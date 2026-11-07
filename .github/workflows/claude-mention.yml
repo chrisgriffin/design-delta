@@ -1,0 +1,30 @@
+name: Claude Mention
+
+# Thin trigger stub: the job body is the public chrisgriffin/workflows repo's
+# _reusable-claude-mention.yml. The `on:` trigger has to live here, because
+# issue_comment, issues and the two review events only fire on the repo
+# where the comment was written. `permissions:` is the actual grant the
+# called job runs under: a called workflow can narrow the caller's token,
+# never widen it.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened, assigned, edited]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  dispatch:
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-claude-mention.yml@v1
+    with:
+      target: design-delta
+    secrets:
+      OPS_GH_TOKEN: ${{ secrets.OPS_GH_TOKEN }}

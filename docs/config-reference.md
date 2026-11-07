@@ -1,0 +1,146 @@
+# Config reference
+
+Generated from [`schema/config.schema.json`](../schema/config.schema.json) — **do not hand-edit this file**, it is overwritten by `node scripts/generate-config-reference.mjs` (checked in CI via the same script's `--check` flag).
+
+The authoritative shape of a consuming project's config (default location `design-delta.json`, at the project root). EVERY field is optional — `{}` validates — so a project sets only what differs from the engine's neutral defaults (see `src/core/config.mjs`'s DEFAULT_PATHS / DEFAULT_CONVENTIONS / DEFAULT_REPORT). Nothing in this schema or its defaults names a specific consumer's design-tool files, code layout, or naming conventions (ADR-001 D9 / the v1 leak this schema exists to not repeat) — every default is either empty or a genuinely neutral, ecosystem-wide convention. `additionalProperties: false` at every closed object level so a typo'd key fails loudly at load time (validateConfig) instead of silently doing nothing; every closed level also accepts `^_`-prefixed keys via `patternProperties` for documentary comments, INCLUDING the open `rules`/`exemptions` maps (v1 issue #68: those two blocks structurally rejected a `_`-prefixed comment key because their `additionalProperties` schema ran every key, comment or not, through the rule/exemption entry shape).
+
+## Fields
+
+- [`$schema`](#schema)
+- [`design`](#design)
+- [`paths`](#paths)
+- [`conventions`](#conventions)
+- [`tokenMapping`](#tokenmapping)
+- [`rules`](#rules)
+- [`exemptions`](#exemptions)
+- [`report`](#report)
+- [`lint`](#lint)
+- [`code`](#code)
+
+## `$schema`
+
+Optional editor hint pointing at this file, so a project's design-delta.json gets completion/validation without the key itself reading as a typo. Format-checked as a uri-reference (a relative path like ./node_modules/design-delta/schema/config.schema.json qualifies) — this is also what makes ajv-formats load-bearing rather than dead wiring.
+
+**Type:** string
+
+## `design`
+
+Selects the ACTIVE design provider (ADR-001 D12) — one at a time, never multiple. Absent means no design side is configured: `gather`/`ingest` have nothing to do, and every design-side rule stays silent, the same 'a surface with nothing to compare skips' convention `tokens`/`components` already follow for a missing snapshot.
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `provider` | string | The active design provider's own config key — resolved by `src/providers/index.mjs`'s loader. No default; a project without a design tool simply omits this block. |
+| `files` | array of string | Design files to census IN ADDITION to the ones the contracts already address (issue #413) — provider-opaque file identifiers, in the active provider's own addressing vocabulary. Scope stays contract-derived first (ADR-003: the union of every contract's `sources.design` — a listed file a contract addresses anyway is deduplicated); this adds files no contract references yet, which would otherwise never be gathered and whose design-only components would stay invisible. The per-node bindings plan is unaffected: a bare file names no nodes. |
+| `options` | object | Provider-specific configuration, validated by that provider's own optional `configSchema` when it declares one (ADR-003 Amendment 3) — unconstrained here by design, the same way `sources.design` is opaque to `contract.schema.json`. The keys the active provider accepts are documented with that provider (ADR-003 Amendment 4; see `docs/cli.md` § audit). |
+
+### `design.options` — provider `figma`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `tokenMap` | object | Explicit `"<variable name>": "<token id>"` overrides — the answer whenever present. `null` declares the variable has no code token at all (it is then neither compared nor reported). An object of `"<mode name>": "<token id>"` pairs each of the variable's modes with its own token, for a code side that keeps one token per mode (`{"sm": ["acme.layout.sm.gutter", "acme.layout.gutter"], "lg": "acme.layout.lg.gutter"}`, where the base token aliases the smallest tier): each mode is compared with each of its tokens, and a mode on one side only is `tokens/design-mode-missing`. |
+| `codeAuthoritativeGroups` | array of string | Token-id prefixes (`system.print`) whose tokens have no design counterpart by construction; candidates under them are dropped before uniqueness is judged. |
+| `codeOnlyGroups` | array of string | Token-id prefixes (`system.layout`) that are code-only by design — no `tokens/code-token-undesigned` finding is raised for a token under one. Unlike `codeAuthoritativeGroups`, name matching still runs for them. |
+| `includePrivateComponents` | boolean | Count the design tool's PRIVATE components — a name, or any `/`-separated path segment, starting with `.` or `_` — under `coverage/design-only` (issue #460). Off by default: such a component is excluded from the published library by the tool's own convention, exists only as an internal composition helper, and can never have a code counterpart, so a contract for it is not missing. Default: `false`. |
+| `ignoreVariables` | array of string | Design variable names to skip entirely — a substring, or `/…/` for a regular expression. For a gathered file that carries another library's variables. |
+| `units` | object | The unit a bare-number variable is in, by name prefix (`"letterSpacing": "%"`) — a design tool's FLOAT carries none, so the project declares it; the engine never infers one from the value. `%` is a fraction of the font size (compared as em), `px`/`rem` are lengths, `em` is as written, `ms`/`s` make it a duration (a TIMING variable needs none — it is rendered in seconds with its unit). The longest matching prefix wins. |
+
+## `paths`
+
+Repo-relative path overrides. See DEFAULT_PATHS in src/core/config.mjs for each key's default. Replaces v1's `baselineFile` with `stateFile` (ADR-001 D6); there is no mockup/print/site directory (mockups are killed, D9) and icons are folded into `componentsDir` (D9).
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `snapshotDir` | string | Directory the gathered design snapshots (design-tokens.json, design-components.json) are read from. |
+| `stateFile` | string | The one change-record store (ADR-001 D6) — replaces v1's baseline.json + component-fingerprints.json. |
+| `tokensFile` | string | The project's W3C-DTCG token file — the token contract (ADR-001 D3). May instead name a DIRECTORY: every `*.json` under it, at any depth, is read in sorted path order and merged into one document. A token defined in two files is reported as `duplicate-token` naming both (the first file in path order wins); a group `$`-key such as `$type` set to different values in two files is reported as `group-key-conflict` (the first value wins); a directory with no `*.json` in it is `empty-tokens-dir`. Diagnostics and lint violations name the specific file a token came from. |
+| `resolvedTokensFile` | string | OPTIONAL. The token document the DTCG parser actually resolves, when a project-owned build step transforms `tokensFile` before the parser sees it. Only the alias pre-scan uses it — on BOTH surfaces that run it, `audit`'s token census and `lint`'s: an alias target that resolves here is reported as `alias-resolved-after-preprocessing` (correct as authored) instead of `unresolvable-alias`, because a prep step can fold or rename groups, making a reference that is unresolvable in the authored file the only one that resolves in the parsed one. The token is still EXCLUDED from the census either way — this engine parses `tokensFile`, and a leaf whose alias cannot resolve there has to be dropped for the rest of the document to parse. Every other token rule reads `tokensFile`, which is what a human authors and what drift is reported against. Leave unset when the parser reads `tokensFile` directly, and for one prep step in particular: where a project keeps each mode as its own top-level set (`system/light` beside `system/dark` — two or more sharing a head), an alias written as the FOLDED path is resolved against the referencing token's own set automatically, with no diagnostic and no exclusion. A path that resolves only in a SIBLING set is deliberately not folded, so no mode's value ever stands in for another's, and that case is still this field's. If set but missing on disk (it is usually a build artifact), alias targets are judged against `tokensFile` instead and `resolved-tokens-file-missing` says so; if set but unreadable, `resolved-tokens-file-unreadable` says so; if set but not valid JSON, `resolved-tokens-file-invalid` says so. All three are reported whenever the field is set, not only when an alias happens to be unresolvable, so a typo'd path cannot sit unnoticed. In any of those three cases the engine also DROPS the "did you mean" suggestion from unresolvable-alias diagnostics: it could not perform the check, so it reports the problem without advising a fix it cannot stand behind. When the document IS usable, surviving suggestions are re-validated against it and any candidate that does not resolve there is dropped too — a suggestion is only ever offered when it holds in the document the parser reads. |
+| `componentsDir` | string | Root of the code-side component inventory. Icons live under this same root (ADR-001 D9) — there is no separate `iconsDir`. |
+| `contractsDir` | string | Directory of `*.contract.json` component contracts (ADR-001 D2). JSON is the only accepted serialization. |
+| `reportDir` | string | Where every command's `--report` markdown/JSON lands. |
+| `styleRoots` | array of string | Extra directories to scan for CSS custom-property DECLARATIONS, beyond `componentsDir`. Generated token stylesheets normally live outside the component tree (`tokens/css/`, `styles/`), and without them the census sees a var used but never declared and reports `tokens/var-unresolved` at error severity — 49 false errors measured on a real design system, enough to fail `verify` on a healthy project. They are also the build output `tokens/emitted-value-mismatch` reads: each custom property declared there is compared against its token's value. Empty by default: the engine assumes nothing about where a project emits its tokens. Default: `[]`. |
+
+## `conventions`
+
+Directory/file naming conventions the code-side component inventory applies. See DEFAULT_CONVENTIONS in src/core/config.mjs — every default here is either an ecosystem-wide convention (e.g. Storybook/test file suffixes) or empty; no consumer-specific naming ships as a default.
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `stylesSuffix` | string | Style-module file suffix (e.g. ".module.scss", ".module.css"). No default — projects vary in how they author component styles. |
+| `codeConnectSuffix` | string | Design-to-code binding file suffix — the design tool's own Code Connect convention, when one is configured. No default. |
+| `contractSuffix` | string | Component-contract file suffix (e.g. ".contract.json"). |
+| `cssVarPrefix` | string | The shipped CSS custom-property namespace prefix (e.g. "--"). No project-specific namespace (like v1's "--system-") ships as a default. |
+| `groupedDirs` | array of string | componentsDir sub-dirs whose CHILDREN are the individual components, rather than the dir itself being one component. Empty by default. Accepted and validated, but no rule in this engine currently reads it (issue #275) — keeping it, not dropping it, since a real consumer has it configured. |
+| `nonComponentFileSuffixes` | array of string | File suffixes inside a component dir that are not the component itself (e.g. ".stories.tsx", ".test.tsx"). |
+| `iconFilePrefix` | string | Per-file naming marking an icon component (e.g. "icon-"). Accepted and validated, but no rule in this engine currently reads it (issue #275) — keeping it, not dropping it, since a real consumer has it configured. |
+| `designVarNamespaces` | object | Design-tool variable-collection heads that sit under a code NAMESPACE the design-tool name omits, keyed by the design-tool head segment and valued with the code namespace segment to insert. Empty by default — every entry here is project data. |
+| `opacityExtension` | string | The `$extensions` key on a color token that holds a reference to its opacity token (e.g. "acme.opacity") — DTCG cannot alias a color and change its alpha, so a project that needs translucency expresses it as this pair. No default: the key is the project's own vendor-prefixed name. Absent means the engine reads no opacity extension, and such a color censuses at its own alpha. |
+| `opacityScale` | number | The domain of the tokens `opacityExtension` points at: 1 for a DTCG number in 0–1 (the default), 100 for a percentage scale. |
+
+## `tokenMapping`
+
+Design-tool <-> code token-name mapping data (ADR-001 D3). Each top-level key REPLACES its default wholesale — resolveConfig does not deep-merge a block's list/map keys onto the defaults, it merges once per block.
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `collections` | object | Design-tool variable-collection + mode mapping, keyed by a caller-chosen label (e.g. "global", "theme"). Empty by default. |
+| `codeAuthoritativeGroups` | array of string | Token groups whose code value is authoritative — the design-tool-value comparison is skipped for these (e.g. viewport-conditional values). |
+| `unitlessGroups` | array of string | Token groups whose CSS values are unitless numbers (a generic CSS convention, not project data). |
+| `aliasFoldingRules` | object | Ordered fold rules mapping a design-tool alias name's segments onto a code token path, grouped by the alias name's top-level segment. Empty by default — every rule here is project-specific naming. |
+
+## `rules`
+
+The one severity mechanism (ADR-001 D5), keyed by rule id (e.g. "tokens/value-mismatch", "components/prop-missing", "lint/camel-case", "coverage/code-only"). A value is either a bare severity — "off" | "error" | "warn" | "review" — or a `[severity, options]` pair carrying that rule's own options. Keys are deliberately open: the valid rule-id set is engine data (the rule registry), not schema data. `^_`-prefixed keys are accepted as documentary comments and are never treated as rule ids (the v1 #68 bug this schema does not repeat). A rule may also take OPTIONS via the `[severity, options]` tuple form. `tokens/token-unreferenced` accepts `{"ignorePrefixes": ["base."]}` — token id prefixes whose findings are suppressed, so a project can keep a colour ramp or spacing scale complete without every unconsumed step being reported, while still hearing about an unused SEMANTIC token. It defaults to empty and the prefixes come from the project: this engine has no opinion about which tier is primitive, because that is a fact about a consumer's token architecture rather than about drift. It also accepts `{"ignoreSources": ["tokens/primitives/*"]}` — globs (`*` matches any run of characters, `/` included, as in `exemptions`) matched against the file each token was authored in, for a project whose tiers are directories rather than id roots. It applies only when `paths.tokensFile` is a directory, and drops a finding only when every token it names matches. `tokens/token-unemitted` is scoped by both options of `tokens/token-unreferenced`.
+
+**Type:** object
+
+Each value: One `rules` (or per-rule severity) entry: a bare severity, or a two-item `[severity, options]` pair. The options object is deliberately unconstrained — each rule owns its own option vocabulary, which is engine data, not schema data.
+
+## `exemptions`
+
+Rule-level exemptions (ADR-001 D5), keyed by rule id — absorbs v1's `ignore.waived` / `ignore.trackedGaps` / `ignore.separateEfforts`. Each entry is an entity string/glob, or an `{entity, reason, decision, issue}` object. `decision` is `waived` (the default, and what a bare string means), `tracked` (a known gap — `issue` required) or `accepted` (correct by design). An exempted finding is never dropped silently: it stays in `audit --json` and `lint --json` under `decided`, carrying `decision: {kind, reason, issue, exemption}`, and never gates `verify` or counts toward severity totals. An exemption matches a finding by its displayed `entity` and also by any alternate identities it declares: `data.tokens`, so a waiver written against an individual token id remains valid when that token is later grouped with others under a shared CSS var; and `data.expectedVar`, so a waiver written against that shared var name remains valid if the group later shrinks back to one token and `entity` reverts to the token's own id. An exemption whose rule reported NOTHING matching it is itself reported, as `coverage/stale-exemption` — exemptions are claims to re-verify, not permanent silence. That covers an entity that no longer exists AND one that still exists but has been fixed: either way the waiver has stopped carrying weight. Only literal entities are checked; a glob matching nothing is not reported, since a pattern states a shape rather than a claim about a specific entity. Stale-checking is scoped to rules the run actually EVALUATED, so a surface that was narrowed out (`audit --tokens`) or skipped does not make every exemption on it look stale. A rule turned "off", or one whose delegated rule set is unconfigured, counts as not evaluated for the same reason: it reported nothing regardless of the code. Findings an exemption hides are counted and reported as `counts.exempted`, so a clean report is never mistaken for no drift. `^_`-prefixed keys are accepted as documentary comments, same as `rules`.
+
+**Type:** object
+
+## `report`
+
+Report rendering configuration (ADR-001 D9).
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `timeZone` | string | IANA time zone name the report renders timestamps in (e.g. "America/Los_Angeles"). Defaults to "UTC" — v1's hardcoded America/Los_Angeles (`lib/pt-date.mjs`) does not carry over as a default. |
+| `actions` | object | Prose shown per finding `side` (e.g. "design", "code") describing what fixing it looks like. Replaces v1's hardcoded `/designer` / `/engineer` role strings in `actionFor`. Empty by default. |
+
+## `lint`
+
+Delegated token lint (ADR-001 Phase 3). EMPTY OR ABSENT MEANS SILENT: a project that configures no rules gets zero lint findings, never a starter set. Measured reason (docs/spikes/lint-rule-mapping.md): `core/consistent-naming` alone produces 798 findings on a 657-leaf token file purely because its default format is kebab-case and the project is camelCase — none of them defects. Opinions ship off.
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `rules` | object | Rule ids to enable, in @terrazzo/parser's own config shape. Keys are that library's rule ids (`core/valid-color`, `core/consistent-naming`) and are deliberately NOT enumerated here: the delegated set belongs to that library and pinning it in this schema would go stale on their next release, and reject a rule that actually exists. Values are that library's own: a severity string, or a `[severity, options]` pair. |
+| `tiers` | array of string | The project's token TIERS, ordered primitive-first — e.g. ["base", "system", "component"]. Each entry is the FIRST dot-segment of a token id belonging to that tier (a mode suffix like `system/dark` is matched on the part before the `/`). The idea a tier list encodes — lower tiers hold raw values and higher tiers alias downward toward them, never upward — is general to layered design systems; the NAMES are one project's and are therefore config, never engine truth (CLAUDE.md: nothing consumer-specific, anywhere). ABSENT MEANS SILENT: with no tiers configured the tier rules emit nothing at all rather than guessing a vocabulary. `lint/tier-alias-missing` (a token above the first tier holding a literal) also reads this list, but runs only when `rules` names it. |
+| `vocabularies` | array of object | Closed-vocabulary token leaves (ADR-001 Phase 3, issue #121) — a canonical ordered scale (t-shirt sizes) and a closed state set (hover/active/disabled) are the same MECHANISM (a token's leaf must belong to a configured set for its path) with different vocabularies, so this is one config surface and one rule for both rather than three. A path with no matching entry is ungoverned and produces no finding. ABSENT MEANS SILENT, like every field in `lint`: with nothing configured, no vocabulary is asserted.<br>Each entry: `{ paths: array of string, values: array of string }` |
+| `contracts` | object | Contract lint (issue #406): naming and vocabulary conventions checked across every loaded contract, the way `tiers`/`vocabularies` are checked across tokens. The contract schema bounds the character set; which case and which enum vocabularies a project uses within it are its own conventions, so they live here. ABSENT MEANS SILENT. |
+| `designNames` | object | Design naming lint (issue #407): the naming convention the project's design-side variable and component names must follow — the convention half of what `tokens/design-token-ambiguous` can only report after the fact. Each pattern is a JavaScript regular expression source, anchored by the author (`^...$`) if whole-name matching is meant. Requires a configured design provider and an ingested snapshot to have anything to check. ABSENT MEANS SILENT. |
+| `rampPaths` | array of string | Dot-path patterns (same `*`-single-segment matching as `lint.vocabularies`) identifying which token groups are numeric color RAMPS — a `color` token's PARENT path matches an entry here, and its leaf is the ramp's numeric step (50, 100, 200, ...). Perceptual lightness is expected to move monotonically as the step increases. ABSENT MEANS SILENT: with no ramp paths configured, nothing is asserted about any token's lightness. |
+
+## `code`
+
+Which UI framework the audited code is written in (issue #117). One active framework at a time, resolved by src/sources/frameworks.mjs to the adapter under src/sources/<framework>/, which supplies its own file conventions. Default `react`, the only adapter today.
+
+**Type:** object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `framework` | enum: `"react"` | Name of the framework adapter (see FRAMEWORKS in src/sources/frameworks.mjs). |

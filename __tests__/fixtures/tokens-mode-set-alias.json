@@ -1,0 +1,72 @@
+{
+  "_comment": "Sibling mode sets (#564). 'system/light' and 'system/dark' are two top-level sets that are modes of 'system', so a token in one of them refers to a token of the SAME mode by the folded path ('{system.color.border.primary}'), which is what that alias means once the sets are read as modes. A bare 'system' group exists alongside them holding the mode-independent tokens, exactly as a real design system does — its presence is why the fold cannot be decided by asking whether the head segment is absent. The aliases below are the three outcomes: folded; declined because the path resolves only in the OTHER mode; declined because it resolves nowhere.",
+  "system": {
+    "focusRing": {
+      "width": { "$type": "dimension", "$value": { "value": 2, "unit": "px" } }
+    }
+  },
+  "system/light": {
+    "color": {
+      "border": {
+        "primary": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [0.1, 0.1, 0.1],
+            "alpha": 1
+          }
+        }
+      },
+      "focusRing": {
+        "color": {
+          "$type": "color",
+          "$description": "CORRECT as authored: the folded path, resolvable in this token's own set.",
+          "$value": "{system.color.border.primary}"
+        }
+      },
+      "crossMode": {
+        "color": {
+          "$type": "color",
+          "$description": "BROKEN: 'border.onlyInDark' resolves in 'system/dark' but not in this token's own set, and no mode's value may stand in for another's.",
+          "$value": "{system.color.border.onlyInDark}"
+        }
+      }
+    }
+  },
+  "system/dark": {
+    "color": {
+      "border": {
+        "primary": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [0.95, 0.95, 0.95],
+            "alpha": 1
+          }
+        },
+        "onlyInDark": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [0.5, 0.5, 0.5],
+            "alpha": 1
+          }
+        }
+      },
+      "focusRing": {
+        "color": {
+          "$type": "color",
+          "$description": "CORRECT as authored, same as the light mode's.",
+          "$value": "{system.color.border.primary}"
+        }
+      },
+      "typo": {
+        "color": {
+          "$type": "color",
+          "$description": "BROKEN: resolves in no set, folded or not.",
+          "$value": "{system.color.bordr.primary}"
+        }
+      }
+    }
+  }
+}

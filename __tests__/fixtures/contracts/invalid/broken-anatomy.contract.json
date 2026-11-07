@@ -1,0 +1,19 @@
+{
+  "_note": "SCHEMA-valid, SEMANTICALLY broken on purpose — every violation here is a cross-reference JSON Schema structurally cannot express. Used by the CLI test to prove a failing directory exits 1 and names each problem.",
+  "id": "broken-anatomy",
+  "title": "BrokenAnatomy",
+  "props": {
+    "label": { "type": "string" }
+  },
+  "anatomy": {
+    "root": {
+      "type": "container",
+      "element": "div",
+      "children": ["ghost"]
+    },
+    "orphan": { "type": "text", "content": { "$prop": "missingProp" } }
+  },
+  "styles": {
+    "nowhere": { "base": { "color": { "token": "system.color.text.primary" } } }
+  }
+}

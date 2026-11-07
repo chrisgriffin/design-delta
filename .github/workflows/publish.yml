@@ -1,0 +1,29 @@
+name: Publish to npm (manual)
+
+# Publishes design-delta to the public npm registry with the NPM_TOKEN
+# secret. Manual escape hatch ONLY: create-github-release.yml's own publish
+# step is the normal path. Run this from the Actions tab if that step failed
+# and needs a retry without re-cutting the release; the registry rejects a
+# version that is already published.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Runaway cap: without it a hung `npm publish` inherits GitHub's 6h default.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

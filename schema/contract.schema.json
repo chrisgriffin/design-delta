@@ -1,0 +1,869 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chrisgriffin.io/schemas/design-delta/contract.schema.json",
+  "title": "design-delta component contract",
+  "version": 1,
+  "description": "The authoritative definition of ONE component: its API, its structure, and the design tokens it binds. Per ADR-001 D1 the contract is the fixed point — every check compares one side against THIS, never design against code directly, so spec↔design and spec↔code are the only two comparisons and in-sync holds by transitivity. Authored as `<name>.contract.json` — JSON is the ONE serialization (D2, tightened 2026-07-31): `_`-prefixed keys carry the reasoning YAML would have kept in `#` comments, so a second format bought nothing but a second parse path. One component per file: v1's `components: {<key>: …}` single-entry wrapper is gone, as is the `$extensions.componentSpec` nesting — deviation markers are first-class here. `_`-prefixed keys are permitted at every level and carry the authoring reasoning v1 kept in YAML `#` comments.",
+  "type": "object",
+  "required": ["id", "title"],
+  "additionalProperties": false,
+  "patternProperties": {
+    "^_": {}
+  },
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Editor hint pointing at this schema, so an authored contract gets completion and validation in-editor."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "description": "The contract-schema version this file was authored against — the top-level `version` of this schema. Absent means current. Bumps ONLY on a breaking schema change (a field removed, renamed, re-typed, or made required); an additive optional field never bumps it. A contract newer than the engine is refused outright; an older one is refused only if it no longer validates, and the diagnostic then names both versions so a stale contract is not mistaken for a malformed one."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "description": "Stable kebab-case identifier, unique across the contract set. The key every finding, report row, and exemption refers to — renaming it is a breaking change to a consumer's exemptions."
+    },
+    "title": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "PascalCase name, matching the exported code component."
+    },
+    "status": {
+      "enum": ["published", "draft", "deprecated"],
+      "default": "published",
+      "description": "Lifecycle. `draft` and `deprecated` are reported but may be exempted wholesale by a consumer's rules config."
+    },
+    "description": {
+      "type": "string",
+      "description": "What this component is for — the purpose line. Prose, never checked for truth; see `intent` for the fields that tell an agent when to reach for it and when not to."
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "description": "Semantic intent (issue #366): what nothing in the API surface can say — when this component is the right choice, how it is commonly misused, and what to use instead. Prose no rule can verify for truth, so what IS checked is staleness: `verifiedAgainst` records the code hash the text was last reviewed against, and `components/intent-stale` fires when the component's props have changed since. Absent `verifiedAgainst` is `components/intent-unverified`; both messages carry the current hash to paste in.",
+      "properties": {
+        "usedFor": {
+          "type": "string",
+          "description": "The situations this component is the right choice for."
+        },
+        "misusedAs": {
+          "type": "string",
+          "description": "How it is commonly reached for wrongly."
+        },
+        "useInstead": {
+          "type": "string",
+          "description": "What to use in those cases — component names where possible, so a reader can follow the pointer."
+        },
+        "verifiedAgainst": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The component's `codeHash` (as `snapshot` writes to state.json) at the time the intent text was last reviewed — the full sha256 digest, not a prefix, because the staleness check compares it to `hashJson` by equality. Set it from the `intent-unverified`/`intent-stale` finding's message, which carries the whole hash to paste."
+        }
+      }
+    },
+    "sources": {
+      "$ref": "#/$defs/sources"
+    },
+    "codegen": {
+      "$ref": "#/$defs/codegen"
+    },
+    "props": {
+      "type": "object",
+      "description": "The component's API, keyed by canonical (code) prop name. Unlike v1, optionality is the explicit `required` field rather than a trailing `?` smuggled into the key — a key should be the prop's name and nothing else.",
+      "patternProperties": {
+        "^_": {},
+        "^[A-Za-z][A-Za-z0-9]*$": {
+          "$ref": "#/$defs/prop"
+        }
+      },
+      "additionalProperties": false
+    },
+    "anatomy": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "The element tree — STRUCTURE only. `root` is expected. the legacy spec format mixed structure and styling into one `elements` map per variant; this keeps structure here and styling in `styles`, so each answers one question. A component whose render function returns DIFFERENT root elements on different branches has no single tree; the optional `$variants` block describes the others (ADR-002). It is the SECOND sigil this map reserves — `^_` is the first, and means \"comment, discard\" — and both are safe here because a node name is constrained below to `^[A-Za-z][A-Za-z0-9]*$`, which no sigil key can match.",
+      "properties": {
+        "$variants": {
+          "$ref": "#/$defs/anatomyVariants"
+        }
+      },
+      "patternProperties": {
+        "^_": {},
+        "^[A-Za-z][A-Za-z0-9]*$": {
+          "$ref": "#/$defs/anatomyNode"
+        }
+      },
+      "additionalProperties": false
+    },
+    "styles": {
+      "type": "object",
+      "description": "Token bindings, ELEMENT-MAJOR (decided 2026-07-31): each anatomy element carries its `base` styles and then the `variants` that override them. v1 was variant-major, which scattered one element's styling across `default.elements.*` and every `variants[].elements.*`; this keeps it in one place, in the order the SCSS it describes is written. Keys must name an element declared in `anatomy`.",
+      "patternProperties": {
+        "^_": {},
+        "^[A-Za-z][A-Za-z0-9]*$": {
+          "$ref": "#/$defs/elementStyles"
+        }
+      },
+      "additionalProperties": false
+    },
+    "invalidVariantCombinations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "type": ["string", "number", "boolean"]
+        }
+      },
+      "description": "Prop combinations that must never be produced. Each entry is a partial configuration — an AND over only the named props, other props irrelevant — and a match is a finding. Every named prop must be a declared `enum` prop and every value one of that prop's own values; an empty entry is rejected, since 'every combination is invalid' is not an intent this field can express. Checked on the DESIGN side only, by `components/variant-combinations-mismatch` (issue #403): a component's code-side props are a TYPE (an enum of possible values per prop), never an enumeration of which COMBINATIONS actually get rendered together, so a static code extractor has no signal to check this against (issue #111) — a design tool's component set genuinely enumerates its variants, and does. Requires a bindings gather; see docs/contract-authoring-guide.md for the matching semantics."
+    },
+    "subcomponents": {
+      "type": "object",
+      "description": "Internal components rolled up into this one that are NOT independently usable and have no design-tool symbol of their own. Anatomy references them via `instanceOf: \"#/subcomponents/<Name>\"`. They conform against their own code and styles, not the parent's. Rare — 1 of 41 in the v1 corpus — so it must not complicate the common path.",
+      "patternProperties": {
+        "^_": {},
+        "^[A-Z][A-Za-z0-9]*$": {
+          "$ref": "#/$defs/subcomponent"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "description": "Where each side of this contract lives.",
+      "properties": {
+        "code": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^_": {}
+          },
+          "required": ["path"],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Repo-relative path to the component implementation."
+            },
+            "styles": {
+              "type": "string",
+              "description": "Repo-relative path to its style file, when it has one."
+            },
+            "propsType": {
+              "type": "string",
+              "description": "Exported props type name, when it differs from `<Title>Props`."
+            }
+          }
+        },
+        "design": {
+          "type": "object",
+          "description": "Addresses this component in the ACTIVE design tool. Deliberately OPAQUE to this schema (ADR-001 D12): the engine never learns any one design tool's `fileKey`/`nodeId` vocabulary, or any other tool's. The enabled provider supplies a `sourceSchema` that validates this object, so provider-specific addressing stays in the provider. Absent means the contract declares no design counterpart, which is itself a checkable fact."
+        }
+      }
+    },
+    "codegen": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "description": "Directives for generated design-to-code binding files. Universal framework boilerplate — never design properties.",
+      "properties": {
+        "className": {
+          "type": "boolean",
+          "description": "Whether the component accepts a `className` passthrough."
+        },
+        "domPassthrough": {
+          "type": "string",
+          "description": "The DOM element whose native props pass through (e.g. `button`)."
+        },
+        "exampleContent": {
+          "type": "string",
+          "description": "Text child for the generated example, when children are arbitrary nodes rather than a modeled prop. Mutually exclusive with `example`."
+        },
+        "example": {
+          "description": "Shapes the generated example when it is not a plain text child: `{selfClose: true}` for a self-closing element, `{comment: \"…\"}` for a comment child, or `\"authored\"` when the example needs literal demo values and is hand-written (the generator then emits everything but the example body, and reports no gap).",
+          "oneOf": [
+            {
+              "const": "authored"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["selfClose"],
+              "properties": {
+                "selfClose": {
+                  "const": true
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["comment"],
+              "properties": {
+                "comment": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "prop": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "required": ["type"],
+      "description": "One prop. `values` is required when `type` is `enum` and forbidden otherwise; `design.gates` is allowed only when `type` is `slot`.",
+      "properties": {
+        "type": {
+          "enum": ["boolean", "string", "number", "enum", "slot", "function"],
+          "description": "`enum` replaces v1's `type: string` + `enum: […]` pairing, matching component-contracts. `slot` is arbitrary renderable content."
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": ["string", "number"]
+          },
+          "description": "Canonical enum values in CODE casing. Matching is EXACT and case-sensitive on every side — `Size`/`SM` vs `size`/`sm` is drift, never a near-match (ADR-001 D1). Numbers are allowed so a numeric code union (`2 | 3`) can be declared as `[2, 3]`; on the DESIGN side only, such a value also matches its exact string form (`\"2\"`), since a design tool's variant options are always strings."
+        },
+        "default": {
+          "type": ["string", "boolean", "number", "null"]
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the prop must be supplied. Defaults to TRUE, preserving v1's semantics (where an unmarked key was required and a trailing `?` made it optional) so migration is behavior-preserving rather than a silent semantic change."
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "accepts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "For a `slot`: the component names it accepts."
+        },
+        "minChildren": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxChildren": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "design": {
+          "$ref": "#/$defs/designDeviation"
+        },
+        "code": {
+          "$ref": "#/$defs/codeDeviation"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "enum"
+              }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "required": ["values"]
+          },
+          "else": {
+            "not": {
+              "required": ["values"]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["design"],
+            "properties": {
+              "design": {
+                "type": "object",
+                "required": ["gates"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "slot"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "designDeviation": {
+      "description": "Records a NON-DERIVABLE fact about how the design side represents this prop, and nothing else. `none`: the prop is code-only and must NOT appear in design. `unverified`: the projection is not yet confirmed, so no finding is raised and no parity is asserted. `{name, reason}`: a genuine rename, with the reason required so the next reader knows it was deliberate. `{name, mechanism}`: a prop the design side models through a different MECHANISM by construction — the type comparison then runs against the mechanism's implied design type instead of the contract's own, so the marker still fails the moment it stops being true. NEVER used to pin a known-wrong value or casing — that would convert drift into permanent fiction, which is the one thing this tool exists to prevent.",
+      "oneOf": [
+        {
+          "const": "none"
+        },
+        {
+          "const": "unverified"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mechanism": {
+              "enum": ["toggle", "text", "instance"],
+              "description": "How the design side models this prop when it CANNOT model it the way the contract types it: `toggle` a boolean beside the region (a design slot always occupies space, so hiding it needs one), `text` a text string where code takes arbitrary content, `instance` a swappable component instance where code takes a plain value. A closed vocabulary on purpose — anything outside it is a real mismatch, not a declared translation. The implied design type is checked, never assumed."
+            },
+            "gates": {
+              "type": "string",
+              "minLength": 1,
+              "description": "`toggle` only, and only on a prop whose own `type` is `slot` (issue #503): the design-side SLOT property the toggle shows and hides, when the design component carries one beside the boolean (a slot plus a `has*` boolean is the usual shape of an optional region). The binding's true branch then renders that slot instead of a placeholder, and the slot is checked to exist and to be a slot, so it is compared rather than assumed. The code type is restricted because that true branch is a component instance: binding one to a `string` or `boolean` prop would be wrong, and nothing downstream reports it."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": ["gates"]
+              },
+              "then": {
+                "required": ["mechanism"],
+                "properties": {
+                  "mechanism": {
+                    "const": "toggle"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "not": {
+                  "required": ["mechanism"]
+                }
+              },
+              "then": {
+                "required": ["reason"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "codeDeviation": {
+      "enum": ["none", "unverified"],
+      "description": "`none`: a design-only axis (an interaction state, a responsive canvas) that must NOT appear as a code prop. `unverified`: the code projection is not yet confirmed."
+    },
+    "anatomyNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "container",
+            "text",
+            "glyph",
+            "vector",
+            "slot",
+            "instance",
+            "line",
+            "ellipse",
+            "rectangle",
+            "polygon",
+            "star"
+          ]
+        },
+        "element": {
+          "type": "string",
+          "description": "The DOM tag this node renders as, code side (e.g. `button`)."
+        },
+        "attributes": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Za-z][A-Za-z0-9:-]*$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "DOM attributes this node must carry, by name, with the literal value expected (`role`, `aria-label`, `type`, …) — the accessibility surface a contract pins (issue #364). A bare boolean attribute is `\"true\"`. Only what is declared is checked: an attribute the code sets that the contract does not name is not drift. A value the code computes is reported as unresolved (review), never as a mismatch."
+        },
+        "instanceOf": {
+          "type": "string",
+          "description": "A component name, or `#/subcomponents/<Name>` for a rolled-up internal one."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Child node names, in render order. Names must exist in this `anatomy`."
+        },
+        "content": {
+          "description": "What this node renders: a literal string, or `{ $prop: <name> }` binding it to a prop. v1 used a JSON-pointer (`{$binding: \"#/props/children\"}`); the prop name alone is unambiguous here and far easier to author.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/propBinding"
+            }
+          ]
+        },
+        "presentIf": {
+          "type": "string",
+          "description": "Name of the prop that conditionally renders this node."
+        },
+        "codeClass": {
+          "type": "string",
+          "description": "The style-file class this node carries, when it isn't derivable from the node name."
+        },
+        "designLayer": {
+          "type": "string",
+          "description": "The design-tool layer name, when it differs from the node name. Tool-neutral (D12) — v1 named this field after its one design tool."
+        }
+      }
+    },
+    "anatomyVariants": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "description": "The alternative trees a component renders, keyed by variant name (ADR-002 D1/D2) — a name in the same casing as a node name, carrying the meaning the engine cannot check (`asLink`). Optional, and absent from the ~95% of components that return one shape. Matching a variant to a rendered branch is STRUCTURAL, by root element (D4), so two variants declaring the same `root.element` are ambiguous and the contract is rejected at load time rather than one of them silently winning.",
+      "patternProperties": {
+        "^_": {},
+        "^[A-Za-z][A-Za-z0-9]*$": {
+          "$ref": "#/$defs/anatomyVariant"
+        }
+      }
+    },
+    "anatomyVariant": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "description": "One alternative tree, as a PARTIAL OVERRIDE (ADR-002 D3): only the nodes that DIFFER from the base anatomy, everything else inherited. A component whose branches differ in one node writes one node, so the common case never costs what the rare one does and no duplicated node can drift from its copy.",
+      "properties": {
+        "when": {
+          "type": "string",
+          "description": "Free text saying when this branch renders (\"href is set\"). DOCUMENTATION FOR A HUMAN READER, never a predicate (ADR-002 D4): this engine is static, so a runtime prop value is not something it can evaluate, and a structured `{prop, equals}` shape would read as executable while being silently ignored — the failure `invalidVariantCombinations` already represents once in this schema. A plain string cannot be mistaken for one. It sits flat alongside the node names, which makes `when` the one name a variant's nodes may not use."
+        }
+      },
+      "patternProperties": {
+        "^_": {},
+        "^(?!when$)[A-Za-z][A-Za-z0-9]*$": {
+          "$ref": "#/$defs/anatomyNode"
+        }
+      }
+    },
+    "propBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$prop"],
+      "properties": {
+        "$prop": {
+          "type": "string",
+          "description": "Name of a prop declared in `props`."
+        }
+      }
+    },
+    "elementStyles": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "description": "One element's styling: its base bindings, then the variant overrides.",
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/styleProps"
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/styleVariant"
+          }
+        }
+      }
+    },
+    "styleVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "required": ["when"],
+      "description": "Style overrides that apply for a given prop configuration. `when` sits alongside the style properties rather than nesting them one level deeper — no style property is or will be named `when`, so the flatter shape costs nothing.",
+      "properties": {
+        "when": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"]
+          },
+          "description": "The prop values this override applies to, e.g. `{ size: lg }`. Multiple keys mean all must match."
+        },
+        "padding": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "margin": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "inset": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "borderWidth": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "borderRadius": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/value"
+            },
+            {
+              "$ref": "#/$defs/cornerValue"
+            }
+          ]
+        },
+        "gap": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/value"
+            },
+            {
+              "$ref": "#/$defs/gapValue"
+            }
+          ]
+        },
+        "border": {
+          "$ref": "#/$defs/border"
+        },
+        "background": {
+          "$ref": "#/$defs/value"
+        },
+        "color": {
+          "$ref": "#/$defs/value"
+        },
+        "maxWidth": {
+          "$ref": "#/$defs/value"
+        },
+        "font": {
+          "$ref": "#/$defs/value"
+        },
+        "fontFamily": {
+          "$ref": "#/$defs/value"
+        },
+        "fontSize": {
+          "$ref": "#/$defs/value"
+        },
+        "fontWeight": {
+          "$ref": "#/$defs/value"
+        },
+        "lineHeight": {
+          "$ref": "#/$defs/value"
+        }
+      }
+    },
+    "styleProps": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "minProperties": 1,
+      "description": "Token-bearing design properties only. Layout mechanics (flex direction, alignment) are deliberately absent: they are implementation, not design contract, and putting them here would make the contract a second stylesheet to keep in sync.",
+      "properties": {
+        "padding": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "margin": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "inset": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "borderWidth": {
+          "$ref": "#/$defs/edgeValue"
+        },
+        "borderRadius": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/value"
+            },
+            {
+              "$ref": "#/$defs/cornerValue"
+            }
+          ]
+        },
+        "gap": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/value"
+            },
+            {
+              "$ref": "#/$defs/gapValue"
+            }
+          ]
+        },
+        "border": {
+          "$ref": "#/$defs/border"
+        },
+        "background": {
+          "$ref": "#/$defs/value"
+        },
+        "color": {
+          "$ref": "#/$defs/value"
+        },
+        "maxWidth": {
+          "$ref": "#/$defs/value"
+        },
+        "font": {
+          "$ref": "#/$defs/value"
+        },
+        "fontFamily": {
+          "$ref": "#/$defs/value"
+        },
+        "fontSize": {
+          "$ref": "#/$defs/value"
+        },
+        "fontWeight": {
+          "$ref": "#/$defs/value"
+        },
+        "lineHeight": {
+          "$ref": "#/$defs/value"
+        }
+      }
+    },
+    "value": {
+      "description": "A single style value: a design-token reference, or an explicitly-marked non-token literal.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/tokenRef"
+        },
+        {
+          "$ref": "#/$defs/rawValue"
+        }
+      ]
+    },
+    "tokenRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["token"],
+      "description": "A reference to a token in the project's DTCG tokens file, which IS the token contract (ADR-001 D3). The `{ token: … }` wrapper is what distinguishes a token reference from a literal string. NOT a design-tool variable id: the design-variable↔tokens mapping belongs to the provider and the tokens module, so a contract needs no knowledge of any tool's identifiers.",
+      "properties": {
+        "token": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9-]*(\\.[A-Za-z0-9][A-Za-z0-9-]*)+$",
+          "description": "Dot-path token id. Deliberately NOT pinned to a namespace: v1 hardcoded `^system\\.` and then mutated the parsed schema at runtime to un-hardcode it. Whether the token exists is verified against the tokens file, which is the real check."
+        }
+      }
+    },
+    "rawValue": {
+      "type": "string",
+      "pattern": "^raw\\(.+\\)$",
+      "description": "A deliberate non-token value, e.g. `raw(transparent)` or `raw(currentcolor)`. Explicit so that an untokenized value is a recorded decision rather than an oversight — the linter can still flag it, but it is never mistaken for missing data."
+    },
+    "edgeValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "minProperties": 1,
+      "description": "Box-edge grammar: named logical slots, NEVER a positional array (a four-element array is unreadable and silently order-dependent). Precedence, most specific wins: individual edge > axis > all.",
+      "properties": {
+        "all": {
+          "$ref": "#/$defs/value"
+        },
+        "block": {
+          "$ref": "#/$defs/value"
+        },
+        "inline": {
+          "$ref": "#/$defs/value"
+        },
+        "blockStart": {
+          "$ref": "#/$defs/value"
+        },
+        "blockEnd": {
+          "$ref": "#/$defs/value"
+        },
+        "inlineStart": {
+          "$ref": "#/$defs/value"
+        },
+        "inlineEnd": {
+          "$ref": "#/$defs/value"
+        }
+      }
+    },
+    "cornerValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "minProperties": 1,
+      "description": "Corner grammar for borderRadius. Precedence: individual corner > all.",
+      "properties": {
+        "all": {
+          "$ref": "#/$defs/value"
+        },
+        "startStart": {
+          "$ref": "#/$defs/value"
+        },
+        "startEnd": {
+          "$ref": "#/$defs/value"
+        },
+        "endStart": {
+          "$ref": "#/$defs/value"
+        },
+        "endEnd": {
+          "$ref": "#/$defs/value"
+        }
+      }
+    },
+    "gapValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "minProperties": 1,
+      "description": "Axis-gap grammar. Precedence: row/column > all.",
+      "properties": {
+        "all": {
+          "$ref": "#/$defs/value"
+        },
+        "row": {
+          "$ref": "#/$defs/value"
+        },
+        "column": {
+          "$ref": "#/$defs/value"
+        }
+      }
+    },
+    "border": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "minProperties": 1,
+      "properties": {
+        "width": {
+          "$ref": "#/$defs/value"
+        },
+        "color": {
+          "$ref": "#/$defs/value"
+        },
+        "style": {
+          "type": "string"
+        }
+      }
+    },
+    "subcomponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_": {}
+      },
+      "required": ["title", "anatomy"],
+      "description": "Same shape as a component, minus the design source: a rolled-up internal component has no independently addressable symbol.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$"
+        },
+        "description": {
+          "type": "string"
+        },
+        "props": {
+          "type": "object",
+          "patternProperties": {
+            "^_": {},
+            "^[A-Za-z][A-Za-z0-9]*$": {
+              "$ref": "#/$defs/prop"
+            }
+          },
+          "additionalProperties": false
+        },
+        "anatomy": {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+            "^_": {},
+            "^[A-Za-z][A-Za-z0-9]*$": {
+              "$ref": "#/$defs/anatomyNode"
+            }
+          },
+          "additionalProperties": false
+        },
+        "styles": {
+          "type": "object",
+          "patternProperties": {
+            "^_": {},
+            "^[A-Za-z][A-Za-z0-9]*$": {
+              "$ref": "#/$defs/elementStyles"
+            }
+          },
+          "additionalProperties": false
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^_": {}
+          },
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^_": {}
+              },
+              "required": ["path"],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "styles": {
+                  "type": "string"
+                },
+                "propsType": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

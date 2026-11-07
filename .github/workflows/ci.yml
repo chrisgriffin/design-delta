@@ -1,0 +1,82 @@
+name: CI
+
+# Thin trigger stub: the job body (checkout, Node, install, run the chain)
+# is the public chrisgriffin/workflows repo's _reusable-node-ci.yml, pinned
+# to its `v1` tag. Each required job reports straight to its own
+# `<job id> / ci` check, which both branch rulesets require by that name;
+# rename or gate a job here and the ruleset edit lands FIRST, or every PR
+# blocks on a check that can no longer report. `scripts/ci/required-checks.mjs`
+# is the record and `__tests__/ci-workflow.test.js` pins it.
+#
+# No secrets anywhere below: every dependency is public, and `npm ci` running
+# with no registry token is what keeps a fork PR working.
+
+on:
+  pull_request:
+    branches: [develop, main]
+    # ready_for_review is load-bearing: the reusable workflow skips draft
+    # PRs, and without this type a draft marked ready never re-fires it.
+    types: [opened, synchronize, reopened, ready_for_review]
+  # main only: a push to develop would re-run a tree its own PR just checked.
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The fast checks run as one job, cheapest first, because GitHub bills each
+  # job rounded up to a whole minute and all four together take about one.
+  # `set -e` is implicit: the reusable workflow runs this as one shell block.
+  checks:
+    permissions:
+      contents: read
+      # The callee declares `packages: read`, and a callee asking above the
+      # caller's ceiling fails the run outright. Inert here: nothing private
+      # is installed.
+      packages: read
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-node-ci.yml@v1
+    with:
+      node_version: "22"
+      claude_md_budget: "9500"
+      docs_owed: ""
+      run: |
+        npx prettier --check .
+        bash scripts/ci/check-action.sh
+        bash scripts/ci/check-package.sh
+        node scripts/ci/check-schemas.mjs
+        node scripts/generate-config-reference.mjs --check
+        node scripts/generate-rules-reference.mjs --check
+  test_22:
+    permissions:
+      contents: read
+      packages: read
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-node-ci.yml@v1
+    with:
+      node_version: "22"
+      run: npm test
+
+  # Push to main only: the 24/26 matrix has never differed from 22 here, and
+  # a skipped `uses:` job emits NO check-run, so neither name is in a
+  # ruleset's required checks. Adding one back blocks every PR forever.
+  test_24:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: read
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-node-ci.yml@v1
+    with:
+      node_version: "24"
+      run: npm test
+
+  test_26:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: read
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-node-ci.yml@v1
+    with:
+      node_version: "26"
+      run: npm test
