@@ -1,0 +1,60 @@
+{
+  "name": "design-delta",
+  "version": "0.26.0",
+  "type": "module",
+  "description": "Deterministic design-drift engine: a component contract is the source of truth, and the engine reports where the code and the design tool disagree with it. Design tools are pluggable providers.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chrisgriffin/design-delta.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "src",
+    "schema",
+    "docs",
+    "skills"
+  ],
+  "exports": {
+    ".": "./src/index.mjs",
+    "./schema/*": "./schema/*"
+  },
+  "bin": {
+    "design-delta": "src/cli/main.mjs"
+  },
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "changelog": "conventional-changelog -n ./changelog-preset.config.mjs -i CHANGELOG.md -s",
+    "changelog:first": "conventional-changelog -n ./changelog-preset.config.mjs -i CHANGELOG.md -s -r 0",
+    "version:recommend": "conventional-recommended-bump -p conventionalcommits",
+    "contracts": "node src/cli/main.mjs contracts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "@terrazzo/parser": "2.5.0",
+    "@terrazzo/token-tools": "2.5.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0 <7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "conventional-changelog-cli": "^5.0.0",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "conventional-recommended-bump": "^11.2.0",
+    "jest": "^30.4.2",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3"
+  }
+}

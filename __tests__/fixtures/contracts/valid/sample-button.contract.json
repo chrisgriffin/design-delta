@@ -1,0 +1,97 @@
+{
+  "$schema": "https://chrisgriffin.io/schemas/design-delta/contract.schema.json",
+  "_note": "Generic in-repo fixture. Exercises every block the loader reads: sources (with an OPAQUE design block), codegen, props with enum/slot/deviation markers, an anatomy tree with a prop binding and a subcomponent instance, element-major styles with a variant, and `_` comment keys at three levels.",
+  "id": "sample-button",
+  "title": "SampleButton",
+  "status": "published",
+  "description": "A generic two-element button. Belongs to no real design system.",
+  "sources": {
+    "code": {
+      "path": "components/sample-button/sample-button.tsx",
+      "styles": "components/sample-button/sample-button.module.scss"
+    },
+    "design": {
+      "_note": "Opaque to the core schema (ADR-001 D12) — the active provider validates this, so any shape parses here.",
+      "someProviderAddress": "sample"
+    }
+  },
+  "codegen": {
+    "className": true,
+    "domPassthrough": "button"
+  },
+  "props": {
+    "size": {
+      "type": "enum",
+      "values": ["sm", "lg"],
+      "default": "sm",
+      "required": false
+    },
+    "label": {
+      "_why": "A comment key on a prop, to prove `_` survives validation and is stripped from the loaded contract.",
+      "type": "string"
+    },
+    "state": {
+      "type": "enum",
+      "values": ["resting", "hover"],
+      "default": "resting",
+      "code": "none"
+    },
+    "adornment": {
+      "type": "slot",
+      "required": false,
+      "accepts": ["Adornment"],
+      "design": "unverified"
+    }
+  },
+  "anatomy": {
+    "root": {
+      "type": "container",
+      "element": "button",
+      "children": ["label", "adornment"]
+    },
+    "label": {
+      "type": "text",
+      "content": { "$prop": "label" }
+    },
+    "adornment": {
+      "type": "instance",
+      "instanceOf": "#/subcomponents/Adornment",
+      "presentIf": "adornment"
+    }
+  },
+  "styles": {
+    "root": {
+      "_note": "Element-major: this element's base bindings, then its variant overrides.",
+      "base": {
+        "borderRadius": { "token": "system.radius.full" },
+        "border": {
+          "width": "raw(1px)",
+          "color": { "token": "system.color.border.subtle" }
+        }
+      },
+      "variants": [
+        {
+          "when": { "size": "lg" },
+          "padding": {
+            "block": { "token": "system.inset.md" },
+            "inline": { "token": "system.inset.lg" }
+          }
+        }
+      ]
+    },
+    "label": {
+      "base": { "color": { "token": "system.color.text.primary" } }
+    }
+  },
+  "invalidVariantCombinations": [{ "size": "sm", "state": "hover" }],
+  "subcomponents": {
+    "Adornment": {
+      "title": "Adornment",
+      "description": "Rolled up into the parent; has no design-tool symbol of its own.",
+      "anatomy": { "root": { "type": "vector" } },
+      "sources": {
+        "code": { "path": "components/sample-button/adornment.tsx" }
+      }
+    }
+  }
+}

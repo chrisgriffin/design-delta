@@ -1,0 +1,20 @@
+name: Sync main to develop
+
+# Thin trigger stub: the job body is the public chrisgriffin/workflows repo's
+# _reusable-sync-main-to-develop.yml. After every push to main (a merged
+# release PR) it merges main back into develop, so the two never diverge.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    # contents: write for the clean-merge push, pull-requests: write for the
+    # conflict path's PR.
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-sync-main-to-develop.yml@v1
+    secrets:
+      RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}

@@ -1,0 +1,16 @@
+node_modules
+coverage/
+.DS_Store
+*.log
+tmp-*/
+
+# npm pack output
+*.tgz
+
+# Machine-local harness settings — never committed. The doctor skill tells a
+# maintainer to keep their local target path here, so an in-repo rule is what
+# makes that safe for everyone, not just whoever has a global gitignore.
+.claude/settings.local.json
+
+# Spec Kit machine-local state — which feature this checkout points at.
+.specify/feature.json

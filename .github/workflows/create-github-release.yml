@@ -1,0 +1,30 @@
+name: Create GitHub Release
+
+# Thin trigger stub: the job body is the public chrisgriffin/workflows repo's
+# _reusable-create-github-release.yml. When a release/* PR opened by
+# release-pr.yml, or a hotfix/* PR cut from main, merges into main it reads
+# the version from package.json, cuts that version's CHANGELOG.md section,
+# creates the Release and tag, and publishes the package to the public npm
+# registry with NPM_TOKEN in the same job. A Release created with
+# GITHUB_TOKEN fires no downstream workflow event, so a chained publish
+# would never run; publish.yml is the manual retry hatch.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  release:
+    # Which branches cut a release is the called workflow's policy, not this
+    # stub's. `merged == true` stays: it keeps a closed-unmerged PR from
+    # reaching the secrets below.
+    if: github.event.pull_request.merged == true
+    permissions:
+      contents: write
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-create-github-release.yml@v1
+    with:
+      npm_registry_url: https://registry.npmjs.org
+      npm_scope: ""
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

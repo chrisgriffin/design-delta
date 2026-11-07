@@ -1,0 +1,33 @@
+{
+  "base": {
+    "spacing": {
+      "sm": { "$type": "dimension", "$value": { "value": 4, "unit": "px" } }
+    }
+  },
+  "system": {
+    "gap": { "$type": "dimension", "$value": "{base.spacing.sm}" },
+    "brand": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.98, 0.98, 0.98],
+        "alpha": 1
+      }
+    },
+    "motion": {
+      "fast": { "$type": "duration", "$value": { "value": 150, "unit": "ms" } },
+      "ease": { "$type": "cubicBezier", "$value": [0.4, 0, 0.2, 1] }
+    },
+    "type": {
+      "body": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": ["Inter"],
+          "fontSize": { "value": 16, "unit": "px" },
+          "fontWeight": 400,
+          "lineHeight": 1.5
+        }
+      }
+    }
+  }
+}

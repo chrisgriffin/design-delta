@@ -1,0 +1,52 @@
+{
+  "_comment": "Reproduces the ONE alias bug class the pre-scan exists for, with entirely generic names. The shape that matters: a bare logical group ('theme') EXISTS alongside slash-qualified mode groups ('theme/light', 'theme/dark'), and two aliases WRITTEN ON THE BARE GROUP point at a path under it that has no token there. A naive 'is the head segment missing?' check would not catch this, because 'theme' is present — which is precisely why the pre-scan resolves the whole path instead. Two bad aliases, not one, so the 'reports ALL of them in a single pass' contract is actually exercised. The referencing tokens sit on the bare group deliberately: a token inside 'theme/light' writing this same alias is the sibling-mode-set shape the engine now resolves on its own (#564, tokens-mode-set-alias.json), so it would produce no diagnostic and this fixture would test nothing.",
+  "theme": {
+    "accent": {
+      "$type": "color",
+      "$description": "Mode-independent, so it lives on the bare group. Its presence is the point: the bare group is real.",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.2, 0.4, 0.9],
+        "alpha": 1
+      }
+    },
+    "focus": {
+      "color": {
+        "$type": "color",
+        "$description": "BROKEN: a mode-independent token reaching for a mode-scoped path. 'theme.border' has no token, and the bare group has no mode to fold to.",
+        "$value": "{theme.border.primary}"
+      }
+    },
+    "ring": {
+      "color": {
+        "$type": "color",
+        "$description": "BROKEN in the same way, so the pre-scan must report both in one pass rather than aborting on the first.",
+        "$value": "{theme.border.primary}"
+      }
+    }
+  },
+  "theme/light": {
+    "border": {
+      "primary": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.1, 0.1, 0.1],
+          "alpha": 1
+        }
+      }
+    }
+  },
+  "theme/dark": {
+    "border": {
+      "primary": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.95, 0.95, 0.95],
+          "alpha": 1
+        }
+      }
+    }
+  }
+}

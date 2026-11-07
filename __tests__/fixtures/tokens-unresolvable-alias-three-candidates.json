@@ -1,0 +1,57 @@
+{
+  "_comment": "Tests the 'did you mean' message format with 3+ suggestions. A bare 'theme' group exists alongside 'theme/light', 'theme/dark' and 'theme/contrast', and an alias written ON THE BARE GROUP points at a path under it that has no token there — so all three mode-qualified siblings resolve and are offered. The referencing token sits on the bare group for the same reason as in tokens-unresolvable-alias.json: inside a mode set this alias is the shape the engine now resolves on its own (#564).",
+  "theme": {
+    "accent": {
+      "$type": "color",
+      "$description": "Mode-independent, on the bare group.",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.2, 0.4, 0.9],
+        "alpha": 1
+      }
+    },
+    "focus": {
+      "color": {
+        "$type": "color",
+        "$description": "BROKEN: targets the logical group, which has no token at this path.",
+        "$value": "{theme.border.primary}"
+      }
+    }
+  },
+  "theme/light": {
+    "border": {
+      "primary": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.1, 0.1, 0.1],
+          "alpha": 1
+        }
+      }
+    }
+  },
+  "theme/dark": {
+    "border": {
+      "primary": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.95, 0.95, 0.95],
+          "alpha": 1
+        }
+      }
+    }
+  },
+  "theme/contrast": {
+    "border": {
+      "primary": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.0, 0.0, 0.0],
+          "alpha": 1
+        }
+      }
+    }
+  }
+}
