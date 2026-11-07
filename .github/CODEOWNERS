@@ -1,0 +1,7 @@
+# Chris is the merge gate on this repo. Listing him here makes GitHub request
+# his review on every pull request automatically (and never re-request once he
+# has reviewed) — the fleet-wide replacement for the per-PR reviewer workflow
+# (chrisgriffin/ops#549). Reviewers named on the PR-opening workflows
+# (release-pr, sync-main-to-develop) stay: a PR authored by Chris's own token
+# cannot be code-owner-requested to him.
+* @chrisgriffin
