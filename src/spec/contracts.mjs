@@ -971,8 +971,8 @@ export function loadContract(filePath, { fs = defaultFs, label } = {}) {
 // Discovering + loading the whole set
 // ---------------------------------------------------------------------------
 
-// JSON is the ONE contract serialization (D2, tightened by Chris 2026-07-31:
-// "Drop YAML. Let's just not support it and keep it lean."). YAML's only real
+// JSON is the ONE contract serialization (D2, tightened 2026-07-31: YAML is
+// dropped to keep the format lean). YAML's only real
 // advantage for an authored spec is comments, and `_`-prefixed keys already
 // carry those — so a second serialization bought terser punctuation in
 // exchange for two parse paths and a parity test whose only purpose was

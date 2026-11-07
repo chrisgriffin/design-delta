@@ -4,8 +4,8 @@
  * `createMcpServer({config, root, packageVersion, globalOpts})` returns a
  * `handle(message)` that turns one JSON-RPC request into one response object
  * (or `null` for a notification). No streams, no clock — `commands/mcp.mjs`
- * owns stdio. Every tool re-reads the project from disk on each call (Chris,
- * 2026-08-29: in-package, live read, local/development only), so there is no
+ * owns stdio. Every tool re-reads the project from disk on each call
+ * (2026-08-29: in-package, live read, local/development only), so there is no
  * snapshot to go stale: the contract and token tools through the loaders
  * `audit` uses, and `get_coverage`, `get_findings`, `get_impact`,
  * `get_movers` and `query_raw_values` by running the matching command

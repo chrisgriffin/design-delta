@@ -120,7 +120,7 @@ export function buildTokenGatherPlan(addresses, rawDir) {
  *
  * `nodes` is the count of nodes walked — the measurement's own sanity check
  * that the walk reached the whole tree. `layers` is that same walk's SHAPE
- * (issue #462, Chris 2026-09-17): the tree `censusLayers` (issue #402) reads,
+ * (issue #462, 2026-09-17): the tree `censusLayers` (issue #402) reads,
  * which the deep-component envelope used to carry and this one dropped, so
  * the design side of the anatomy surface had no gather path at all. The walk
  * already visits every node to collect what it binds — returning the shape

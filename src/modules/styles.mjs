@@ -1340,7 +1340,7 @@ export function expandThroughAliases(folds, index) {
  * design component actually binds (`usedVars`, merged by
  * `ingest --bindings`). Pure — every census arrives already loaded.
  *
- * THREE THINGS THIS RULE CANNOT CLAIM (issue #492, Chris 2026-09-17). Each
+ * THREE THINGS THIS RULE CANNOT CLAIM (issue #492, 2026-09-17). Each
  * would otherwise produce a finding no one can act on — the contract is
  * right, the stylesheet is right, the design file is right, and only the
  * comparison is wrong:

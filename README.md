@@ -4,11 +4,13 @@ A deterministic **design-delta engine**. A per-component **contract** is the
 source of truth; the engine reports where the code and the design tool disagree
 with it.
 
-> **Status: published to npm as [`design-delta`](https://www.npmjs.com/package/design-delta).**
+> **Status: publishes to npm as [`design-delta`](https://www.npmjs.com/package/design-delta)
+> on its first release ([#2](https://github.com/chrisgriffin/design-delta/issues/2)).**
 > Architecture and phase order are tracked in
 > [`docs/adr/ADR-001-modular-rewrite.md`](./docs/adr/ADR-001-modular-rewrite.md).
 > The engine was developed privately through 0.26.0 and cut into this repo at
-> that version, so its history starts here.
+> that version, so its history starts here. An `#N` reference in the code or docs
+> from before the copy points at the engine's original tracker, not this repo's.
 
 ## Install
 

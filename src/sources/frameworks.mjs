@@ -1,4 +1,4 @@
-// The one place a UI framework is selected (issue #117, Chris 2026-08-29).
+// The one place a UI framework is selected (issue #117, 2026-08-29).
 //
 // `core/` and `modules/` never name a framework (ADR-001 D16,
 // __tests__/layering.test.js); `sources/<framework>/` is the only layer that

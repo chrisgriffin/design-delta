@@ -28,7 +28,7 @@ worktree) found the package is three tools wearing one trench coat:
    sequence with **no severity field at all**; every finding is implicitly fatal.
 
 Three incompatible finding shapes, three suppression mechanisms, no way to say "turn
-this check off" except for the lint family. Chris's direction: the package will be
+this check off" except for the lint family. The direction: the package will be
 highly configurable, lint-style — enable/disable rules from the consumer's config.
 
 **Verified bugs forcing the correctness-first ordering** (all confirmed against source,
@@ -56,8 +56,8 @@ synthetic `drift/<kind>` ids — the id scheme is already shipped; `verify.mjs` 
 has a per-check `enabled` field for exactly one check.
 
 Tension resolved: the repo ROADMAP parks "generality beyond the first consumer" as a
-non-goal, while repo CLAUDE.md demands config-driven purity. Chris chose the unified
-rule system explicitly, so configurability is now in-scope; consumer-specific string
+non-goal, while repo CLAUDE.md demands config-driven purity. The unified
+rule system was chosen explicitly, so configurability is now in-scope; consumer-specific string
 cleanup (`/designer` remediation text, PT timezone) stays parked.
 
 ## Options considered
@@ -189,8 +189,8 @@ Conventional Commit types drive the automated release — no hand version bumps.
 
 ## Status
 
-**Proposed 2026-07-28.** Design locked by Chris in-session (unified rule system; bugs +
+**Proposed 2026-07-28.** Design locked (unified rule system; bugs +
 rules, phased). Execution plan written for a Sonnet/Opus build session; not yet started —
-awaiting Chris's go on the plan itself.
+awaiting a go on the plan itself.
 
 — design-delta audit session 2026-07-28

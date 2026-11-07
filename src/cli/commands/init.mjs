@@ -32,7 +32,7 @@
  * untouched and reported as `skipped`. `skills/design-delta/` is a name a
  * project may well have used before installing this package.
  *
- * `@clack/prompts` (ADR-001 D8: "Decided (decided 2026-07-30): adopted") is
+ * `@clack/prompts` (ADR-001 D8, decided 2026-07-30: adopted) is
  * INJECTABLE (`opts.prompts`, defaulting to the real module) — the same
  * convention `sources/` uses for `fs`, so a test drives the interactive path
  * with a scripted fake rather than a real TTY.

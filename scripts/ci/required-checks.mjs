@@ -36,7 +36,7 @@ export const REQUIRED_CHECKS = ["checks / ci", "test_22 / ci"]
 export const OTHER_REQUIRED_CHECKS = { Evaluator: "evaluator-gate.yml" }
 
 // THEN FOUR BECAME TWO. `test_24` and `test_26`
-// still exist but run only on push to develop/main (`if:` on the job), and a
+// still exist but run only on push to main (`if:` on the job), and a
 // skipped `uses:` job emits NO check-run — so they can never be required
 // again without blocking every PR. They are the PUSH_ONLY set.
 export const PUSH_ONLY = ["test_24", "test_26"]

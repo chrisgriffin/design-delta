@@ -1,8 +1,8 @@
 ---
 status: accepted
 date: 2026-07-30
-status-note: "amended 2026-07-31 (Chris is the merge gate); the date is likewise amended 2026-07-31 for D12 provider abstraction, D13 phase inversion, D2 format decisions and D15 contract-to-code-only MVP"
-deciders: "Chris Griffin"
+status-note: "amended 2026-07-31; the date is likewise amended 2026-07-31 for D12 provider abstraction, D13 phase inversion, D2 format decisions and D15 contract-to-code-only MVP"
+deciders: "the maintainer"
 informed-by: "full architecture audit of v0.5.4 (12,470 lines, 681 tests) and evaluation of nvillapiano/component-contracts, https://github.com/nvillapiano/component-contracts"
 ---
 
@@ -70,7 +70,7 @@ left structural debt that a feature-at-a-time approach can no longer pay down:
 - Evaluate [component-contracts](https://github.com/nvillapiano/component-contracts)
   as a replacement for the `*.component.yml` spec format.
 
-### North Star and scope test (amended 2026-08-30, Chris)
+### North Star and scope test (amended 2026-08-30)
 
 **North Star: find drift.** design-delta exists to report where Figma, code,
 and the contract disagree — and, secondarily, to lint the structure,
@@ -105,11 +105,10 @@ schema states is a general linter's job, not this engine's.
 
 ### Roadmap note
 
-`.agents/ROADMAP.md`'s North Star currently reads "stay the boring, deterministic
-engine… without growing the engine's surface." This ADR is Chris redirecting that
-North Star — the rewrite grows the surface deliberately (init wizard, progress UX,
-spec-first model). Merging this ADR should be read as amending the North Star;
-the PM updates `ROADMAP.md` accordingly in the first the engine PR. What does **not**
+The engine's earlier North Star was to stay a boring, deterministic engine
+without growing its surface. This ADR redirects it: the rewrite grows the
+surface deliberately (init wizard, progress UX, spec-first model), and
+accepting this ADR amends the North Star. What does **not**
 change: deterministic, read-only audit path; zero-to-few runtime deps; nothing
 consumer-specific hardcoded in the engine.
 
@@ -143,8 +142,8 @@ machinery (delta census, `deriveDirection`, waiver claims-verification) is
 deleted, not ported. The v1 `ignore` block survives only as rule-level
 exemptions (D5).
 
-This is the load-bearing decision. It is what Chris asked for ("using the spec
-as a basis"), it is the model v1's own docs call better-reasoned, and it is what
+This is the load-bearing decision. It makes the spec the basis, it is the
+model v1's own docs call better-reasoned, and it is what
 collapses most of v1's accumulated complexity: no baseline census, no
 direction vocabulary, no dual finding taxonomies.
 
@@ -411,7 +410,7 @@ dies. Consumers wire `"drift:audit": "design-delta audit --report"` etc.
 
 Prompting uses **`@clack/prompts`** (public, tiny, no registry auth — satisfies
 the CI rule) as a regular dependency imported only by `init` and progress
-rendering. **Decided (decided 2026-07-30): adopted** — see resolved open
+rendering. **Decided 2026-07-30: adopted** — see resolved open
 question #3.
 
 **Progress feedback.** `core/progress.mjs` is an event bus (`task:start`,
@@ -523,7 +522,7 @@ vendor identity.
 ### D13 — Contract↔code parity comes first (decided 2026-07-31)
 
 The phase order inverts: **contract↔code parity ships before any design-tool
-parity.** Rationale, in Chris's framing: it is the easier half, and it is the
+parity.** Rationale: it is the easier half, and it is the
 half that proves the contract is a real fixed point rather than a Figma mirror.
 
 Consequences, all of them good:
@@ -542,7 +541,7 @@ Consequences, all of them good:
 
 **Supersedes D11**, which planned to grow the new engine alongside the old one
 and cut over at release. That plan existed to protect a consumer running the
-old engine mid-flight. Two facts removed the need, and Chris called it:
+old engine mid-flight. Two facts removed the need:
 
 - **Nothing ships until the rewrite is done.** The consuming project installs a
   _published_ version from the registry, not this repo, so deleting the old
@@ -552,9 +551,8 @@ old engine mid-flight. Two facts removed the need, and Chris called it:
   working-but-unreliable path has value only if someone depends on it working;
   nobody did.
 
-In Chris's words: _"I don't think I want to do this transitional migration
-thing we're doing… Just yank out what we don't need. I'd rather not leave the
-cruft."_
+So there is no transitional migration: what is not needed is removed, and no
+cruft is left behind.
 
 So the old engine — every flat `src/*.mjs` engine, all of `src/lib/`, the
 paste-script gather, its nine schemas, its ~660 tests, its docs and its skill
@@ -601,7 +599,7 @@ and module boundaries that let each domain be hardened independently.
 
 ## The plan
 
-> Working agreement (Chris): one module at a time, hardened until reliable,
+> Working agreement: one module at a time, hardened until reliable,
 > then the next. Every phase ends green (`npm test`, prettier, schema, package
 > CI jobs) and demo-able against the first consumer. Conventional commits, PRs to
 > `develop`, each phase = several small PRs, not one monster.
@@ -611,13 +609,13 @@ and module boundaries that let each domain be hardened independently.
 Context for the implementer: v1's failure mode was **erratic output** — each
 round of code fixes shifted the report in new ways (three change-detection
 mechanisms that can disagree, hashes that differ across gather paths, a model
-that flips when a spec file appears). the engine is built depth-first, and "done" is
+that flips when a spec file appears). The engine is built depth-first, and "done" is
 judged on **output**, never on code quality. Four gates apply to every slice of
 every phase:
 
 1. **Vertical slices, adjudicated output.** A slice is gather → snapshot →
    diff → report for one narrow scope, run against the first consumer's real data.
-   Chris (with the session) walks every finding and marks it true or false. A
+   The maintainer walks every finding and marks it true or false. A
    slice is _working_ when a real run has **zero false findings**. Do not widen
    scope before that.
 2. **Fixture ratchet.** Every false positive becomes a fixture test _before_
@@ -633,10 +631,9 @@ every phase:
 
 ### D15 — The first release is contract↔code ONLY (decided 2026-07-31)
 
-**The design side is deferred past the first release.** In Chris's words: _"I
-want to get to an MVP, and rigorously test it. I think the design side is a
-gigantic layer of complexity that I don't want to deal with until we get the
-contract↔code in a good place."_
+**The design side is deferred past the first release.** The first release is
+an MVP to test rigorously, and the design side is a large layer of complexity
+that waits until contract↔code is in a good place.
 
 D13 already put contract↔code first. D15 goes further: the design provider
 layer is not merely later, it is **out of the first release entirely**. What
@@ -697,8 +694,7 @@ MVP is done:
 3. Add the import-graph layering test (D4) and wire the new dirs into CI.
 4. Port the synthetic-project fixture harness to a test entry (it will grow
    per phase).
-5. Update `.agents/ROADMAP.md` North Star per this ADR (PM change, same PR
-   series).
+5. Amend the North Star per this ADR (same PR series).
 
 **Exit:** `design-delta2 --help` works; layering test green; ADR merged.
 
@@ -801,8 +797,8 @@ has repeatedly not been sufficient.
 
 ### Phase 5 — The design provider layer (D12) + contract↔design parity
 
-**Explicitly post-release (D15).** Everything below was Phase 3 before Chris
-deferred the design side out of the MVP.
+**Explicitly post-release (D15).** Everything below was Phase 3 before the
+design side was deferred out of the MVP.
 
 1. `providers/` interface: `name`, `capabilities`, `sourceSchema`,
    `censusComponents`, `censusTokens`. The layering test gains the rule that
@@ -827,8 +823,8 @@ shipped ahead of the provider layer** — `snapshot`, `scaffold`, `dock`.
 ### D16 — A UI framework is an adapter, the way a design tool is a provider (decided 2026-07-31)
 
 **Other JS frameworks (Angular, web components) are roadmap, not now — but the
-boundary that makes them cheap is built now.** Chris's framing: _"if there [are]
-ways to structure the code now to make that easier we should try to do it."_
+boundary that makes them cheap is built now.** Where the code can be
+structured now to make that easier, it is.
 
 This is the exact symmetric twin of D12. There, a **design tool** is a provider
 and `src/providers/<name>/` is the only place that may name one. Here, a **UI
@@ -912,14 +908,14 @@ narrower meaning. That needs a deliberate decision, not an accident.
 | `lib/pt-date.mjs`                                                         | `report.timeZone` config (D9)                                                                                                                          |
 | `lib/names.mjs` / `token-naming.mjs` / `io.mjs` / `cli.mjs`(lib)          | ported into `core/` near-verbatim                                                                                                                      |
 | hygiene surface + vardefs snapshot                                        | two lint rules over `design-components.json` (D5/D7)                                                                                                   |
-| mockups surface                                                           | **killed** at cutover (D9, Chris 2026-07-30)                                                                                                           |
+| mockups surface                                                           | **killed** at cutover (D9, 2026-07-30)                                                                                                                 |
 | `skill/`                                                                  | kept, fewer placeholders, init-aware (D9)                                                                                                              |
 
-## Open questions for Chris
+## Open questions
 
 1. **Contract format sign-off (D2)** — **RESOLVED (decided 2026-07-30):** spec
    is the source of truth; design systems are moving machine-ready and
-   component data is becoming real. the engine owns its contract schema, shaped like
+   component data is becoming real. The engine owns its contract schema, shaped like
    component-contracts, with the `migrate` converter from v1 specs.
 2. **Mockups surface** — **RESOLVED (decided 2026-07-30): kill it.** Weakest
    surface, frame-granularity fragile, partially subsumed by the engine coverage

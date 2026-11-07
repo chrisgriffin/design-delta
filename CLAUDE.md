@@ -113,7 +113,7 @@ Git workflow rules are the fleet's: `.agents/build.md` and
   [`docs/releasing.md`](docs/releasing.md).
 - **Never write a `BREAKING CHANGE:` footer or a `feat!:`/`fix!:` subject**
   (decided 2026-08-03). This package stays `0.x` until it is stable, `0.x`
-  promises no compatibility anyway, and 1.0.0 is Chris's call, never a
+  promises no compatibility anyway, and 1.0.0 is the maintainer's call, never a
   marker's. A genuinely breaking change still ships — describe it in the
   commit body and the PR, without the marker. How the bump is computed:
   [`docs/releasing.md`](docs/releasing.md).

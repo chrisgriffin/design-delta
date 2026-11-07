@@ -1,8 +1,8 @@
 ---
 status: accepted
 date: 2026-08-03
-status-note: "accepted by Chris 2026-08-30 (issue #396), as the agreed direction for work not yet built: the schema's variant-keyed form and the resolver change do not exist yet, and acceptance is what moves them into the buildable queue. Direction originally chosen 2026-08-03."
-deciders: "Chris Griffin"
+status-note: "accepted 2026-08-30 (issue #396), as the agreed direction for work not yet built: the schema's variant-keyed form and the resolver change do not exist yet, and acceptance is what moves them into the buildable queue. Direction originally chosen 2026-08-03."
+deciders: "the maintainer"
 informed-by: "issue #156, and measured runs against the first consumer (99 components censused)"
 ---
 
@@ -167,7 +167,7 @@ adapter implements against — is updated in the same change.
 
 ## Ratified questions
 
-The three questions this ADR left open were **ratified by Chris on 2026-09-07**
+The three questions this ADR left open were **ratified on 2026-09-07**
 ([#441](https://github.com/chrisgriffin/design-delta/issues/441)), each after it
 had already shipped. None was reversed.
 

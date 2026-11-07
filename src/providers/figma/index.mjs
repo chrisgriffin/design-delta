@@ -184,7 +184,7 @@ export { indexTokens }
 
 /**
  * The style properties this design tool cannot express as a node-level
- * variable (issue #492, Chris 2026-09-17). `modules/styles.mjs`'s bindings
+ * variable (issue #492, 2026-09-17). `modules/styles.mjs`'s bindings
  * comparison reads this and skips such a binding with a stated reason
  * instead of reporting drift no one can act on — the contract is right, the
  * stylesheet is right, and the design file is right.

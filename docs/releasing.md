@@ -35,7 +35,7 @@ public `chrisgriffin/workflows` repo.
 
 ## Hotfixes
 
-A hotfix is only a change Chris calls a hotfix. It branches off `main` as
+A hotfix is only a change the maintainer calls a hotfix. It branches off `main` as
 `hotfix/<name>`, opens its PR into `main`, and bumps the patch version and
 adds its `CHANGELOG.md` entry in that same PR, because it never passes
 through `release-pr.yml`. Merging it runs steps 4 and 5 above.

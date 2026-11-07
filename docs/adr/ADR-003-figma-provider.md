@@ -1,8 +1,8 @@
 ---
 status: accepted
 date: 2026-08-16
-status-note: "accepted by Chris 2026-08-30 (issue #396). Every phase had shipped (5.0-5.3; 5.4 closed not-planned) and Amendments 1 and 3 were already enforced in code while this document still read Proposed; this line catches the status up to reality, and ADR-001's amendments now stand."
-deciders: "Chris Griffin"
+status-note: "accepted 2026-08-30 (issue #396). Every phase had shipped (5.0-5.3; 5.4 closed not-planned) and Amendments 1 and 3 were already enforced in code while this document still read Proposed; this line catches the status up to reality, and ADR-001's amendments now stand."
+deciders: "the maintainer"
 informed-by: "ADR-001 D12/D13/D15/D16; a fresh audit of this repo's provider-layer state (src/providers/ does not exist; gather and ingest are stubs); and a full inventory of the first consumer's real Figma data (contracts, Code Connect, baseline.json, Figma account access) - the only consumer this work is validated against."
 ---
 
@@ -32,7 +32,7 @@ of which ADR-001 could have known:
 1. **The Variables REST API is almost certainly closed to this project.**
    `the first consumer`'s Figma files live in the `CG/IO` organization at plan
    tier `org`. `GET /v1/files/:key/variables/local` is Enterprise-only, and
-   Chris's one Enterprise seat is `View` on a _different_ organization. The
+   The one Enterprise seat available is `View` on a _different_ organization. The
    personal access token on file is also expired (`403 Token expired`,
    verified against all six of the project's file keys). The **official Figma
    MCP plugin works today** — OAuth-authenticated, not plan-gated, verified
@@ -239,7 +239,7 @@ real data-hygiene finding from the audit behind this ADR: one contract
 config-list model. Deriving scope from contracts instead makes that
 impossible by construction.
 
-**Amended 2026-08-30 (issue #413, Chris):** the original `config.fileKeys`
+**Amended 2026-08-30 (issue #413):** the original `config.fileKeys`
 removal happened while the project had restarted with no design file at all —
 it was never a decision that files must not be configurable. `design.files`
 (optional) now ADDS files to the contract-derived scope, for a file no
@@ -385,7 +385,7 @@ the same unchanged file — D6's actual claim, tested for the first time.
   are today; a checker for a field with no users is how false-finding
   classes get born. They become checkable when a contract uses them.
 
-  **Amended 2026-09-02 (issue #403, following Chris's acceptance of ADR-002
+  **Amended 2026-09-02 (issue #403, following the acceptance of ADR-002
   in #411, which named this issue as unblocked):**
   `invalidVariantCombinations` is now read by
   `components/variant-combinations-mismatch`, against variant combinations

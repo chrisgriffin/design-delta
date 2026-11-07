@@ -126,8 +126,7 @@ describe("create-github-release.yml — trigger stub", () => {
     expect(text).toMatch(/types:\s*\[closed\]/)
     expect(text).toMatch(/branches:\s*\[main\]/)
 
-    // WHICH BRANCHES cut a release must NOT be restated here
-    //. It lived in this stub and four others, so
+    // WHICH BRANCHES cut a release must NOT be restated here. It lived in this stub and four others, so
     // teaching the loop about hotfix/ took five PRs — each needing to reach
     // its own repo's main before it counted, and two releases were missed
     // while they had not. It lives once in the shared reusable workflow now.
