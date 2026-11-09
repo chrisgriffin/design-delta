@@ -1,0 +1,48 @@
+{
+  "id": "sample-card",
+  "title": "SampleCard",
+  "description": "A generic surface with a body slot. Belongs to no real design system.",
+  "sources": {
+    "code": {
+      "path": "components/sample-card/sample-card.tsx"
+    }
+  },
+  "props": {
+    "elevated": {
+      "type": "boolean",
+      "default": false,
+      "required": false
+    }
+  },
+  "anatomy": {
+    "root": {
+      "type": "container",
+      "element": "div",
+      "children": ["body"]
+    },
+    "body": {
+      "type": "slot"
+    }
+  },
+  "styles": {
+    "root": {
+      "base": {
+        "padding": {
+          "all": {
+            "token": "system.inset.md"
+          }
+        }
+      },
+      "variants": [
+        {
+          "when": {
+            "elevated": true
+          },
+          "background": {
+            "token": "system.color.surface.raised"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+name: "design-delta"
+description: >-
+  Runs `design-delta verify` as a CI gate, with an optional SARIF upload so
+  findings annotate the PR diff via GitHub code scanning.
+author: chrisgriffin
+branding:
+  icon: eye
+  color: purple
+
+inputs:
+  config-path:
+    description: >-
+      Path to the project's design-delta config, passed as `verify`'s
+      `--config`. Leave unset to use the CLI's own default
+      (`design-delta.json`).
+    required: false
+    default: ""
+  fail-on:
+    description: >-
+      Severity threshold passed to `verify --fail-on`
+      (`error` | `warn` | `review` | `none`).
+    required: false
+    default: "error"
+  sarif:
+    description: >-
+      When `"true"`, also runs `design-delta report --format sarif` and
+      uploads the result via `github/codeql-action/upload-sarif`, before the
+      `verify` gate runs — so the annotations land even on a failing run.
+    required: false
+    default: "false"
+  sarif-path:
+    description: Output path for the SARIF log, when `sarif` is `"true"`.
+    required: false
+    default: "drift-report.sarif"
+
+runs:
+  using: "composite"
+  steps:
+    # Inputs reach bash through `env:`, never through `${{ }}` inside `run:`.
+    # An expression is substituted into the script text before bash parses it,
+    # so a value containing a quote is script injection in a published action;
+    # an environment variable is just a value the shell reads.
+    - name: design-delta report --format sarif
+      if: inputs.sarif == 'true'
+      shell: bash
+      env:
+        SARIF_PATH: ${{ inputs.sarif-path }}
+        CONFIG_PATH: ${{ inputs.config-path }}
+      run: |
+        args=(report --format sarif --out "$SARIF_PATH")
+        if [ -n "$CONFIG_PATH" ]; then
+          args+=(--config "$CONFIG_PATH")
+        fi
+        npx --yes design-delta "${args[@]}"
+
+    - name: Upload SARIF to code scanning
+      if: inputs.sarif == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-path }}
+
+    - name: design-delta verify
+      shell: bash
+      env:
+        FAIL_ON: ${{ inputs.fail-on }}
+        CONFIG_PATH: ${{ inputs.config-path }}
+      run: |
+        args=(verify --fail-on "$FAIL_ON")
+        if [ -n "$CONFIG_PATH" ]; then
+          args+=(--config "$CONFIG_PATH")
+        fi
+        npx --yes design-delta "${args[@]}"

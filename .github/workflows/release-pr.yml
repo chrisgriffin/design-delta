@@ -1,0 +1,25 @@
+name: Release PR
+
+# Thin trigger stub: the job body is the public chrisgriffin/workflows repo's
+# _reusable-release-pr.yml. On every push to develop it opens, or updates,
+# the rolling release/next PR into main.
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  release-pr:
+    # A called workflow can never elevate beyond what the calling job grants:
+    # contents: write for the push, pull-requests: write for the PR, and
+    # statuses: write for the release PR's Evaluator status.
+    permissions:
+      contents: write
+      pull-requests: write
+      statuses: write
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-release-pr.yml@v1
+    secrets:
+      RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+      OPS_GH_TOKEN: ${{ secrets.OPS_GH_TOKEN }}

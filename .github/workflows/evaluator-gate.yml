@@ -1,0 +1,29 @@
+name: Evaluator
+
+# Thin trigger stub: the body is the public chrisgriffin/workflows repo's
+# _reusable-evaluator-gate.yml, the PR review loop's one dispatcher. It
+# reads the loop's recorded state from the PR's comments, sets the required
+# `Evaluator` status, and starts the Evaluator or Autofix review.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, converted_to_draft, synchronize]
+  # `edited` carries the loop: each review reports by editing its comment.
+  # `created` carries the owner's `/autofix`.
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  evaluator:
+    uses: chrisgriffin/workflows/.github/workflows/_reusable-evaluator-gate.yml@v1
+    secrets:
+      EVALUATOR_FIRE_TOKEN: ${{ secrets.EVALUATOR_FIRE_TOKEN }}
+      AUTOFIX_FIRE_TOKEN: ${{ secrets.AUTOFIX_FIRE_TOKEN }}
+      OPS_GH_TOKEN: ${{ secrets.OPS_GH_TOKEN }}
+      TARGET_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}

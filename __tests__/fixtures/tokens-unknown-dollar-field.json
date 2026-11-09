@@ -1,0 +1,28 @@
+{
+  "$schema": "https://example.invalid/tokens.schema.json",
+  "quarry": {
+    "$descripton": "a typo on a group",
+    "color": {
+      "$type": "color",
+      "$extensions": { "org.example": { "$anything": true } },
+      "slate": {
+        "$type": "color",
+        "$value": { "colorSpace": "srgb", "components": [0.2, 0.2, 0.25] },
+        "$vaule": "a typo on a token"
+      },
+      "ink": {
+        "$type": "color",
+        "$value": { "colorSpace": "srgb", "components": [0, 0, 0] },
+        "$description": "reserved",
+        "$deprecated": false
+      }
+    },
+    "size": {
+      "$root": {
+        "$type": "dimension",
+        "$value": { "value": 4, "unit": "px" },
+        "$tyep": "dimension"
+      }
+    }
+  }
+}
