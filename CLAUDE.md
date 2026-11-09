@@ -82,11 +82,12 @@ a thin stub calling a reusable workflow in the public `chrisgriffin/workflows` r
 before opening a PR rather than discovering a red check:
 
 - `test_22` — `npm test` on Node 22 (`test_24` and `test_26` run it again on a
-  push to `main` only)
+  push to `main` or a manual run, never on a PR)
 - `checks` — `npx prettier --check .`, `bash scripts/ci/check-action.sh`,
   `bash scripts/ci/check-package.sh`, `node scripts/ci/check-schemas.mjs`, plus
   `generate-config-reference.mjs` and `generate-rules-reference.mjs` under
-  `scripts/`, both with `--check`
+  `scripts/`, both with `--check`; it also holds this file to a 9500-byte
+  budget (`claude_md_budget` in `ci.yml`)
 
 - `check-package.sh` catches what `npm test` structurally cannot: this is a
   published library, so a dropped `files` entry or a renamed `bin` leaves the

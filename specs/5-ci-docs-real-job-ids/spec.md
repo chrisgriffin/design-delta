@@ -4,7 +4,7 @@
 
 ## Overview
 
-Two docs describe CI checks this repo does not run under those names. `docs/architecture.md` says CI's `Check docs/` step fails a PR that changes the directory structure without touching the file, but `ci.yml` passes `docs_owed: ""`, so that step checks nothing here. `CLAUDE.md` § CI names the test job `test`, but its real id is `test_22`.
+Two docs describe CI checks this repo does not run under those names. `docs/architecture.md` says CI's `Check docs/` step fails a PR that changes the directory structure without touching the file, but `ci.yml` passes `docs_owed: ""`, so that step owes no template here: it still enforces the rest of the docs/ standard, but not the directory-structure check that owing `architecture` turns on. `CLAUDE.md` § CI names the test job `test`, but its real id is `test_22`.
 
 ## User scenarios
 
@@ -14,7 +14,7 @@ Two docs describe CI checks this repo does not run under those names. `docs/arch
 ## Functional requirements
 
 - FR-001: `docs/architecture.md` keeps asking that a change adding, removing or renaming a directory, or changing what a part does, update it in the same PR, and no longer claims CI enforces that.
-- FR-002: `CLAUDE.md` § CI names the test job `test_22`, and notes that `test_24` and `test_26` run on a push to `main` only.
+- FR-002: `CLAUDE.md` § CI names the test job `test_22`, and notes that `test_24` and `test_26` run on a push to `main` or a manual run, never on a PR.
 
 ## Success criteria
 
