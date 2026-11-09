@@ -2,7 +2,7 @@
   "name": "design-delta",
   "version": "0.27.0",
   "type": "module",
-  "description": "Deterministic design-drift engine: a component contract is the source of truth, and the engine reports where the code and the design tool disagree with it. Design tools are pluggable providers.",
+  "description": "Deterministic design-delta engine: a component contract is the source of truth, and the engine reports where the code and the design tool disagree with it. Design tools are pluggable providers.",
   "license": "MIT",
   "repository": {
     "type": "git",
