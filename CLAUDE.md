@@ -81,7 +81,8 @@ gate — keep them green; never `.skip(`/`.only(` to get past a failure.
 a thin stub calling a reusable workflow in the public `chrisgriffin/workflows` repo. Run these locally
 before opening a PR rather than discovering a red check:
 
-- `test` — `npm test`
+- `test_22` — `npm test` on Node 22 (`test_24` and `test_26` run it again on a
+  push to `main` only)
 - `checks` — `npx prettier --check .`, `bash scripts/ci/check-action.sh`,
   `bash scripts/ci/check-package.sh`, `node scripts/ci/check-schemas.mjs`, plus
   `generate-config-reference.mjs` and `generate-rules-reference.mjs` under

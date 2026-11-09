@@ -3,8 +3,7 @@
 How this repo works, written for a person rather than a parser. It is living
 documentation: it describes the repo as it is on `develop` today, and a change
 that adds, removes or renames a directory, or changes what a part does,
-updates this file in the same PR. CI's `Check docs/` step fails a PR that
-changes the directory structure without touching it.
+updates this file in the same PR.
 
 ## What it is
 
