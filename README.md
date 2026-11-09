@@ -15,12 +15,14 @@ with it.
 
 ## Install
 
+Once the package is on npm (see the status note above):
+
 ```bash
 npm install --save-dev design-delta
 npx design-delta init
 ```
 
-The package is public: no registry auth, no scope.
+It publishes as a public, unscoped package: no registry auth.
 
 ## The model
 
