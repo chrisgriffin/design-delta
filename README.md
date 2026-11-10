@@ -4,8 +4,9 @@ A deterministic **design-delta engine**. A per-component **contract** is the
 source of truth; the engine reports where the code and the design tool disagree
 with it.
 
-> **Status: publishes to npm as [`design-delta`](https://www.npmjs.com/package/design-delta)
-> on its first release ([#2](https://github.com/chrisgriffin/design-delta/issues/2)).**
+> **Status: 0.27.0 is released but not yet on npm.
+> [`design-delta`](https://www.npmjs.com/package/design-delta) publishes to npm
+> from the next release.**
 > Architecture and phase order are tracked in
 > [`docs/adr/ADR-001-modular-rewrite.md`](./docs/adr/ADR-001-modular-rewrite.md).
 > The engine was developed privately through 0.26.0 and cut into this repo at
@@ -14,12 +15,14 @@ with it.
 
 ## Install
 
+Once the package is on npm (see the status note above):
+
 ```bash
 npm install --save-dev design-delta
 npx design-delta init
 ```
 
-The package is public: no registry auth, no scope.
+It publishes as a public, unscoped package: no registry auth.
 
 ## The model
 
