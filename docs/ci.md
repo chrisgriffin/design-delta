@@ -11,8 +11,8 @@ Four independent jobs, two of them required checks.
 
 `test_22`, `test_24` and `test_26` are three separate jobs rather than a
 `strategy.matrix` on one, because each calls the shared reusable workflow with
-its own `node_version` input. `test_24` and `test_26` run on push to `main`
-only: about 7 billed minutes per PR push for a version skew that has never
+its own `node_version` input. `test_24` and `test_26` run on a push to `main`
+or a manual run, never on a PR: about 7 billed minutes per PR push for a version skew that has never
 differed from 22. The four fast checks share one `checks` job because GitHub
 bills every job rounded up to a whole minute and they did 66 seconds of work
 between them. The commands run cheapest-first as one shell block, so the
