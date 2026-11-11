@@ -379,7 +379,6 @@ describe("sources/code — censusTokens with unresolvable aliases", () => {
       // For 3+ suggestions, should use proper Oxford-comma style: "a", "b" or "c"
       // not "a" or "b" or "c"
       if (diagnostic.suggestions.length >= 3) {
-        const quoted = diagnostic.suggestions.map(s => `"{${s}}"`)
         // The formatted list should have a comma between first and second-to-last items
         expect(diagnostic.message).toMatch(/", "/)
         // And "or" before the last item
