@@ -4,7 +4,7 @@
 
 Nothing lints this package. The engine's source was copied here at `0.26.0` and renamed, and in the transcription of the CI chain the lint step was dropped and never noticed. The result, measured on `develop` at `2128be6`:
 
-- No `eslint.config.mjs`, and no `eslint` in `dependencies`, `devDependencies` or `peerDependencies`. [`@chrisgriffin/config`](https://github.com/chrisgriffin/config), which carries the shared Prettier, ESLint and TypeScript bases this package's Prettier config already uses, is not a dependency either.
+- No `eslint.config.mjs`, and no `eslint` in `dependencies`, `devDependencies` or `peerDependencies`. [`@chrisgriffin/config`](https://github.com/chrisgriffin/config), which carries the shared Prettier, ESLint and TypeScript bases, is not a dependency either; this package's Prettier config is a local `.prettierrc`.
 - `.github/workflows/ci.yml`'s `checks` job runs six commands — `prettier --check`, `check-action.sh`, `check-package.sh`, `check-schemas.mjs`, and the two reference generators with `--check`. There is no lint step.
 - `CLAUDE.md` § Coding standards says only that Prettier owns formatting; the source it came from said Prettier owns formatting **and ESLint lints**, both from the shared config.
 

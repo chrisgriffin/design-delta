@@ -85,7 +85,8 @@ a thin stub calling a reusable workflow in the public `chrisgriffin/workflows` r
 than discovering a red check:
 
 - `checks` — `npm run checks`, the chain `package.json` holds once; it also
-  holds this file to a 9500-byte budget (`claude_md_budget` in `ci.yml`)
+  holds this file to a 9500-byte budget (`claude_md_budget` in `ci.yml`),
+  which runs in CI only — `verify` does not check it
 - `test_22` — `npm test` on Node 22 (`test_24` and `test_26` run it again on a
   push to `main` or a manual run, never on a PR)
 

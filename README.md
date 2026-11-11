@@ -215,7 +215,7 @@ for `src/providers/<name>/`, verified against the current Figma provider.
 ## Development
 
 ```bash
-npm run verify   # the whole gate: `npm run checks`, then `npm test`
+npm run verify   # `npm run checks`, then `npm test`: all of CI but the CLAUDE.md budget
 ```
 
 `npm test` is native-ESM Jest. `npm run checks` is the rest of what CI runs —
@@ -223,6 +223,8 @@ formatting, ESLint, and the integrity checks listed once in `package.json` —
 including `check-package.sh`, which catches what the suite structurally
 cannot, since a dropped `files` entry or a renamed `bin` leaves the tests
 green and breaks a consumer's install.
+The one CI step neither runs is `CLAUDE.md`'s byte budget, which only CI's
+`checks` job holds (`claude_md_budget` in `ci.yml`).
 
 Every dependency is public: CI needs no registry auth, which keeps fork PRs
 working.
