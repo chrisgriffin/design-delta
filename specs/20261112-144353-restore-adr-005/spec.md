@@ -57,9 +57,12 @@ This restores the record and every pointer to it. It changes no behaviour.
 
 ## Success criteria
 
-- [ ] **Runnable:** `test -f docs/adr/ADR-005-primitive-binding-is-drift.md && grep -q "design-delta's ADR-005" src/modules/styles.mjs`
-      exits 0. On `develop` today it exits 1: the file is absent and no file in `src/` mentions ADR-005.
-- [ ] `grep -c "ADR-005" src/modules/styles.mjs` prints 4 or more; it prints 0 on `develop` today.
+- [ ] **Runnable:** `grep -q "design-delta's ADR-005" src/modules/styles.mjs` exits 0 — the rule
+      description cites the record again. It exits 1 on `develop` today: `grep -c "ADR-005"
+      src/modules/styles.mjs` prints 0.
+- [ ] `docs/adr/ADR-005-primitive-binding-is-drift.md` exists and carries the record's Context,
+      Decision and Consequences with `status: accepted` and `date: 2026-10-26`.
+- [ ] `grep -c "ADR-005" src/modules/styles.mjs` prints 4 or more, covering the description and the four docblocks.
 - [ ] `docs/adr/README.md` links ADR-005 and its stated count of pre-existing records equals
       the number of `ADR-*.md` files in `docs/adr/`.
 - [ ] `docs/report-structure.md` links `./adr/ADR-005-primitive-binding-is-drift.md` and no
