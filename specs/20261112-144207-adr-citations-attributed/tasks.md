@@ -17,8 +17,9 @@
 
 ## Phase 3 — the guard
 
-- [ ] T004 Add `__tests__/adr-citations.test.js` asserting every registered rule's
-      `description` carries no unattributed citation, failing with `<rule id>: bare <citation>`.
+- [ ] T004 Add `__tests__/adr-citations.test.js` with a describe block named
+      `rule and scaffold ADR citations`, asserting every registered rule's `description`
+      carries no unattributed citation, failing with `<rule id>: bare <citation>`.
 - [ ] T005 In the same file, assert at least one rule description cites an ADR at all, so
       the scan cannot pass by the citations having been deleted.
 - [ ] T006 In the same file, drive a scaffold run against a synthetic project reaching

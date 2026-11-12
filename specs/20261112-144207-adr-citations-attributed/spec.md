@@ -50,9 +50,10 @@ restores the guard, retargeted to the package that owns them now.
 
 ## Success criteria
 
-- [ ] **Runnable:** `npm test` exits 0 and its output names an ADR-citation test that
-      passed. On `develop` today there is no such test: `ls __tests__/adr-citations.test.js`
-      exits 2.
+- [ ] **Runnable:** `npm test 2>&1 | grep -qi "ADR citations"` exits 0 — the suite runs the
+      ADR-citation guard, whose describe block is named `rule and scaffold ADR citations`. It
+      exits 1 on `develop` today: `npm test` passes (71 suites, 2098 tests) and no test names
+      an ADR citation.
 - [ ] A scan of every registered rule's `description` for a citation not written
       `design-delta's ADR-NNN` returns zero. It returns 7 on `develop` today.
 - [ ] A scan of every `_scaffold` note a scaffold run drafts returns zero unattributed
