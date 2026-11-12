@@ -135,19 +135,13 @@ here reaches back into either.
 
 ```bash
 npm ci                    # Node 22 or newer
-npm test                  # the whole Jest suite — the main gate
+npm run verify            # `npm run checks`, then `npm test`: all of CI but the CLAUDE.md budget
 ```
 
-The rest of the gate is the `checks` job — no build, browser or token needed:
-
-```bash
-npx prettier --check .
-bash scripts/ci/check-action.sh
-bash scripts/ci/check-package.sh
-node scripts/ci/check-schemas.mjs
-node scripts/generate-config-reference.mjs --check
-node scripts/generate-rules-reference.mjs --check
-```
+`npm run checks` is the `checks` job's chain — formatting, ESLint and the
+integrity checks, listed once in `package.json`, with no build, browser or
+token needed. `CLAUDE.md`'s byte budget is the one step it lacks: only CI's
+`checks` job holds it (`claude_md_budget` in `ci.yml`). `npm test` is the whole Jest suite.
 
 Run the CLI from the checkout with `node src/cli/main.mjs <subcommand>`, or
 `--help` for the full list. Releases are automated from Conventional Commits —
