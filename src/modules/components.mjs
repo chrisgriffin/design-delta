@@ -161,7 +161,7 @@ export const RULES = [
     surface: "components",
     defaultSeverity: "error",
     description:
-      "A contract declares a prop the compared side (code, or design once ADR-003 Phase 5.2's parity runs) does not have.",
+      "A contract declares a prop the compared side (code, or design once design-delta's ADR-003 Phase 5.2's parity runs) does not have.",
   },
   {
     id: "components/prop-unexpected",
@@ -189,7 +189,7 @@ export const RULES = [
     surface: "components",
     defaultSeverity: "error",
     description:
-      "A shared enum prop's values disagree between the contract and the compared side (code or design) — exact and case-sensitive (ADR-001 D1). One boundary exception: when every contract value is a number, a design value that is its exact string form (\"2\" for 2) matches, because a design tool's variant options can only ever be strings.",
+      "A shared enum prop's values disagree between the contract and the compared side (code or design) — exact and case-sensitive (design-delta's ADR-001 D1). One boundary exception: when every contract value is a number, a design value that is its exact string form (\"2\" for 2) matches, because a design tool's variant options can only ever be strings.",
   },
   {
     id: "components/variant-combinations-mismatch",
@@ -245,7 +245,7 @@ export const RULES = [
     surface: "coverage",
     defaultSeverity: "warn",
     description:
-      "A code component has no contract referencing it at all — doubles as the authoring worklist (ADR-001 D1).",
+      "A code component has no contract referencing it at all — doubles as the authoring worklist (design-delta's ADR-001 D1).",
   },
   {
     id: "coverage/contract-only",
@@ -266,14 +266,14 @@ export const RULES = [
     surface: "coverage",
     defaultSeverity: "warn",
     description:
-      "A design-tool component has no contract addressing it at all (ADR-003 Phase 5.1) — the design-side twin of `coverage/uncontracted-component`. A component the provider marks private — one the design tool keeps out of its published library — is excluded (issue #460), counted once in the run's diagnostics, and counted here only when `design.options.includePrivateComponents` is true.",
+      "A design-tool component has no contract addressing it at all (design-delta's ADR-003 Phase 5.1) — the design-side twin of `coverage/uncontracted-component`. A component the provider marks private — one the design tool keeps out of its published library — is excluded (issue #460), counted once in the run's diagnostics, and counted here only when `design.options.includePrivateComponents` is true.",
   },
   {
     id: "coverage/design-missing",
     surface: "coverage",
     defaultSeverity: "warn",
     description:
-      "A contract declares `sources.design`, but it does not resolve against the design census (ADR-003 Phase 5.1) — the design-side twin of `coverage/contract-only`.",
+      "A contract declares `sources.design`, but it does not resolve against the design census (design-delta's ADR-003 Phase 5.1) — the design-side twin of `coverage/contract-only`.",
   },
   {
     id: "components/intent-unverified",

@@ -5,7 +5,7 @@
 This package writes ADR citations into strings a consumer reads inside their own
 repo: a rule's `description`, which lands in `docs/rules.md` and in every report,
 and the `_scaffold` notes the scaffolder drafts into their contract files. A bare
-`ADR-002` there reads as *that repo's* ADR-002, pointing a consumer at a decision
+`ADR-002` there reads as _that repo's_ ADR-002, pointing a consumer at a decision
 record they do not have. Seven registered rules and one scaffold note carry a bare
 citation today, and the test that used to catch them is gone.
 
