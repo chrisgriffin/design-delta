@@ -207,14 +207,14 @@ export const RULES = [
     surface: "components",
     defaultSeverity: "warn",
     description:
-      "The contract renders a design-to-code binding file and none is committed at the derived path (issue #400) — the mapping a design tool reads to show this component's real code does not exist yet. Applies only to a contract that declares a design source: with no design node there is nothing to bind to, so no binding file is expected (issue #448). Applicable only when the project configures a binding-file convention; requires an active design provider. The finding carries the rendered content the contract says the file holds, in `data.expected` (issue #579), so a consumer can write it without the engine ever writing anything; where nothing was rendered the field is `null` rather than absent.",
+      "The contract renders a design-to-code binding file and none is committed at the derived path — the mapping a design tool reads to show this component's real code does not exist yet. Applies only to a contract that declares a design source: with no design node there is nothing to bind to, so no binding file is expected. Applicable only when the project configures a binding-file convention; requires an active design provider. The finding carries the rendered content the contract says the file holds, in `data.expected`, so a consumer can write it without the engine ever writing anything; where nothing was rendered the field is `null` rather than absent.",
   },
   {
     id: "components/binding-file-stale",
     surface: "components",
     defaultSeverity: "warn",
     description:
-      "The committed design-to-code binding file differs from what the contract renders (issue #400) — the contract moved and the binding did not, so a design tool shows this component's code wrongly. Applies only to a contract that declares a design source, the same gate as `binding-file-missing` (issue #448). The comparison is structural, not textual: both sides are parsed (issue #609), so formatting, comments, semicolons, trailing commas and key quoting never count (issue #452), imports an example body needs beyond the component's own are not drift (issue #459), what an author put in a toggle's true/false branch is example content and not drift (issue #477), and a hand-authored example body is neutralized before comparing and is never itself drift. The finding carries the rendered content the contract says the file holds, in `data.expected` (issue #579), so a consumer can diff against what was actually compared; where nothing was rendered the field is `null` rather than absent.",
+      "The committed design-to-code binding file differs from what the contract renders — the contract moved and the binding did not, so a design tool shows this component's code wrongly. Applies only to a contract that declares a design source, the same gate as `binding-file-missing`. The comparison is structural, not textual: both sides are parsed, so formatting, comments, semicolons, trailing commas and key quoting never count, imports an example body needs beyond the component's own are not drift, what an author put in a toggle's true/false branch is example content and not drift, and a hand-authored example body is neutralized before comparing and is never itself drift. The finding carries the rendered content the contract says the file holds, in `data.expected`, so a consumer can diff against what was actually compared; where nothing was rendered the field is `null` rather than absent.",
   },
   {
     id: "components/binding-file-compare-unreliable",
@@ -224,7 +224,7 @@ export const RULES = [
     // comparison explicitly does not have here.
     defaultSeverity: "review",
     description:
-      "The committed design-to-code binding file differs from what the contract renders as text, but the provider could not compare the two, so the difference is NOT reported as drift (issue #588). The comparison parses both sides (issue #609), and the parser is an optional peer dependency: without it installed there is nothing to compare with. `data.ceiling` names why, in the provider's words, and how to fix it; `data.expected` still carries what the contract says the file holds. A file identical to the render still reads as a match with no parser at all.",
+      "The committed design-to-code binding file differs from what the contract renders as text, but the provider could not compare the two, so the difference is NOT reported as drift. The comparison parses both sides, and the parser is an optional peer dependency: without it installed there is nothing to compare with. `data.ceiling` names why, in the provider's words, and how to fix it; `data.expected` still carries what the contract says the file holds. A file identical to the render still reads as a match with no parser at all.",
   },
   {
     id: "components/prop-default-mismatch",
@@ -266,7 +266,7 @@ export const RULES = [
     surface: "coverage",
     defaultSeverity: "warn",
     description:
-      "A design-tool component has no contract addressing it at all (ADR-003 Phase 5.1) — the design-side twin of `coverage/uncontracted-component`. A component the provider marks private — one the design tool keeps out of its published library — is excluded (issue #460), counted once in the run's diagnostics, and counted here only when `design.options.includePrivateComponents` is true.",
+      "A design-tool component has no contract addressing it at all (ADR-003 Phase 5.1) — the design-side twin of `coverage/uncontracted-component`. A component the provider marks private — one the design tool keeps out of its published library — is excluded, counted once in the run's diagnostics, and counted here only when `design.options.includePrivateComponents` is true.",
   },
   {
     id: "coverage/design-missing",
