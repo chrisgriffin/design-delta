@@ -5,7 +5,7 @@
 This package writes ADR citations into strings a consumer reads inside their own
 repo: a rule's `description`, which lands in `docs/rules.md` and in every report,
 and the `_scaffold` notes the scaffolder drafts into their contract files. A bare
-`ADR-002` there reads as *that repo's* ADR-002, pointing a consumer at a decision
+`ADR-002` there reads as _that repo's_ ADR-002, pointing a consumer at a decision
 record they do not have. Seven registered rules and one scaffold note carry a bare
 citation today, and the test that used to catch them is gone.
 
@@ -50,14 +50,16 @@ restores the guard, retargeted to the package that owns them now.
 
 ## Success criteria
 
-- [ ] **Runnable:** `npm test 2>&1 | grep -qi "ADR citations"` exits 0 — the suite runs the
-      ADR-citation guard, whose describe block is named `rule and scaffold ADR citations`. It
-      exits 1 on `develop` today: `npm test` passes (71 suites, 2098 tests) and no test names
-      an ADR citation.
+- [ ] **Runnable:** `npm test -- --json 2>/dev/null | grep -qi "rule and scaffold ADR citations"`
+      exits 0 — the suite runs the ADR-citation guard, whose describe block is named
+      `rule and scaffold ADR citations`. It exits 1 on `develop` today, where no such test
+      exists. Jest prints no describe-block name on a passing run, so the reporter's JSON is
+      what makes the guard's presence observable from a command.
 - [ ] A scan of every registered rule's `description` for a citation not written
       `design-delta's ADR-NNN` returns zero. It returns 7 on `develop` today.
 - [ ] A scan of every `_scaffold` note a scaffold run drafts returns zero unattributed
-      citations. It returns 1 on `develop` today.
+      citations. It returns **2** on `develop` today — the `when` note and the
+      undraftable-branch `todo` note, both in `src/spec/scaffold.mjs`.
 - [ ] Adding a rule whose `description` says `per ADR-004` makes `npm test` fail, and the
       failure names that rule's id and `ADR-004`.
 - [ ] `node scripts/generate-rules-reference.mjs --check` exits 0, so `docs/rules.md`
