@@ -101,6 +101,18 @@ function rulesDocumented(markdown) {
   ].map(match => ({ id: match[1], defaultSeverity: match[2] }))
 }
 
+/**
+ * Ids of rules whose `description` cites a tracker issue by number. A
+ * description lands in a consumer's `docs/rules.md` and reports, where
+ * `issue #400` reads as the consumer's own issue and points nowhere; the
+ * history belongs in a code comment, which a consumer never reads.
+ */
+function rulesCitingIssues(rules) {
+  return rules
+    .filter(rule => /\bissue #\d+/i.test(rule.description))
+    .map(rule => rule.id)
+}
+
 /** The `### \`<surface>\`` headings, in document order. */
 function surfacesDocumented(markdown) {
   return [...markdown.matchAll(/^### `([a-z]+)`$/gm)].map(match => match[1])
@@ -117,6 +129,10 @@ describe("the rule vocabulary is fully described", () => {
     expect(Object.keys(SURFACE_DESCRIPTIONS).sort()).toEqual(
       [...SURFACES].sort(),
     )
+  })
+
+  it("#16 no rule description cites a tracker issue", () => {
+    expect(rulesCitingIssues(exportedRules)).toEqual([])
   })
 
   it("registers every rule against a declared surface and severity", () => {
@@ -225,6 +241,14 @@ describe("the rules-reference guards actually fire", () => {
       "\n",
     )
     expect(surfacesDocumented(markdown)).toEqual(["tokens"])
+  })
+
+  it("the issue-citation check names a rule whose description cites one", () => {
+    const rules = [
+      { id: "a/clean", description: "Says what it does." },
+      { id: "a/cites", description: "Says what it does (issue #123)." },
+    ]
+    expect(rulesCitingIssues(rules)).toEqual(["a/cites"])
   })
 
   it("the descriptor shape test rejects a non-descriptor array", () => {
