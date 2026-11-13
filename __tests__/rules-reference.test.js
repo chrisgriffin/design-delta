@@ -36,6 +36,7 @@ import {
   SURFACES,
   SURFACE_DESCRIPTIONS,
 } from "../src/core/findings.mjs"
+import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const SRC = join(ROOT, "src")
@@ -51,30 +52,6 @@ function walk(dir) {
     else if (name.endsWith(".mjs")) out.push(full)
   }
   return out
-}
-
-/**
- * A rule descriptor as `core/rules.mjs` validates it. Used to recognize a
- * registry by shape, so a newly exported one is found without this test (or the
- * generator) being told about it.
- */
-function isRuleDescriptor(value) {
-  return (
-    value != null &&
-    typeof value === "object" &&
-    typeof value.id === "string" &&
-    typeof value.surface === "string" &&
-    typeof value.defaultSeverity === "string" &&
-    typeof value.description === "string"
-  )
-}
-
-/** Every exported array of rule descriptors in a module namespace. */
-function ruleArraysOf(namespace) {
-  return Object.values(namespace).filter(
-    value =>
-      Array.isArray(value) && value.length > 0 && value.every(isRuleDescriptor),
-  )
 }
 
 const exportedRules = ruleArraysOf(index).flat()
