@@ -11,7 +11,8 @@
  */
 
 import { readdirSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { runScaffold } from "../src/cli/commands/scaffold.mjs"
 import * as index from "../src/index.mjs"
@@ -19,6 +20,7 @@ import { buildScaffoldAnatomy } from "../src/spec/scaffold.mjs"
 import {
   citesAdr,
   scaffoldNotes,
+  sourceLiterals,
   unattributedAdrs,
 } from "./helpers/adr-citations.mjs"
 import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
@@ -26,6 +28,13 @@ import {
   createSyntheticProject,
   SYNTHETIC_PATHS,
 } from "./helpers/synthetic-project.mjs"
+
+// The one module that writes `_scaffold` notes (`src/spec/contracts.mjs`
+// only reads them back).
+const SCAFFOLD_SOURCE = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../src/spec/scaffold.mjs",
+)
 
 // Every rule array the package exports, found by shape exactly as
 // `rules-reference.test.js` finds the ones `docs/rules.md` must document, so
@@ -38,6 +47,13 @@ function ruleProblems(ruleList) {
     unattributedAdrs(rule.description ?? "").map(
       adr => `${rule.id}: bare ${adr}`,
     ),
+  )
+}
+
+/** `<file>:<line>: bare <citation>` for each unattributed citation. */
+function literalProblems(file, sourceText) {
+  return sourceLiterals(sourceText, file).flatMap(([line, text]) =>
+    unattributedAdrs(text).map(adr => `${file}:${line}: bare ${adr}`),
   )
 }
 
@@ -129,8 +145,9 @@ const CARD_STYLES = `.acmeCard {
 
 // Each kind of note the scaffolder writes, by the phrase that identifies it.
 // `src/spec/scaffold.mjs` writes each one at a single site, so a fixture
-// reaching every phrase reaches every site; a note added without a fixture
-// fails the "unrecognized" check below rather than going unscanned.
+// reaching every phrase reaches every site. A new note the fixtures do reach
+// fails the "unrecognized" check below; one they never reach is still held
+// by the scan of the module's string and template literals, further down.
 const NOTE_KINDS = {
   instance: "confirm instanceOf",
   "drafted variant": "`when` is documentation",
@@ -249,6 +266,16 @@ describe("rule and scaffold ADR citations (#12)", () => {
     expect(noteProblems(scanned)).toEqual([])
   })
 
+  it("every ADR a string or template literal in the scaffolder cites names design-delta, whether or not a fixture reaches it", () => {
+    const source = readFileSync(SCAFFOLD_SOURCE, "utf8")
+    const literals = sourceLiterals(source, SCAFFOLD_SOURCE)
+    // Not vacuous: the two notes that cite an ADR are among the literals read.
+    expect(
+      literals.filter(([, text]) => citesAdr(text)).length,
+    ).toBeGreaterThan(1)
+    expect(literalProblems("src/spec/scaffold.mjs", source)).toEqual([])
+  })
+
   it("fails naming the rule id, or the note's file and pointer, and the citation", () => {
     expect(
       ruleProblems([
@@ -275,6 +302,25 @@ describe("rule and scaffold ADR citations (#12)", () => {
       ]),
     ).toEqual([
       "deep.spec.json/anatomy/$variants/asB/children/0/_scaffold/todo: bare ADR-002",
+    ])
+
+    // A note behind a census kind no fixture renders, in every literal form;
+    // a comment's bare citation is this repo's own and is not read.
+    const source = [
+      "// per ADR-002 D5, read in this repo",
+      "/* ADR-003 */",
+      'const a = { todo: "see ADR-002 D4" }',
+      "const b = { todo: 'see ADR 003' }",
+      "const c = { todo: `see ADR-4` }",
+      "const d = { todo: `${x} per ADR-005 ${y}` }",
+      "const e = { todo: `ok (design-delta's ADR-002 D4) ${`nested ADR-6`}` }",
+    ].join("\n")
+    expect(literalProblems("fake.mjs", source)).toEqual([
+      "fake.mjs:3: bare ADR-002",
+      "fake.mjs:4: bare ADR 003",
+      "fake.mjs:5: bare ADR-4",
+      "fake.mjs:6: bare ADR-005",
+      "fake.mjs:7: bare ADR-6",
     ])
   })
 

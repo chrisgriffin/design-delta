@@ -27,6 +27,9 @@
       failing with `<file><pointer>: bare <citation>`.
 - [x] T007 In the same file, assert the note fixtures reached every kind of note site and
       that every note read is a recognised kind, and that more than one note cites an ADR.
+      Built: the fixtures only reach note sites some census renders, so the same file also
+      scans every string and template literal in `src/spec/scaffold.mjs` (the one module that
+      writes `_scaffold` notes), so a note no fixture reaches is still held.
 - [x] T008 In the same file, assert the scan reads `ADR-002`, `ADR 002`, `ADR-2` and
       `ADR4` alike, treats either apostrophe as attribution, and does not match `GADR-1`.
 

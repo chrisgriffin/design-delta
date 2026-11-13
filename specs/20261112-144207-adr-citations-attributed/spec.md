@@ -6,12 +6,13 @@ This package writes ADR citations into strings a consumer reads inside their own
 repo: a rule's `description`, which lands in `docs/rules.md` and in every report,
 and the `_scaffold` notes the scaffolder drafts into their contract files. A bare
 `ADR-002` there reads as _that repo's_ ADR-002, pointing a consumer at a decision
-record they do not have. Seven registered rules and one scaffold note carry a bare
-citation today, and the test that used to catch them is gone.
+record they do not have. Seven registered rules and two scaffold notes (the `when`
+note and the undraftable-branch `todo` note) carry a bare citation today, and the test
+that used to catch them is gone.
 
 The source this engine was copied from attributed every one of them and held it with
 a test. The rename stripped the owner's name from the citations and dropped the test
-in the same change, so nothing failed. This re-attributes the eight strings and
+in the same change, so nothing failed. This re-attributes the nine strings and
 restores the guard, retargeted to the package that owns them now.
 
 ## User scenarios
@@ -33,7 +34,9 @@ restores the guard, retargeted to the package that owns them now.
   `coverage/design-only`, `coverage/design-missing`, `coverage/stale-exemption`,
   `tokens/design-token-mismatch`.
 - **FR-2** Every `_scaffold` note the scaffolder writes that cites an ADR attributes it
-  the same way. One does not today: the `when` note in `src/spec/scaffold.mjs`.
+  the same way. Two do not today, both in `src/spec/scaffold.mjs`: the `when` note and
+  the undraftable-branch `todo` note. (Corrected in review: the spec first counted one
+  note; the scan the success criteria run returns 2 on `develop`, as they say.)
 - **FR-3** One scan owns the definition of an unattributed citation, imported by every
   test that guards one of these surfaces, so widening it reaches all of them. It treats
   `ADR-002`, `ADR 002` and `ADR-2` alike, accepts either apostrophe in the attribution,
