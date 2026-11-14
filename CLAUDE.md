@@ -64,7 +64,9 @@ same change:
 ## Coding standards
 
 - **TypeScript-free ESM**; 2-space indent. **Prettier owns formatting**
-  (`arrowParens: "avoid"`, `semi: false`) — run `npx prettier --write` before commit.
+  (`arrowParens: "avoid"`, `semi: false`) and **ESLint lints**, from the
+  shared `@chrisgriffin/config` base plus `eslint.config.mjs`'s commented
+  overrides — run `npx prettier --write` before commit.
 - **Deterministic + honest output.** The audit path never edits Figma or tokens
   and never files/triages issues — it emits a report. Don't add side effects to it.
 - New behavior ships with a test in `__tests__/` and, if it changes the config
@@ -78,14 +80,15 @@ gate — keep them green; never `.skip(`/`.only(` to get past a failure.
 ## CI
 
 `.github/workflows/ci.yml` runs on every PR into `develop`/`main`; every job is
-a thin stub calling a reusable workflow in the public `chrisgriffin/workflows` repo. Run these locally
-before opening a PR rather than discovering a red check:
+a thin stub calling a reusable workflow in the public `chrisgriffin/workflows` repo.
+**`npm run verify` is the local gate** — run it before opening a PR rather
+than discovering a red check:
 
-- `test` — `npm test`
-- `checks` — `npx prettier --check .`, `bash scripts/ci/check-action.sh`,
-  `bash scripts/ci/check-package.sh`, `node scripts/ci/check-schemas.mjs`, plus
-  `generate-config-reference.mjs` and `generate-rules-reference.mjs` under
-  `scripts/`, both with `--check`
+- `checks` — `npm run checks`, the chain `package.json` holds once; it also
+  holds this file to a 9500-byte budget (`claude_md_budget` in `ci.yml`),
+  which runs in CI only — `verify` does not check it
+- `test_22` — `npm test` on Node 22 (`test_24` and `test_26` run it again on a
+  push to `main` or a manual run, never on a PR)
 
 - `check-package.sh` catches what `npm test` structurally cannot: this is a
   published library, so a dropped `files` entry or a renamed `bin` leaves the

@@ -36,6 +36,7 @@ import {
   SURFACES,
   SURFACE_DESCRIPTIONS,
 } from "../src/core/findings.mjs"
+import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const SRC = join(ROOT, "src")
@@ -51,30 +52,6 @@ function walk(dir) {
     else if (name.endsWith(".mjs")) out.push(full)
   }
   return out
-}
-
-/**
- * A rule descriptor as `core/rules.mjs` validates it. Used to recognize a
- * registry by shape, so a newly exported one is found without this test (or the
- * generator) being told about it.
- */
-function isRuleDescriptor(value) {
-  return (
-    value != null &&
-    typeof value === "object" &&
-    typeof value.id === "string" &&
-    typeof value.surface === "string" &&
-    typeof value.defaultSeverity === "string" &&
-    typeof value.description === "string"
-  )
-}
-
-/** Every exported array of rule descriptors in a module namespace. */
-function ruleArraysOf(namespace) {
-  return Object.values(namespace).filter(
-    value =>
-      Array.isArray(value) && value.length > 0 && value.every(isRuleDescriptor),
-  )
 }
 
 const exportedRules = ruleArraysOf(index).flat()
@@ -101,6 +78,23 @@ function rulesDocumented(markdown) {
   ].map(match => ({ id: match[1], defaultSeverity: match[2] }))
 }
 
+/**
+ * A tracker issue cited by number, in every form it is written: `issue #400`,
+ * `(#640)`, `(issues #401, #402)`. Text that lands in a consumer's
+ * `docs/rules.md` and reports reads such a number as the consumer's own issue
+ * and points nowhere; the history belongs in a code comment, which a consumer
+ * never reads. A `#` followed by digits and then a hex letter is a colour
+ * (`#1a2b3c`), and `&#123;` is an HTML entity — neither is a citation.
+ */
+const TRACKER_CITATION = /(?<![&\w])#\d+(?![0-9a-fA-F])/g
+
+/** The lines of `markdown` that cite a tracker issue by number. */
+function linesCitingIssues(markdown) {
+  return markdown
+    .split("\n")
+    .filter(line => line.match(TRACKER_CITATION) !== null)
+}
+
 /** The `### \`<surface>\`` headings, in document order. */
 function surfacesDocumented(markdown) {
   return [...markdown.matchAll(/^### `([a-z]+)`$/gm)].map(match => match[1])
@@ -117,6 +111,13 @@ describe("the rule vocabulary is fully described", () => {
     expect(Object.keys(SURFACE_DESCRIPTIONS).sort()).toEqual(
       [...SURFACES].sort(),
     )
+  })
+
+  it("#16 nothing in docs/rules.md cites a tracker issue", () => {
+    // The generated doc, not the registries: it carries every rule
+    // description and the surface and severity descriptions alike, so one
+    // assertion covers every source the generator renders.
+    expect(linesCitingIssues(doc)).toEqual([])
   })
 
   it("registers every rule against a declared surface and severity", () => {
@@ -225,6 +226,25 @@ describe("the rules-reference guards actually fire", () => {
       "\n",
     )
     expect(surfacesDocumented(markdown)).toEqual(["tokens"])
+  })
+
+  it("the issue-citation check catches every form of a citation, and no colour", () => {
+    for (const cited of [
+      "A rule (#123).",
+      "A rule (issue #400).",
+      "A rule (issues #401, #402).",
+      "See #7 for why.",
+    ]) {
+      expect(linesCitingIssues(cited)).toEqual([cited])
+    }
+    for (const clean of [
+      "A colour of #1a2b3c is not a citation.",
+      "Nor is #ff0000.",
+      "Nor is the entity &#123;.",
+      "### `tokens`",
+    ]) {
+      expect(linesCitingIssues(clean)).toEqual([])
+    }
   })
 
   it("the descriptor shape test rejects a non-descriptor array", () => {

@@ -288,7 +288,7 @@ function renderJson(result) {
  * @returns {number}
  */
 export function runDock(cmdArgv, ctx) {
-  const { io, globalOpts = {} } = ctx
+  const { io } = ctx
   const fs = ctx.fs || { mkdirSync, readFileSync, writeFileSync }
   const root = ctx.root || process.cwd()
   const { opts, errors } = parseFlags(cmdArgv, FLAG_SPEC)
