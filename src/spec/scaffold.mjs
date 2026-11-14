@@ -310,7 +310,7 @@ export function buildScaffoldAnatomy(root, propNames) {
 // every other value this module refuses to guess.
 const VARIANT_WHEN_PLACEHOLDER = "TODO: say when this branch renders"
 const VARIANT_WHEN_TODO =
-  "`when` is documentation for a human reader, never a condition this engine evaluates (ADR-002 D4) — say when this branch renders"
+  "`when` is documentation for a human reader, never a condition this engine evaluates (design-delta's ADR-002 D4) — say when this branch renders"
 
 // What tells one rendered branch apart from another: its root element, and
 // nothing else (ADR-002 D4). A custom-component root is keyed by its name for
@@ -420,7 +420,7 @@ export function buildScaffoldAnatomyVariants(branches, propNames) {
 
   if (undraftable.length > 0) {
     variants._scaffold = {
-      todo: `branch(es) rendering ${undraftable.join(", ")} are not drafted — another variant already claims that root, and variants are told apart by their root element alone (ADR-002 D4), so a second one could not be told from the first; fill in by hand`,
+      todo: `branch(es) rendering ${undraftable.join(", ")} are not drafted — another variant already claims that root, and variants are told apart by their root element alone (design-delta's ADR-002 D4), so a second one could not be told from the first; fill in by hand`,
     }
   }
   anatomy[ANATOMY_VARIANTS_KEY] = variants

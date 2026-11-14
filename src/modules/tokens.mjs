@@ -302,7 +302,7 @@ export const RULES = [
     surface: "tokens",
     defaultSeverity: "error",
     description:
-      "A design variable maps to exactly one code token by name (ADR-003 Amendment 4's candidate rule, or an explicit `design.options.tokenMap` entry), and their resolved values differ — per mode, naming the mode, when both sides are mode-scoped and share a mode name; otherwise on the one folded value. This specific token is wrong on one side.",
+      "A design variable maps to exactly one code token by name (design-delta's ADR-003 Amendment 4's candidate rule, or an explicit `design.options.tokenMap` entry), and their resolved values differ — per mode, naming the mode, when both sides are mode-scoped and share a mode name; otherwise on the one folded value. This specific token is wrong on one side.",
   },
   {
     id: "tokens/design-token-ambiguous",
