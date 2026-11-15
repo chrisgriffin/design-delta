@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://chrisgriffin.io/schemas/design-delta/config.schema.json",
   "title": "design-delta project config",
-  "description": "The authoritative shape of a consuming project's config (default location `design-delta.json`, at the project root). EVERY field is optional — `{}` validates — so a project sets only what differs from the engine's neutral defaults (see `src/core/config.mjs`'s DEFAULT_PATHS / DEFAULT_CONVENTIONS / DEFAULT_REPORT). Nothing in this schema or its defaults names a specific consumer's design-tool files, code layout, or naming conventions (ADR-001 D9 / the v1 leak this schema exists to not repeat) — every default is either empty or a genuinely neutral, ecosystem-wide convention. `additionalProperties: false` at every closed object level so a typo'd key fails loudly at load time (validateConfig) instead of silently doing nothing; every closed level also accepts `^_`-prefixed keys via `patternProperties` for documentary comments, INCLUDING the open `rules`/`exemptions` maps (v1 issue #68: those two blocks structurally rejected a `_`-prefixed comment key because their `additionalProperties` schema ran every key, comment or not, through the rule/exemption entry shape).",
+  "description": "The authoritative shape of a consuming project's config (default location `design-delta.json`, at the project root). EVERY field is optional — `{}` validates — so a project sets only what differs from the engine's neutral defaults (see `src/core/config.mjs`'s DEFAULT_PATHS / DEFAULT_CONVENTIONS / DEFAULT_REPORT). Nothing in this schema or its defaults names a specific consumer's design-tool files, code layout, or naming conventions (design-delta's ADR-001 D9 / the v1 leak this schema exists to not repeat) — every default is either empty or a genuinely neutral, ecosystem-wide convention. `additionalProperties: false` at every closed object level so a typo'd key fails loudly at load time (validateConfig) instead of silently doing nothing; every closed level also accepts `^_`-prefixed keys via `patternProperties` for documentary comments, INCLUDING the open `rules`/`exemptions` maps (v1 issue #68: those two blocks structurally rejected a `_`-prefixed comment key because their `additionalProperties` schema ran every key, comment or not, through the rule/exemption entry shape).",
   "type": "object",
   "additionalProperties": false,
   "patternProperties": {
@@ -20,7 +20,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Selects the ACTIVE design provider (ADR-001 D12) — one at a time, never multiple. Absent means no design side is configured: `gather`/`ingest` have nothing to do, and every design-side rule stays silent, the same 'a surface with nothing to compare skips' convention `tokens`/`components` already follow for a missing snapshot.",
+      "description": "Selects the ACTIVE design provider (design-delta's ADR-001 D12) — one at a time, never multiple. Absent means no design side is configured: `gather`/`ingest` have nothing to do, and every design-side rule stays silent, the same 'a surface with nothing to compare skips' convention `tokens`/`components` already follow for a missing snapshot.",
       "properties": {
         "provider": {
           "type": "string",
@@ -33,11 +33,11 @@
             "type": "string",
             "minLength": 1
           },
-          "description": "Design files to census IN ADDITION to the ones the contracts already address (issue #413) — provider-opaque file identifiers, in the active provider's own addressing vocabulary. Scope stays contract-derived first (ADR-003: the union of every contract's `sources.design` — a listed file a contract addresses anyway is deduplicated); this adds files no contract references yet, which would otherwise never be gathered and whose design-only components would stay invisible. The per-node bindings plan is unaffected: a bare file names no nodes."
+          "description": "Design files to census IN ADDITION to the ones the contracts already address (issue #413) — provider-opaque file identifiers, in the active provider's own addressing vocabulary. Scope stays contract-derived first (design-delta's ADR-003: the union of every contract's `sources.design` — a listed file a contract addresses anyway is deduplicated); this adds files no contract references yet, which would otherwise never be gathered and whose design-only components would stay invisible. The per-node bindings plan is unaffected: a bare file names no nodes."
         },
         "options": {
           "type": "object",
-          "description": "Provider-specific configuration, validated by that provider's own optional `configSchema` when it declares one (ADR-003 Amendment 3) — unconstrained here by design, the same way `sources.design` is opaque to `contract.schema.json`. The keys the active provider accepts are documented with that provider (ADR-003 Amendment 4; see `docs/cli.md` § audit)."
+          "description": "Provider-specific configuration, validated by that provider's own optional `configSchema` when it declares one (design-delta's ADR-003 Amendment 3) — unconstrained here by design, the same way `sources.design` is opaque to `contract.schema.json`. The keys the active provider accepts are documented with that provider (design-delta's ADR-003 Amendment 4; see `docs/cli.md` § audit)."
         }
       }
     },
@@ -47,7 +47,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Repo-relative path overrides. See DEFAULT_PATHS in src/core/config.mjs for each key's default. Replaces v1's `baselineFile` with `stateFile` (ADR-001 D6); there is no mockup/print/site directory (mockups are killed, D9) and icons are folded into `componentsDir` (D9).",
+      "description": "Repo-relative path overrides. See DEFAULT_PATHS in src/core/config.mjs for each key's default. Replaces v1's `baselineFile` with `stateFile` (design-delta's ADR-001 D6); there is no mockup/print/site directory (mockups are killed, D9) and icons are folded into `componentsDir` (D9).",
       "properties": {
         "snapshotDir": {
           "$ref": "#/$defs/stringValue",
@@ -55,11 +55,11 @@
         },
         "stateFile": {
           "$ref": "#/$defs/stringValue",
-          "description": "The one change-record store (ADR-001 D6) — replaces v1's baseline.json + component-fingerprints.json."
+          "description": "The one change-record store (design-delta's ADR-001 D6) — replaces v1's baseline.json + component-fingerprints.json."
         },
         "tokensFile": {
           "$ref": "#/$defs/stringValue",
-          "description": "The project's W3C-DTCG token file — the token contract (ADR-001 D3). May instead name a DIRECTORY: every `*.json` under it, at any depth, is read in sorted path order and merged into one document. A token defined in two files is reported as `duplicate-token` naming both (the first file in path order wins); a group `$`-key such as `$type` set to different values in two files is reported as `group-key-conflict` (the first value wins); a directory with no `*.json` in it is `empty-tokens-dir`. Diagnostics and lint violations name the specific file a token came from."
+          "description": "The project's W3C-DTCG token file — the token contract (design-delta's ADR-001 D3). May instead name a DIRECTORY: every `*.json` under it, at any depth, is read in sorted path order and merged into one document. A token defined in two files is reported as `duplicate-token` naming both (the first file in path order wins); a group `$`-key such as `$type` set to different values in two files is reported as `group-key-conflict` (the first value wins); a directory with no `*.json` in it is `empty-tokens-dir`. Diagnostics and lint violations name the specific file a token came from."
         },
         "resolvedTokensFile": {
           "$ref": "#/$defs/stringValue",
@@ -67,11 +67,11 @@
         },
         "componentsDir": {
           "$ref": "#/$defs/stringValue",
-          "description": "Root of the code-side component inventory. Icons live under this same root (ADR-001 D9) — there is no separate `iconsDir`."
+          "description": "Root of the code-side component inventory. Icons live under this same root (design-delta's ADR-001 D9) — there is no separate `iconsDir`."
         },
         "contractsDir": {
           "$ref": "#/$defs/stringValue",
-          "description": "Directory of `*.contract.json` component contracts (ADR-001 D2). JSON is the only accepted serialization."
+          "description": "Directory of `*.contract.json` component contracts (design-delta's ADR-001 D2). JSON is the only accepted serialization."
         },
         "reportDir": {
           "$ref": "#/$defs/stringValue",
@@ -144,7 +144,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Design-tool <-> code token-name mapping data (ADR-001 D3). Each top-level key REPLACES its default wholesale — resolveConfig does not deep-merge a block's list/map keys onto the defaults, it merges once per block.",
+      "description": "Design-tool <-> code token-name mapping data (design-delta's ADR-001 D3). Each top-level key REPLACES its default wholesale — resolveConfig does not deep-merge a block's list/map keys onto the defaults, it merges once per block.",
       "properties": {
         "collections": {
           "type": "object",
@@ -178,7 +178,7 @@
       "additionalProperties": {
         "$ref": "#/$defs/ruleEntry"
       },
-      "description": "The one severity mechanism (ADR-001 D5), keyed by rule id (e.g. \"tokens/value-mismatch\", \"components/prop-missing\", \"lint/camel-case\", \"coverage/code-only\"). A value is either a bare severity — \"off\" | \"error\" | \"warn\" | \"review\" — or a `[severity, options]` pair carrying that rule's own options. Keys are deliberately open: the valid rule-id set is engine data (the rule registry), not schema data. `^_`-prefixed keys are accepted as documentary comments and are never treated as rule ids (the v1 #68 bug this schema does not repeat). A rule may also take OPTIONS via the `[severity, options]` tuple form. `tokens/token-unreferenced` accepts `{\"ignorePrefixes\": [\"base.\"]}` — token id prefixes whose findings are suppressed, so a project can keep a colour ramp or spacing scale complete without every unconsumed step being reported, while still hearing about an unused SEMANTIC token. It defaults to empty and the prefixes come from the project: this engine has no opinion about which tier is primitive, because that is a fact about a consumer's token architecture rather than about drift. It also accepts `{\"ignoreSources\": [\"tokens/primitives/*\"]}` — globs (`*` matches any run of characters, `/` included, as in `exemptions`) matched against the file each token was authored in, for a project whose tiers are directories rather than id roots. It applies only when `paths.tokensFile` is a directory, and drops a finding only when every token it names matches. `tokens/token-unemitted` is scoped by both options of `tokens/token-unreferenced`."
+      "description": "The one severity mechanism (design-delta's ADR-001 D5), keyed by rule id (e.g. \"tokens/value-mismatch\", \"components/prop-missing\", \"lint/camel-case\", \"coverage/code-only\"). A value is either a bare severity — \"off\" | \"error\" | \"warn\" | \"review\" — or a `[severity, options]` pair carrying that rule's own options. Keys are deliberately open: the valid rule-id set is engine data (the rule registry), not schema data. `^_`-prefixed keys are accepted as documentary comments and are never treated as rule ids (the v1 #68 bug this schema does not repeat). A rule may also take OPTIONS via the `[severity, options]` tuple form. `tokens/token-unreferenced` accepts `{\"ignorePrefixes\": [\"base.\"]}` — token id prefixes whose findings are suppressed, so a project can keep a colour ramp or spacing scale complete without every unconsumed step being reported, while still hearing about an unused SEMANTIC token. It defaults to empty and the prefixes come from the project: this engine has no opinion about which tier is primitive, because that is a fact about a consumer's token architecture rather than about drift. It also accepts `{\"ignoreSources\": [\"tokens/primitives/*\"]}` — globs (`*` matches any run of characters, `/` included, as in `exemptions`) matched against the file each token was authored in, for a project whose tiers are directories rather than id roots. It applies only when `paths.tokensFile` is a directory, and drops a finding only when every token it names matches. `tokens/token-unemitted` is scoped by both options of `tokens/token-unreferenced`."
     },
     "exemptions": {
       "type": "object",
@@ -188,7 +188,7 @@
       "additionalProperties": {
         "$ref": "#/$defs/exemptionList"
       },
-      "description": "Rule-level exemptions (ADR-001 D5), keyed by rule id — absorbs v1's `ignore.waived` / `ignore.trackedGaps` / `ignore.separateEfforts`. Each entry is an entity string/glob, or an `{entity, reason, decision, issue}` object. `decision` is `waived` (the default, and what a bare string means), `tracked` (a known gap — `issue` required) or `accepted` (correct by design). An exempted finding is never dropped silently: it stays in `audit --json` and `lint --json` under `decided`, carrying `decision: {kind, reason, issue, exemption}`, and never gates `verify` or counts toward severity totals. An exemption matches a finding by its displayed `entity` and also by any alternate identities it declares: `data.tokens`, so a waiver written against an individual token id remains valid when that token is later grouped with others under a shared CSS var; and `data.expectedVar`, so a waiver written against that shared var name remains valid if the group later shrinks back to one token and `entity` reverts to the token's own id. An exemption whose rule reported NOTHING matching it is itself reported, as `coverage/stale-exemption` — exemptions are claims to re-verify, not permanent silence. That covers an entity that no longer exists AND one that still exists but has been fixed: either way the waiver has stopped carrying weight. Only literal entities are checked; a glob matching nothing is not reported, since a pattern states a shape rather than a claim about a specific entity. Stale-checking is scoped to rules the run actually EVALUATED, so a surface that was narrowed out (`audit --tokens`) or skipped does not make every exemption on it look stale. A rule turned \"off\", or one whose delegated rule set is unconfigured, counts as not evaluated for the same reason: it reported nothing regardless of the code. Findings an exemption hides are counted and reported as `counts.exempted`, so a clean report is never mistaken for no drift. `^_`-prefixed keys are accepted as documentary comments, same as `rules`."
+      "description": "Rule-level exemptions (design-delta's ADR-001 D5), keyed by rule id — absorbs v1's `ignore.waived` / `ignore.trackedGaps` / `ignore.separateEfforts`. Each entry is an entity string/glob, or an `{entity, reason, decision, issue}` object. `decision` is `waived` (the default, and what a bare string means), `tracked` (a known gap — `issue` required) or `accepted` (correct by design). An exempted finding is never dropped silently: it stays in `audit --json` and `lint --json` under `decided`, carrying `decision: {kind, reason, issue, exemption}`, and never gates `verify` or counts toward severity totals. An exemption matches a finding by its displayed `entity` and also by any alternate identities it declares: `data.tokens`, so a waiver written against an individual token id remains valid when that token is later grouped with others under a shared CSS var; and `data.expectedVar`, so a waiver written against that shared var name remains valid if the group later shrinks back to one token and `entity` reverts to the token's own id. An exemption whose rule reported NOTHING matching it is itself reported, as `coverage/stale-exemption` — exemptions are claims to re-verify, not permanent silence. That covers an entity that no longer exists AND one that still exists but has been fixed: either way the waiver has stopped carrying weight. Only literal entities are checked; a glob matching nothing is not reported, since a pattern states a shape rather than a claim about a specific entity. Stale-checking is scoped to rules the run actually EVALUATED, so a surface that was narrowed out (`audit --tokens`) or skipped does not make every exemption on it look stale. A rule turned \"off\", or one whose delegated rule set is unconfigured, counts as not evaluated for the same reason: it reported nothing regardless of the code. Findings an exemption hides are counted and reported as `counts.exempted`, so a clean report is never mistaken for no drift. `^_`-prefixed keys are accepted as documentary comments, same as `rules`."
     },
     "report": {
       "type": "object",
@@ -196,7 +196,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Report rendering configuration (ADR-001 D9).",
+      "description": "Report rendering configuration (design-delta's ADR-001 D9).",
       "properties": {
         "timeZone": {
           "$ref": "#/$defs/stringValue",
@@ -214,7 +214,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Delegated token lint (ADR-001 Phase 3). EMPTY OR ABSENT MEANS SILENT: a project that configures no rules gets zero lint findings, never a starter set. Measured reason (docs/spikes/lint-rule-mapping.md): `core/consistent-naming` alone produces 798 findings on a 657-leaf token file purely because its default format is kebab-case and the project is camelCase — none of them defects. Opinions ship off.",
+      "description": "Delegated token lint (design-delta's ADR-001 Phase 3). EMPTY OR ABSENT MEANS SILENT: a project that configures no rules gets zero lint findings, never a starter set. Measured reason (docs/spikes/lint-rule-mapping.md): `core/consistent-naming` alone produces 798 findings on a 657-leaf token file purely because its default format is kebab-case and the project is camelCase — none of them defects. Opinions ship off.",
       "properties": {
         "rules": {
           "type": "object",
@@ -282,7 +282,7 @@
               }
             }
           },
-          "description": "Closed-vocabulary token leaves (ADR-001 Phase 3, issue #121) — a canonical ordered scale (t-shirt sizes) and a closed state set (hover/active/disabled) are the same MECHANISM (a token's leaf must belong to a configured set for its path) with different vocabularies, so this is one config surface and one rule for both rather than three. A path with no matching entry is ungoverned and produces no finding. ABSENT MEANS SILENT, like every field in `lint`: with nothing configured, no vocabulary is asserted."
+          "description": "Closed-vocabulary token leaves (design-delta's ADR-001 Phase 3, issue #121) — a canonical ordered scale (t-shirt sizes) and a closed state set (hover/active/disabled) are the same MECHANISM (a token's leaf must belong to a configured set for its path) with different vocabularies, so this is one config surface and one rule for both rather than three. A path with no matching entry is ungoverned and produces no finding. ABSENT MEANS SILENT, like every field in `lint`: with nothing configured, no vocabulary is asserted."
         },
         "contracts": {
           "type": "object",

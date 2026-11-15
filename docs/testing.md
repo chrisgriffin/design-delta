@@ -58,10 +58,12 @@ Nothing needs a build, a browser or a registry token first.
   `coupled-files.test.js` compare a doc's tables and paths against the schema,
   registry, `action.yml` or CLAUDE.md section they mirror.
 - **Consumer-read strings** — `__tests__/adr-citations.test.js` holds every
-  ADR a rule description or a drafted `_scaffold` note cites to the form
-  `design-delta's ADR-NNN`, since both are read in a consumer's own repo:
-  the notes a scaffold run drafts, and every string and template literal in
-  `src/spec/scaffold.mjs`, so a note no fixture reaches is held too.
+  ADR a rule description, a drafted `_scaffold` note, a shipped JSON schema
+  or a shipped skill cites to the form `design-delta's ADR-NNN`, since all
+  are read in a consumer's own repo: the notes a scaffold run drafts, every
+  string and template literal in `src/spec/scaffold.mjs` (so a note no
+  fixture reaches is held too), every string at any depth in `schema/*.json`,
+  and every line under `skills/`.
   Its scan lives once in `helpers/adr-citations.mjs`; `helpers/rule-arrays.mjs`
   finds every exported rule registry by shape, shared with
   `rules-reference.test.js` and `cli-rule-registry.test.js`.

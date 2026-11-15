@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://chrisgriffin.io/schemas/design-delta/design-tokens.schema.json",
   "title": "design-delta design-side token snapshot",
-  "description": "The second of D7's two design-side snapshot files (`design-tokens.json`), written by `design-delta ingest --tokens` from a provider's raw gather envelopes, read by `audit`/`verify`. Provider-agnostic (ADR-001 D12) — one entry per distinct variable NAME the provider observed bound somewhere across the gathered nodes, deduplicated project-wide (ADR-003 Phase 5.3: census scope has no per-file attribution, matched by name candidate first — ADR-003 Amendment 4 — and by value as coverage). Every snapshot is optional and degrades like missing if invalid (ADR-001 D7); this file is never hand-authored.",
+  "description": "The second of D7's two design-side snapshot files (`design-tokens.json`), written by `design-delta ingest --tokens` from a provider's raw gather envelopes, read by `audit`/`verify`. Provider-agnostic (design-delta's ADR-001 D12) — one entry per distinct variable NAME the provider observed bound somewhere across the gathered nodes, deduplicated project-wide (design-delta's ADR-003 Phase 5.3: census scope has no per-file attribution, matched by name candidate first — design-delta's ADR-003 Amendment 4 — and by value as coverage). Every snapshot is optional and degrades like missing if invalid (design-delta's ADR-001 D7); this file is never hand-authored.",
   "type": "object",
   "additionalProperties": false,
   "patternProperties": {
@@ -66,7 +66,7 @@
         "name": {
           "type": "string",
           "minLength": 1,
-          "description": "The provider's own variable or style name/path — opaque to the rest of the engine (ADR-001 D12). Matched by NAME CANDIDATE first (ADR-003 Amendment 4), by value as coverage."
+          "description": "The provider's own variable or style name/path — opaque to the rest of the engine (design-delta's ADR-001 D12). Matched by NAME CANDIDATE first (design-delta's ADR-003 Amendment 4), by value as coverage."
         },
         "value": {
           "type": "string",

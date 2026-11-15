@@ -3,7 +3,7 @@
   "$id": "https://chrisgriffin.io/schemas/design-delta/contract.schema.json",
   "title": "design-delta component contract",
   "version": 1,
-  "description": "The authoritative definition of ONE component: its API, its structure, and the design tokens it binds. Per ADR-001 D1 the contract is the fixed point — every check compares one side against THIS, never design against code directly, so spec↔design and spec↔code are the only two comparisons and in-sync holds by transitivity. Authored as `<name>.contract.json` — JSON is the ONE serialization (D2, tightened 2026-07-31): `_`-prefixed keys carry the reasoning YAML would have kept in `#` comments, so a second format bought nothing but a second parse path. One component per file: v1's `components: {<key>: …}` single-entry wrapper is gone, as is the `$extensions.componentSpec` nesting — deviation markers are first-class here. `_`-prefixed keys are permitted at every level and carry the authoring reasoning v1 kept in YAML `#` comments.",
+  "description": "The authoritative definition of ONE component: its API, its structure, and the design tokens it binds. Per design-delta's ADR-001 D1 the contract is the fixed point — every check compares one side against THIS, never design against code directly, so spec↔design and spec↔code are the only two comparisons and in-sync holds by transitivity. Authored as `<name>.contract.json` — JSON is the ONE serialization (D2, tightened 2026-07-31): `_`-prefixed keys carry the reasoning YAML would have kept in `#` comments, so a second format bought nothing but a second parse path. One component per file: v1's `components: {<key>: …}` single-entry wrapper is gone, as is the `$extensions.componentSpec` nesting — deviation markers are first-class here. `_`-prefixed keys are permitted at every level and carry the authoring reasoning v1 kept in YAML `#` comments.",
   "type": "object",
   "required": ["id", "title"],
   "additionalProperties": false,
@@ -86,7 +86,7 @@
     "anatomy": {
       "type": "object",
       "minProperties": 1,
-      "description": "The element tree — STRUCTURE only. `root` is expected. the legacy spec format mixed structure and styling into one `elements` map per variant; this keeps structure here and styling in `styles`, so each answers one question. A component whose render function returns DIFFERENT root elements on different branches has no single tree; the optional `$variants` block describes the others (ADR-002). It is the SECOND sigil this map reserves — `^_` is the first, and means \"comment, discard\" — and both are safe here because a node name is constrained below to `^[A-Za-z][A-Za-z0-9]*$`, which no sigil key can match.",
+      "description": "The element tree — STRUCTURE only. `root` is expected. the legacy spec format mixed structure and styling into one `elements` map per variant; this keeps structure here and styling in `styles`, so each answers one question. A component whose render function returns DIFFERENT root elements on different branches has no single tree; the optional `$variants` block describes the others (design-delta's ADR-002). It is the SECOND sigil this map reserves — `^_` is the first, and means \"comment, discard\" — and both are safe here because a node name is constrained below to `^[A-Za-z][A-Za-z0-9]*$`, which no sigil key can match.",
       "properties": {
         "$variants": {
           "$ref": "#/$defs/anatomyVariants"
@@ -167,7 +167,7 @@
         },
         "design": {
           "type": "object",
-          "description": "Addresses this component in the ACTIVE design tool. Deliberately OPAQUE to this schema (ADR-001 D12): the engine never learns any one design tool's `fileKey`/`nodeId` vocabulary, or any other tool's. The enabled provider supplies a `sourceSchema` that validates this object, so provider-specific addressing stays in the provider. Absent means the contract declares no design counterpart, which is itself a checkable fact."
+          "description": "Addresses this component in the ACTIVE design tool. Deliberately OPAQUE to this schema (design-delta's ADR-001 D12): the engine never learns any one design tool's `fileKey`/`nodeId` vocabulary, or any other tool's. The enabled provider supplies a `sourceSchema` that validates this object, so provider-specific addressing stays in the provider. Absent means the contract declares no design counterpart, which is itself a checkable fact."
         }
       }
     },
@@ -240,7 +240,7 @@
           "items": {
             "type": ["string", "number"]
           },
-          "description": "Canonical enum values in CODE casing. Matching is EXACT and case-sensitive on every side — `Size`/`SM` vs `size`/`sm` is drift, never a near-match (ADR-001 D1). Numbers are allowed so a numeric code union (`2 | 3`) can be declared as `[2, 3]`; on the DESIGN side only, such a value also matches its exact string form (`\"2\"`), since a design tool's variant options are always strings."
+          "description": "Canonical enum values in CODE casing. Matching is EXACT and case-sensitive on every side — `Size`/`SM` vs `size`/`sm` is drift, never a near-match (design-delta's ADR-001 D1). Numbers are allowed so a numeric code union (`2 | 3`) can be declared as `[2, 3]`; on the DESIGN side only, such a value also matches its exact string form (`\"2\"`), since a design tool's variant options are always strings."
         },
         "default": {
           "type": ["string", "boolean", "number", "null"]
@@ -457,7 +457,7 @@
       "type": "object",
       "minProperties": 1,
       "additionalProperties": false,
-      "description": "The alternative trees a component renders, keyed by variant name (ADR-002 D1/D2) — a name in the same casing as a node name, carrying the meaning the engine cannot check (`asLink`). Optional, and absent from the ~95% of components that return one shape. Matching a variant to a rendered branch is STRUCTURAL, by root element (D4), so two variants declaring the same `root.element` are ambiguous and the contract is rejected at load time rather than one of them silently winning.",
+      "description": "The alternative trees a component renders, keyed by variant name (design-delta's ADR-002 D1/D2) — a name in the same casing as a node name, carrying the meaning the engine cannot check (`asLink`). Optional, and absent from the ~95% of components that return one shape. Matching a variant to a rendered branch is STRUCTURAL, by root element (D4), so two variants declaring the same `root.element` are ambiguous and the contract is rejected at load time rather than one of them silently winning.",
       "patternProperties": {
         "^_": {},
         "^[A-Za-z][A-Za-z0-9]*$": {
@@ -469,11 +469,11 @@
       "type": "object",
       "minProperties": 1,
       "additionalProperties": false,
-      "description": "One alternative tree, as a PARTIAL OVERRIDE (ADR-002 D3): only the nodes that DIFFER from the base anatomy, everything else inherited. A component whose branches differ in one node writes one node, so the common case never costs what the rare one does and no duplicated node can drift from its copy.",
+      "description": "One alternative tree, as a PARTIAL OVERRIDE (design-delta's ADR-002 D3): only the nodes that DIFFER from the base anatomy, everything else inherited. A component whose branches differ in one node writes one node, so the common case never costs what the rare one does and no duplicated node can drift from its copy.",
       "properties": {
         "when": {
           "type": "string",
-          "description": "Free text saying when this branch renders (\"href is set\"). DOCUMENTATION FOR A HUMAN READER, never a predicate (ADR-002 D4): this engine is static, so a runtime prop value is not something it can evaluate, and a structured `{prop, equals}` shape would read as executable while being silently ignored — the failure `invalidVariantCombinations` already represents once in this schema. A plain string cannot be mistaken for one. It sits flat alongside the node names, which makes `when` the one name a variant's nodes may not use."
+          "description": "Free text saying when this branch renders (\"href is set\"). DOCUMENTATION FOR A HUMAN READER, never a predicate (design-delta's ADR-002 D4): this engine is static, so a runtime prop value is not something it can evaluate, and a structured `{prop, equals}` shape would read as executable while being silently ignored — the failure `invalidVariantCombinations` already represents once in this schema. A plain string cannot be mistaken for one. It sits flat alongside the node names, which makes `when` the one name a variant's nodes may not use."
         }
       },
       "patternProperties": {
@@ -676,7 +676,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["token"],
-      "description": "A reference to a token in the project's DTCG tokens file, which IS the token contract (ADR-001 D3). The `{ token: … }` wrapper is what distinguishes a token reference from a literal string. NOT a design-tool variable id: the design-variable↔tokens mapping belongs to the provider and the tokens module, so a contract needs no knowledge of any tool's identifiers.",
+      "description": "A reference to a token in the project's DTCG tokens file, which IS the token contract (design-delta's ADR-001 D3). The `{ token: … }` wrapper is what distinguishes a token reference from a literal string. NOT a design-tool variable id: the design-variable↔tokens mapping belongs to the provider and the tokens module, so a contract needs no knowledge of any tool's identifiers.",
       "properties": {
         "token": {
           "type": "string",

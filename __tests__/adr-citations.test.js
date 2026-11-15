@@ -1,13 +1,17 @@
 /**
- * adr-citations.test.js — every ADR a rule description or a scaffold note
- * cites names design-delta as its owner (#12).
+ * adr-citations.test.js — every ADR a rule description, a scaffold note, a
+ * shipped JSON schema or a shipped skill cites names design-delta as its
+ * owner (#12, #15).
  *
  * Both are read inside a consumer's own repo: a rule's `description` in
  * `docs/rules.md` and in reports, a `_scaffold` note in the contract file the
  * scaffolder drafts there. A bare `ADR-002` in either reads as the consumer's
  * own ADR-002. This holds the attribution over every registered rule and
- * every note a scaffold writes, wherever in the contract it sits, through the
- * one scan in `helpers/adr-citations.mjs`.
+ * every note a scaffold writes, wherever in the contract it sits, and over
+ * every string in `schema/` and every file in `skills/` (both ship in the
+ * package: a schema's text is the hover a consumer's editor shows through the
+ * `$schema` pointer `init` and the scaffolder write), through the one scan in
+ * `helpers/adr-citations.mjs`.
  */
 
 import { readdirSync, readFileSync } from "node:fs"
@@ -19,6 +23,7 @@ import * as index from "../src/index.mjs"
 import { buildScaffoldAnatomy } from "../src/spec/scaffold.mjs"
 import {
   citesAdr,
+  jsonStrings,
   scaffoldNotes,
   sourceLiterals,
   unattributedAdrs,
@@ -29,12 +34,19 @@ import {
   SYNTHETIC_PATHS,
 } from "./helpers/synthetic-project.mjs"
 
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
+
 // The one module that writes `_scaffold` notes (`src/spec/contracts.mjs`
 // only reads them back).
-const SCAFFOLD_SOURCE = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "../src/spec/scaffold.mjs",
-)
+const SCAFFOLD_SOURCE = join(ROOT, "src/spec/scaffold.mjs")
+
+/** Every file under `dir` (relative to the repo root) whose name passes `keep`. */
+function shippedFiles(dir, keep) {
+  return readdirSync(join(ROOT, dir), { recursive: true })
+    .filter(name => keep(String(name)))
+    .map(name => join(dir, String(name)))
+    .sort()
+}
 
 // Every rule array the package exports, found by shape exactly as
 // `rules-reference.test.js` finds the ones `docs/rules.md` must document, so
@@ -64,6 +76,22 @@ function noteProblems(contracts) {
       unattributedAdrs(text).map(adr => `${file}${at}: bare ${adr}`),
     ),
   )
+}
+
+/** `<file><pointer>: bare <citation>` for each unattributed citation. */
+function schemaProblems(file, schema) {
+  return jsonStrings(schema).flatMap(([at, text]) =>
+    unattributedAdrs(text).map(adr => `${file}${at}: bare ${adr}`),
+  )
+}
+
+/** `<file>:<line>: bare <citation>` for each unattributed citation. */
+function textProblems(file, text) {
+  return text
+    .split("\n")
+    .flatMap((line, i) =>
+      unattributedAdrs(line).map(adr => `${file}:${i + 1}: bare ${adr}`),
+    )
 }
 
 // Three branches, two rendering the same root: the drafted variant carries
@@ -336,5 +364,53 @@ describe("rule and scaffold ADR citations (#12)", () => {
     ).toEqual([])
     expect(unattributedAdrs("design-delta ADR-002")).toEqual(["ADR-002"])
     expect(unattributedAdrs("GADR-1 is no citation")).toEqual([])
+  })
+
+  it("#15 every ADR a shipped JSON schema cites names design-delta, in any string at any depth", () => {
+    const files = shippedFiles("schema", name => name.endsWith(".json"))
+    expect(files.length).toBeGreaterThan(0)
+    const schemas = files.map(file => [
+      file,
+      JSON.parse(readFileSync(join(ROOT, file), "utf8")),
+    ])
+    // Not vacuous: the schemas do cite ADRs, attributed.
+    expect(
+      schemas.flatMap(([, schema]) =>
+        jsonStrings(schema).filter(([, text]) => citesAdr(text)),
+      ).length,
+    ).toBeGreaterThan(1)
+    expect(
+      schemas.flatMap(([file, schema]) => schemaProblems(file, schema)),
+    ).toEqual([])
+  })
+
+  it("#15 every ADR a shipped skill cites names design-delta", () => {
+    const files = shippedFiles("skills", name =>
+      /\.(md|json|mjs|js)$/.test(name),
+    )
+    expect(files.length).toBeGreaterThan(0)
+    expect(
+      files.flatMap(file =>
+        textProblems(file, readFileSync(join(ROOT, file), "utf8")),
+      ),
+    ).toEqual([])
+  })
+
+  it("#15 fails naming the schema file, the pointer and the citation", () => {
+    expect(
+      schemaProblems("schema/fake.schema.json", {
+        description: "fine (design-delta's ADR-001 D1)",
+        properties: {
+          when: { description: "per ADR-004" },
+          list: { items: [{ title: "see ADR 2" }] },
+        },
+      }),
+    ).toEqual([
+      "schema/fake.schema.json/properties/when/description: bare ADR-004",
+      "schema/fake.schema.json/properties/list/items/0/title: bare ADR 2",
+    ])
+    expect(
+      textProblems("skills/x/SKILL.md", "ok\n- ADR-001's claim\n"),
+    ).toEqual(["skills/x/SKILL.md:2: bare ADR-001"])
   })
 })
