@@ -7,51 +7,31 @@
  * editor's hovers through `$schema`. A number like `(issue #413)` there came
  * from the tracker the engine was built in before it moved here: it reads as
  * an issue in this repo or in the consumer's own, and a link to it 404s.
- * `rules-reference.test.js` holds `docs/rules.md` to the same rule (#16).
+ * `rules-reference.test.js` holds `docs/rules.md` to the same rule (#16);
+ * both import the one scan in `helpers/tracker-citations.mjs`.
  *
- * The docs about how THIS repo is run (its CI, releases, tests, layout) cite
- * this repo's own tracker on purpose and are left out, as are `docs/adr/` and
- * `docs/spikes/`, which are dated records.
+ * `docs/ci.md` is left out: it records this repo's CI history and cites this
+ * repo's own tracker for it, an issue a reader here can open. So are
+ * `docs/adr/` and `docs/spikes/`, which are dated records.
  */
 
 import { readdirSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
+import { linesCitingIssues } from "./helpers/tracker-citations.mjs"
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 
-/** Docs about this repo's own process, not the engine a consumer runs. */
-const REPO_PROCESS_DOCS = new Set([
-  "architecture.md",
-  "ci.md",
-  "releasing.md",
-  "testing.md",
-])
-
-/**
- * A tracker issue cited by number, in every form it is written: `issue #400`,
- * `(#640)`, `roadmap #216`, `retargeted by #417`. A `#` followed by digits and
- * then a hex letter is a colour (`#1a2b3c`), one in backticks is a colour
- * written as code (`#111111`), and `&#123;` is an HTML entity — none is a
- * citation.
- */
-const TRACKER_CITATION = /(?<![&\w`])#\d+(?![0-9a-fA-F])/
-/** A link to an issue or pull request on any GitHub tracker. */
-const TRACKER_LINK = /github\.com\/[^/\s]+\/[^/\s]+\/(?:issues|pull)\/\d+/
-
-/** The lines of `text` that cite a tracker issue. */
-function linesCitingIssues(text) {
-  return text
-    .split("\n")
-    .filter(line => TRACKER_CITATION.test(line) || TRACKER_LINK.test(line))
-}
+/** A shipped doc that cites this repo's own tracker on purpose. */
+const OWN_TRACKER_DOCS = new Set(["ci.md"])
 
 function shippedFiles() {
   const schemas = readdirSync(join(ROOT, "schema"))
     .filter(name => name.endsWith(".json"))
     .map(name => join("schema", name))
   const docs = readdirSync(join(ROOT, "docs"))
-    .filter(name => name.endsWith(".md") && !REPO_PROCESS_DOCS.has(name))
+    .filter(name => name.endsWith(".md") && !OWN_TRACKER_DOCS.has(name))
     .map(name => join("docs", name))
   return [...schemas, ...docs]
 }
@@ -75,6 +55,9 @@ describe("shipped schemas and reference docs", () => {
         "docs/cli.md",
         "docs/config-reference.md",
         "docs/rules.md",
+        "docs/architecture.md",
+        "docs/releasing.md",
+        "docs/testing.md",
       ]),
     )
     expect(files).not.toContain("docs/ci.md")
@@ -88,6 +71,9 @@ describe("shipped schemas and reference docs", () => {
       "The bindings plan (issue #401, retargeted by #417).",
       "Shipped ([#627](https://github.com/acme/tool/issues/627)).",
       "See https://github.com/acme/tool/pull/278 for why.",
+      "Ported from other-tool#640.",
+      "Tracked in acme/tool#440.",
+      "Fixed under issue#12.",
     ]) {
       expect(linesCitingIssues(cited)).toEqual([cited])
     }
@@ -97,6 +83,8 @@ describe("shipped schemas and reference docs", () => {
       "Nor is `#111111` written as code.",
       "Nor is the entity &#123;.",
       "Nor is a heading anchor [Health](./report-structure.md#health-score).",
+      "Nor is a numbered anchor [Overview](./cli.md#1-overview).",
+      "Nor is the placeholder `owner/repo#12`.",
     ]) {
       expect(linesCitingIssues(clean)).toEqual([])
     }

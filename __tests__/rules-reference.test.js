@@ -37,6 +37,7 @@ import {
   SURFACE_DESCRIPTIONS,
 } from "../src/core/findings.mjs"
 import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
+import { linesCitingIssues } from "./helpers/tracker-citations.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const SRC = join(ROOT, "src")
@@ -76,23 +77,6 @@ function rulesDocumented(markdown) {
   return [
     ...markdown.matchAll(/^\|\s*`([a-z]+\/[a-z-]+)`\s*\|\s*([a-z]+)\s*\|/gm),
   ].map(match => ({ id: match[1], defaultSeverity: match[2] }))
-}
-
-/**
- * A tracker issue cited by number, in every form it is written: `issue #400`,
- * `(#640)`, `(issues #401, #402)`. Text that lands in a consumer's
- * `docs/rules.md` and reports reads such a number as the consumer's own issue
- * and points nowhere; the history belongs in a code comment, which a consumer
- * never reads. A `#` followed by digits and then a hex letter is a colour
- * (`#1a2b3c`), and `&#123;` is an HTML entity — neither is a citation.
- */
-const TRACKER_CITATION = /(?<![&\w])#\d+(?![0-9a-fA-F])/g
-
-/** The lines of `markdown` that cite a tracker issue by number. */
-function linesCitingIssues(markdown) {
-  return markdown
-    .split("\n")
-    .filter(line => line.match(TRACKER_CITATION) !== null)
 }
 
 /** The `### \`<surface>\`` headings, in document order. */
