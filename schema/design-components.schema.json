@@ -27,7 +27,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "When and how this snapshot was gathered (issue #389) — kept from the raw envelopes by `ingest`, never from the clock, so a report can state whether it rests on a fresh gather or a months-old committed file. Absent on a snapshot written before this field existed.",
+      "description": "When and how this snapshot was gathered — kept from the raw envelopes by `ingest`, never from the clock, so a report can state whether it rests on a fresh gather or a months-old committed file. Absent on a snapshot written before this field existed.",
       "properties": {
         "gatheredAt": {
           "type": "string",
@@ -44,7 +44,7 @@
         },
         "engineVersion": {
           "type": "string",
-          "description": "The design-delta version that normalized this snapshot (issue #458). Normalization runs at `ingest`, so stored values are only as current as this engine; `audit` compares it against the provider's `normalizationSince`. Absent on a snapshot written before 0.19.0."
+          "description": "The design-delta version that normalized this snapshot. Normalization runs at `ingest`, so stored values are only as current as this engine; `audit` compares it against the provider's `normalizationSince`. Absent on a snapshot written before 0.19.0."
         },
         "files": {
           "type": "integer",
@@ -125,7 +125,7 @@
         },
         "unit": {
           "enum": ["variant-set", "component"],
-          "description": "What kind of census unit this is, in the engine's own vocabulary (issue #658): a `variant-set`'s gathered `layers` children are its variants, each a whole component; a `component`'s are its own layers. Derived from `type` at ingest, so it never disagrees with it; absent on a snapshot written before it, where `audit` derives the same answer itself."
+          "description": "What kind of census unit this is, in the engine's own vocabulary: a `variant-set`'s gathered `layers` children are its variants, each a whole component; a `component`'s are its own layers. Derived from `type` at ingest, so it never disagrees with it; absent on a snapshot written before it, where `audit` derives the same answer itself."
         },
         "variantProperties": {
           "type": "object",
@@ -137,7 +137,7 @@
         },
         "variantCombinations": {
           "type": "array",
-          "description": "Which variant combinations this component set actually PUBLISHES — one entry per combination, each a full `variant property name -> value` assignment (issue #403). Distinct from `variantProperties`, which says only which options each property offers: the product of those options is what a contract IMPLIES, this is what the design tool enumerates. Written by the bindings pass, which reads the one gather surface that returns a set's variant children; ABSENT (never `[]`) when that pass has not run or the component has no variants, so a reader can tell 'not gathered' from 'gathered, none'.",
+          "description": "Which variant combinations this component set actually PUBLISHES — one entry per combination, each a full `variant property name -> value` assignment. Distinct from `variantProperties`, which says only which options each property offers: the product of those options is what a contract IMPLIES, this is what the design tool enumerates. Written by the bindings pass, which reads the one gather surface that returns a set's variant children; ABSENT (never `[]`) when that pass has not run or the component has no variants, so a reader can tell 'not gathered' from 'gathered, none'.",
           "items": {
             "type": "object",
             "minProperties": 1,
@@ -153,7 +153,7 @@
         },
         "layers": {
           "$ref": "#/$defs/designLayer",
-          "description": "This component's own layer tree, normalized into the engine's node vocabulary, when the provider's gather surface reports it (issue #402) — what `anatomy/*` compares a contract's declared anatomy against on the design side. Absent means the tree was never gathered, which is never reported as drift."
+          "description": "This component's own layer tree, normalized into the engine's node vocabulary, when the provider's gather surface reports it — what `anatomy/*` compares a contract's declared anatomy against on the design side. Absent means the tree was never gathered, which is never reported as drift."
         },
         "rawProps": {
           "type": "object",

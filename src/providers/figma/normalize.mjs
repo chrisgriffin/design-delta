@@ -186,7 +186,7 @@ export const configSchema = {
       type: "boolean",
       default: false,
       description:
-        "Count the design tool's PRIVATE components — a name, or any `/`-separated path segment, starting with `.` or `_` — under `coverage/design-only` (issue #460). Off by default: such a component is excluded from the published library by the tool's own convention, exists only as an internal composition helper, and can never have a code counterpart, so a contract for it is not missing.",
+        "Count the design tool's PRIVATE components — a name, or any `/`-separated path segment, starting with `.` or `_` — under `coverage/design-only`. Off by default: such a component is excluded from the published library by the tool's own convention, exists only as an internal composition helper, and can never have a code counterpart, so a contract for it is not missing.",
     },
     ignoreVariables: {
       type: "array",

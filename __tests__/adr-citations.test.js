@@ -1,20 +1,22 @@
 /**
  * adr-citations.test.js — every ADR a rule description, a scaffold note, a
  * shipped JSON schema or a shipped skill cites names design-delta as its
- * owner (#12, #15).
+ * owner (#12, #15), and no shipped schema string cites a tracker issue by
+ * number.
  *
- * Both are read inside a consumer's own repo: a rule's `description` in
+ * All four are read inside a consumer's own repo: a rule's `description` in
  * `docs/rules.md` and in reports, a `_scaffold` note in the contract file the
- * scaffolder drafts there. A bare `ADR-002` in either reads as the consumer's
- * own ADR-002. This holds the attribution over every registered rule and
- * every note a scaffold writes, wherever in the contract it sits, and over
- * every string in `schema/` and every file in `skills/` (both ship in the
- * package: a schema's text is the hover a consumer's editor shows through the
- * `$schema` pointer `init` and the scaffolder write), through the one scan in
- * `helpers/adr-citations.mjs`.
+ * scaffolder drafts there, a schema's text as the hover a consumer's editor
+ * shows through the `$schema` pointer `init` and the scaffolder write, and a
+ * skill as the instructions a consumer's agent follows (both ship in the
+ * package). A bare `ADR-002` in any reads as the consumer's own ADR-002, and
+ * an `issue #481` as their own issue. This holds the attribution over every
+ * registered rule and every note a scaffold writes, wherever in the contract
+ * it sits, over every string in `schema/` and over every file in `skills/`,
+ * whatever its extension, through the one scan in `helpers/adr-citations.mjs`.
  */
 
-import { readdirSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync, statSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -26,6 +28,7 @@ import {
   jsonStrings,
   scaffoldNotes,
   sourceLiterals,
+  trackerCitations,
   unattributedAdrs,
 } from "./helpers/adr-citations.mjs"
 import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
@@ -40,11 +43,14 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 // only reads them back).
 const SCAFFOLD_SOURCE = join(ROOT, "src/spec/scaffold.mjs")
 
-/** Every file under `dir` (relative to the repo root) whose name passes `keep`. */
-function shippedFiles(dir, keep) {
+/**
+ * Every file (not directory) under `dir` (relative to the repo root) whose
+ * name passes `keep`.
+ */
+function shippedFiles(dir, keep = () => true) {
   return readdirSync(join(ROOT, dir), { recursive: true })
-    .filter(name => keep(String(name)))
     .map(name => join(dir, String(name)))
+    .filter(file => keep(file) && statSync(join(ROOT, file)).isFile())
     .sort()
 }
 
@@ -78,11 +84,15 @@ function noteProblems(contracts) {
   )
 }
 
-/** `<file><pointer>: bare <citation>` for each unattributed citation. */
+/**
+ * `<file><pointer>: bare <citation>` for each unattributed ADR citation, and
+ * `<file><pointer>: tracker <#N>` for each tracker issue cited by number.
+ */
 function schemaProblems(file, schema) {
-  return jsonStrings(schema).flatMap(([at, text]) =>
-    unattributedAdrs(text).map(adr => `${file}${at}: bare ${adr}`),
-  )
+  return jsonStrings(schema).flatMap(([at, text]) => [
+    ...unattributedAdrs(text).map(adr => `${file}${at}: bare ${adr}`),
+    ...trackerCitations(text).map(ref => `${file}${at}: tracker ${ref}`),
+  ])
 }
 
 /** `<file>:<line>: bare <citation>` for each unattributed citation. */
@@ -366,7 +376,7 @@ describe("rule and scaffold ADR citations (#12)", () => {
     expect(unattributedAdrs("GADR-1 is no citation")).toEqual([])
   })
 
-  it("#15 every ADR a shipped JSON schema cites names design-delta, in any string at any depth", () => {
+  it("#15 every ADR a shipped JSON schema cites names design-delta, and none cites a tracker issue, in any string at any depth", () => {
     const files = shippedFiles("schema", name => name.endsWith(".json"))
     expect(files.length).toBeGreaterThan(0)
     const schemas = files.map(file => [
@@ -384,11 +394,34 @@ describe("rule and scaffold ADR citations (#12)", () => {
     ).toEqual([])
   })
 
-  it("#15 every ADR a shipped skill cites names design-delta", () => {
-    const files = shippedFiles("skills", name =>
-      /\.(md|json|mjs|js)$/.test(name),
-    )
+  it("#15 nothing in docs/config-reference.md cites a tracker issue", () => {
+    // The generated doc, not only `schema/`: it also renders each provider's
+    // own config fragment, so one assertion covers every source a consumer
+    // reads as config documentation.
+    const doc = readFileSync(join(ROOT, "docs/config-reference.md"), "utf8")
+    expect(
+      doc
+        .split("\n")
+        .flatMap((line, i) =>
+          trackerCitations(line).map(
+            ref => `docs/config-reference.md:${i + 1}: tracker ${ref}`,
+          ),
+        ),
+    ).toEqual([])
+  })
+
+  it("#15 every ADR a shipped skill cites names design-delta, in every file whatever its extension", () => {
+    // Every file `skills/` holds ships (`files` includes `skills`), so none
+    // is left out by its name: a `.txt` or `.sh` is read as surely as a
+    // `SKILL.md`.
+    const files = shippedFiles("skills")
     expect(files.length).toBeGreaterThan(0)
+    expect(files).toEqual(
+      expect.arrayContaining([
+        join("skills", "design-delta", "SKILL.md"),
+        join("skills", "design-delta-doctor", "SKILL.md"),
+      ]),
+    )
     expect(
       files.flatMap(file =>
         textProblems(file, readFileSync(join(ROOT, file), "utf8")),
@@ -408,6 +441,25 @@ describe("rule and scaffold ADR citations (#12)", () => {
     ).toEqual([
       "schema/fake.schema.json/properties/when/description: bare ADR-004",
       "schema/fake.schema.json/properties/list/items/0/title: bare ADR 2",
+    ])
+    // Every form a tracker issue is cited in, and no colour or entity.
+    expect(
+      schemaProblems("schema/fake.schema.json", {
+        description: "(design-delta's ADR-001 D6, roadmap #216)",
+        properties: {
+          a: { description: "Contract lint (issue #406): x" },
+          b: { description: "(v1 #68 bug) and (issues #401, #402)" },
+          c: { description: "A rule (#123)." },
+          d: { examples: ["#1a2b3c", "#ff0000", "&#123;"] },
+        },
+      }),
+    ).toEqual([
+      "schema/fake.schema.json/description: tracker #216",
+      "schema/fake.schema.json/properties/a/description: tracker #406",
+      "schema/fake.schema.json/properties/b/description: tracker #68",
+      "schema/fake.schema.json/properties/b/description: tracker #401",
+      "schema/fake.schema.json/properties/b/description: tracker #402",
+      "schema/fake.schema.json/properties/c/description: tracker #123",
     ])
     expect(
       textProblems("skills/x/SKILL.md", "ok\n- ADR-001's claim\n"),

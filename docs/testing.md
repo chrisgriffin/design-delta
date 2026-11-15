@@ -63,7 +63,11 @@ Nothing needs a build, a browser or a registry token first.
   are read in a consumer's own repo: the notes a scaffold run drafts, every
   string and template literal in `src/spec/scaffold.mjs` (so a note no
   fixture reaches is held too), every string at any depth in `schema/*.json`,
-  and every line under `skills/`.
+  and every line of every file under `skills/`, whatever its extension. The
+  same schema strings are held to cite no tracker issue by number
+  (`issue #481` reads as the consumer's own issue), through the tracker scan
+  `rules-reference.test.js` applies to `docs/rules.md`, as is the generated
+  `docs/config-reference.md`, which also renders each provider's config.
   Its scan lives once in `helpers/adr-citations.mjs`; `helpers/rule-arrays.mjs`
   finds every exported rule registry by shape, shared with
   `rules-reference.test.js` and `cli-rule-registry.test.js`.

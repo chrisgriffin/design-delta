@@ -1,6 +1,7 @@
 /**
  * adr-citations.mjs — the one scan for an ADR citation that does not name
- * design-delta as its owner (#12).
+ * design-delta as its owner (#12), and for a tracker issue cited by number
+ * (#16), which reads the same way.
  *
  * Rule descriptions, the `_scaffold` notes the scaffolder writes, and the
  * shipped `schema/` and `skills/` text are all read inside a consumer's own
@@ -19,6 +20,21 @@ const CITATION = /(?<!design-delta['’]s )\bADR[- ]?\d+/g
 /** Each ADR citation in `text` not written as `design-delta's ADR-NNN`. */
 export function unattributedAdrs(text) {
   return [...text.matchAll(CITATION)].map(m => m[0])
+}
+
+/**
+ * A tracker issue cited by number, in every form it is written: `issue #400`,
+ * `(#640)`, `(issues #401, #402)`, `roadmap #216`. Text a consumer reads
+ * takes such a number as their own issue, and it points nowhere; the history
+ * belongs in a code comment. A `#` followed by digits and then a hex letter is
+ * a colour (`#1a2b3c`), and `&#123;` is an HTML entity — neither is a
+ * citation.
+ */
+const TRACKER_CITATION = /(?<![&\w])#\d+(?![0-9a-fA-F])/g
+
+/** Each tracker issue `text` cites by number. */
+export function trackerCitations(text) {
+  return [...text.matchAll(TRACKER_CITATION)].map(m => m[0])
 }
 
 /** Whether `text` cites any ADR at all, attributed or not. */

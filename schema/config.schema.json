@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://chrisgriffin.io/schemas/design-delta/config.schema.json",
   "title": "design-delta project config",
-  "description": "The authoritative shape of a consuming project's config (default location `design-delta.json`, at the project root). EVERY field is optional — `{}` validates — so a project sets only what differs from the engine's neutral defaults (see `src/core/config.mjs`'s DEFAULT_PATHS / DEFAULT_CONVENTIONS / DEFAULT_REPORT). Nothing in this schema or its defaults names a specific consumer's design-tool files, code layout, or naming conventions (design-delta's ADR-001 D9 / the v1 leak this schema exists to not repeat) — every default is either empty or a genuinely neutral, ecosystem-wide convention. `additionalProperties: false` at every closed object level so a typo'd key fails loudly at load time (validateConfig) instead of silently doing nothing; every closed level also accepts `^_`-prefixed keys via `patternProperties` for documentary comments, INCLUDING the open `rules`/`exemptions` maps (v1 issue #68: those two blocks structurally rejected a `_`-prefixed comment key because their `additionalProperties` schema ran every key, comment or not, through the rule/exemption entry shape).",
+  "description": "The authoritative shape of a consuming project's config (default location `design-delta.json`, at the project root). EVERY field is optional — `{}` validates — so a project sets only what differs from the engine's neutral defaults (see `src/core/config.mjs`'s DEFAULT_PATHS / DEFAULT_CONVENTIONS / DEFAULT_REPORT). Nothing in this schema or its defaults names a specific consumer's design-tool files, code layout, or naming conventions (design-delta's ADR-001 D9 / the v1 leak this schema exists to not repeat) — every default is either empty or a genuinely neutral, ecosystem-wide convention. `additionalProperties: false` at every closed object level so a typo'd key fails loudly at load time (validateConfig) instead of silently doing nothing; every closed level also accepts `^_`-prefixed keys via `patternProperties` for documentary comments, INCLUDING the open `rules`/`exemptions` maps (in v1, those two blocks structurally rejected a `_`-prefixed comment key because their `additionalProperties` schema ran every key, comment or not, through the rule/exemption entry shape).",
   "type": "object",
   "additionalProperties": false,
   "patternProperties": {
@@ -33,7 +33,7 @@
             "type": "string",
             "minLength": 1
           },
-          "description": "Design files to census IN ADDITION to the ones the contracts already address (issue #413) — provider-opaque file identifiers, in the active provider's own addressing vocabulary. Scope stays contract-derived first (design-delta's ADR-003: the union of every contract's `sources.design` — a listed file a contract addresses anyway is deduplicated); this adds files no contract references yet, which would otherwise never be gathered and whose design-only components would stay invisible. The per-node bindings plan is unaffected: a bare file names no nodes."
+          "description": "Design files to census IN ADDITION to the ones the contracts already address — provider-opaque file identifiers, in the active provider's own addressing vocabulary. Scope stays contract-derived first (design-delta's ADR-003: the union of every contract's `sources.design` — a listed file a contract addresses anyway is deduplicated); this adds files no contract references yet, which would otherwise never be gathered and whose design-only components would stay invisible. The per-node bindings plan is unaffected: a bare file names no nodes."
         },
         "options": {
           "type": "object",
@@ -113,7 +113,7 @@
         },
         "groupedDirs": {
           "$ref": "#/$defs/stringArray",
-          "description": "componentsDir sub-dirs whose CHILDREN are the individual components, rather than the dir itself being one component. Empty by default. Accepted and validated, but no rule in this engine currently reads it (issue #275) — keeping it, not dropping it, since a real consumer has it configured."
+          "description": "componentsDir sub-dirs whose CHILDREN are the individual components, rather than the dir itself being one component. Empty by default. Accepted and validated, but no rule in this engine currently reads it — keeping it, not dropping it, since a real consumer has it configured."
         },
         "nonComponentFileSuffixes": {
           "$ref": "#/$defs/stringArray",
@@ -121,7 +121,7 @@
         },
         "iconFilePrefix": {
           "$ref": "#/$defs/stringValue",
-          "description": "Per-file naming marking an icon component (e.g. \"icon-\"). Accepted and validated, but no rule in this engine currently reads it (issue #275) — keeping it, not dropping it, since a real consumer has it configured."
+          "description": "Per-file naming marking an icon component (e.g. \"icon-\"). Accepted and validated, but no rule in this engine currently reads it — keeping it, not dropping it, since a real consumer has it configured."
         },
         "designVarNamespaces": {
           "$ref": "#/$defs/stringMap",
@@ -178,7 +178,7 @@
       "additionalProperties": {
         "$ref": "#/$defs/ruleEntry"
       },
-      "description": "The one severity mechanism (design-delta's ADR-001 D5), keyed by rule id (e.g. \"tokens/value-mismatch\", \"components/prop-missing\", \"lint/camel-case\", \"coverage/code-only\"). A value is either a bare severity — \"off\" | \"error\" | \"warn\" | \"review\" — or a `[severity, options]` pair carrying that rule's own options. Keys are deliberately open: the valid rule-id set is engine data (the rule registry), not schema data. `^_`-prefixed keys are accepted as documentary comments and are never treated as rule ids (the v1 #68 bug this schema does not repeat). A rule may also take OPTIONS via the `[severity, options]` tuple form. `tokens/token-unreferenced` accepts `{\"ignorePrefixes\": [\"base.\"]}` — token id prefixes whose findings are suppressed, so a project can keep a colour ramp or spacing scale complete without every unconsumed step being reported, while still hearing about an unused SEMANTIC token. It defaults to empty and the prefixes come from the project: this engine has no opinion about which tier is primitive, because that is a fact about a consumer's token architecture rather than about drift. It also accepts `{\"ignoreSources\": [\"tokens/primitives/*\"]}` — globs (`*` matches any run of characters, `/` included, as in `exemptions`) matched against the file each token was authored in, for a project whose tiers are directories rather than id roots. It applies only when `paths.tokensFile` is a directory, and drops a finding only when every token it names matches. `tokens/token-unemitted` is scoped by both options of `tokens/token-unreferenced`."
+      "description": "The one severity mechanism (design-delta's ADR-001 D5), keyed by rule id (e.g. \"tokens/value-mismatch\", \"components/prop-missing\", \"lint/camel-case\", \"coverage/code-only\"). A value is either a bare severity — \"off\" | \"error\" | \"warn\" | \"review\" — or a `[severity, options]` pair carrying that rule's own options. Keys are deliberately open: the valid rule-id set is engine data (the rule registry), not schema data. `^_`-prefixed keys are accepted as documentary comments and are never treated as rule ids (a v1 bug this schema does not repeat). A rule may also take OPTIONS via the `[severity, options]` tuple form. `tokens/token-unreferenced` accepts `{\"ignorePrefixes\": [\"base.\"]}` — token id prefixes whose findings are suppressed, so a project can keep a colour ramp or spacing scale complete without every unconsumed step being reported, while still hearing about an unused SEMANTIC token. It defaults to empty and the prefixes come from the project: this engine has no opinion about which tier is primitive, because that is a fact about a consumer's token architecture rather than about drift. It also accepts `{\"ignoreSources\": [\"tokens/primitives/*\"]}` — globs (`*` matches any run of characters, `/` included, as in `exemptions`) matched against the file each token was authored in, for a project whose tiers are directories rather than id roots. It applies only when `paths.tokensFile` is a directory, and drops a finding only when every token it names matches. `tokens/token-unemitted` is scoped by both options of `tokens/token-unreferenced`."
     },
     "exemptions": {
       "type": "object",
@@ -282,7 +282,7 @@
               }
             }
           },
-          "description": "Closed-vocabulary token leaves (design-delta's ADR-001 Phase 3, issue #121) — a canonical ordered scale (t-shirt sizes) and a closed state set (hover/active/disabled) are the same MECHANISM (a token's leaf must belong to a configured set for its path) with different vocabularies, so this is one config surface and one rule for both rather than three. A path with no matching entry is ungoverned and produces no finding. ABSENT MEANS SILENT, like every field in `lint`: with nothing configured, no vocabulary is asserted."
+          "description": "Closed-vocabulary token leaves (design-delta's ADR-001 Phase 3) — a canonical ordered scale (t-shirt sizes) and a closed state set (hover/active/disabled) are the same MECHANISM (a token's leaf must belong to a configured set for its path) with different vocabularies, so this is one config surface and one rule for both rather than three. A path with no matching entry is ungoverned and produces no finding. ABSENT MEANS SILENT, like every field in `lint`: with nothing configured, no vocabulary is asserted."
         },
         "contracts": {
           "type": "object",
@@ -290,7 +290,7 @@
           "patternProperties": {
             "^_": {}
           },
-          "description": "Contract lint (issue #406): naming and vocabulary conventions checked across every loaded contract, the way `tiers`/`vocabularies` are checked across tokens. The contract schema bounds the character set; which case and which enum vocabularies a project uses within it are its own conventions, so they live here. ABSENT MEANS SILENT.",
+          "description": "Contract lint: naming and vocabulary conventions checked across every loaded contract, the way `tiers`/`vocabularies` are checked across tokens. The contract schema bounds the character set; which case and which enum vocabularies a project uses within it are its own conventions, so they live here. ABSENT MEANS SILENT.",
           "properties": {
             "nameCase": {
               "type": "string",
@@ -333,7 +333,7 @@
           "patternProperties": {
             "^_": {}
           },
-          "description": "Design naming lint (issue #407): the naming convention the project's design-side variable and component names must follow — the convention half of what `tokens/design-token-ambiguous` can only report after the fact. Each pattern is a JavaScript regular expression source, anchored by the author (`^...$`) if whole-name matching is meant. Requires a configured design provider and an ingested snapshot to have anything to check. ABSENT MEANS SILENT.",
+          "description": "Design naming lint: the naming convention the project's design-side variable and component names must follow — the convention half of what `tokens/design-token-ambiguous` can only report after the fact. Each pattern is a JavaScript regular expression source, anchored by the author (`^...$`) if whole-name matching is meant. Requires a configured design provider and an ingested snapshot to have anything to check. ABSENT MEANS SILENT.",
           "properties": {
             "variablePattern": {
               "type": "string",
@@ -363,7 +363,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Which UI framework the audited code is written in (issue #117). One active framework at a time, resolved by src/sources/frameworks.mjs to the adapter under src/sources/<framework>/, which supplies its own file conventions. Default `react`, the only adapter today.",
+      "description": "Which UI framework the audited code is written in. One active framework at a time, resolved by src/sources/frameworks.mjs to the adapter under src/sources/<framework>/, which supplies its own file conventions. Default `react`, the only adapter today.",
       "properties": {
         "framework": {
           "type": "string",
