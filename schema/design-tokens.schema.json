@@ -27,7 +27,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "When and how this snapshot was gathered (issue #389) — kept from the raw envelopes by `ingest`, never from the clock, so a report can state whether it rests on a fresh gather or a months-old committed file. Absent on a snapshot written before this field existed.",
+      "description": "When and how this snapshot was gathered — kept from the raw envelopes by `ingest`, never from the clock, so a report can state whether it rests on a fresh gather or a months-old committed file. Absent on a snapshot written before this field existed.",
       "properties": {
         "gatheredAt": {
           "type": "string",
@@ -44,7 +44,7 @@
         },
         "engineVersion": {
           "type": "string",
-          "description": "The design-delta version that normalized this snapshot (issue #458). Normalization runs at `ingest`, so stored values are only as current as this engine; `audit` compares it against the provider's `normalizationSince`. Absent on a snapshot written before 0.19.0."
+          "description": "The design-delta version that normalized this snapshot. Normalization runs at `ingest`, so stored values are only as current as this engine; `audit` compares it against the provider's `normalizationSince`. Absent on a snapshot written before 0.19.0."
         },
         "files": {
           "type": "integer",
@@ -70,11 +70,11 @@
         },
         "value": {
           "type": "string",
-          "description": "The resolved value as a comparable string — the default mode's value for a variable, a deterministic rendering for a text style. Always present, so a reader from before issue #380 still works; the structured fields below are what a reader after it compares."
+          "description": "The resolved value as a comparable string — the default mode's value for a variable, a deterministic rendering for a text style. Always present, so a reader from before the structured fields below existed still works; those fields are what a newer reader compares."
         },
         "kind": {
           "enum": ["variable", "textStyle"],
-          "description": "What the provider observed (issue #380). Absent on a snapshot written before it, which is a variable."
+          "description": "What the provider observed. Absent on a snapshot written before this field existed, which is a variable."
         },
         "resolvedType": {
           "type": "string",
@@ -82,7 +82,7 @@
         },
         "values": {
           "type": "object",
-          "description": "A variable's typed value per mode NAME: a hex color, a number, a string, a boolean, or `{alias}` when the alias could not be resolved. What `tokens/design-token-mismatch` compares mode by mode, and what `tokens/design-mode-missing` reads the design side's mode vocabulary from (issue #404) — absent (a snapshot gathered before issue #380's structured path), the comparison degrades to the single folded `value` above and no mode finding is raised.",
+          "description": "A variable's typed value per mode NAME: a hex color, a number, a string, a boolean, or `{alias}` when the alias could not be resolved. What `tokens/design-token-mismatch` compares mode by mode, and what `tokens/design-mode-missing` reads the design side's mode vocabulary from — absent (a snapshot gathered before these structured fields existed), the comparison degrades to the single folded `value` above and no mode finding is raised.",
           "additionalProperties": {
             "type": ["string", "number", "boolean", "object"]
           }

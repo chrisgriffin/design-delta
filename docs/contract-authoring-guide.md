@@ -360,7 +360,7 @@ is a gap an author fills by hand, and what they write there is not compared.
 That true branch is a component instance, so the code prop has to be one a
 component instance can fill: `gates` is rejected on any prop whose `type` is
 not `slot`, even though `mechanism: "toggle"` itself is legal on `string` and
-`boolean` props too (issue #503).
+`boolean` props too.
 
 This is a **redirection** of the check, never a suppression: the prop must
 still exist under its design name, and the design side must still model it the
@@ -602,7 +602,7 @@ A list of prop configurations that must never occur:
 ]
 ```
 
-`components/variant-combinations-mismatch` ([issue #403](https://github.com/chrisgriffin/design-delta/issues/403))
+`components/variant-combinations-mismatch`
 reads it, and reports two things at once for one component: a combination the
 design component set **publishes** that an entry here forbids, and a
 combination the contract **implies** — the product of its enum props' values,
@@ -648,7 +648,7 @@ agree", always "there is nothing to compare" — unless all of these hold:
   `components/prop-missing` / `components/prop-unexpected` already report
   per prop.
 
-**Never checked against code, deliberately** — [issue #111](https://github.com/chrisgriffin/design-delta/issues/111).
+**Never checked against code, deliberately.**
 A component's code-side props are a TYPE — an enum of possible values per
 prop — never an enumeration of which combinations actually get rendered
 together, so a static code extractor has no signal to check this against.

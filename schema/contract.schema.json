@@ -45,7 +45,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "Semantic intent (issue #366): what nothing in the API surface can say — when this component is the right choice, how it is commonly misused, and what to use instead. Prose no rule can verify for truth, so what IS checked is staleness: `verifiedAgainst` records the code hash the text was last reviewed against, and `components/intent-stale` fires when the component's props have changed since. Absent `verifiedAgainst` is `components/intent-unverified`; both messages carry the current hash to paste in.",
+      "description": "Semantic intent: what nothing in the API surface can say — when this component is the right choice, how it is commonly misused, and what to use instead. Prose no rule can verify for truth, so what IS checked is staleness: `verifiedAgainst` records the code hash the text was last reviewed against, and `components/intent-stale` fires when the component's props have changed since. Absent `verifiedAgainst` is `components/intent-unverified`; both messages carry the current hash to paste in.",
       "properties": {
         "usedFor": {
           "type": "string",
@@ -120,7 +120,7 @@
           "type": ["string", "number", "boolean"]
         }
       },
-      "description": "Prop combinations that must never be produced. Each entry is a partial configuration — an AND over only the named props, other props irrelevant — and a match is a finding. Every named prop must be a declared `enum` prop and every value one of that prop's own values; an empty entry is rejected, since 'every combination is invalid' is not an intent this field can express. Checked on the DESIGN side only, by `components/variant-combinations-mismatch` (issue #403): a component's code-side props are a TYPE (an enum of possible values per prop), never an enumeration of which COMBINATIONS actually get rendered together, so a static code extractor has no signal to check this against (issue #111) — a design tool's component set genuinely enumerates its variants, and does. Requires a bindings gather; see docs/contract-authoring-guide.md for the matching semantics."
+      "description": "Prop combinations that must never be produced. Each entry is a partial configuration — an AND over only the named props, other props irrelevant — and a match is a finding. Every named prop must be a declared `enum` prop and every value one of that prop's own values; an empty entry is rejected, since 'every combination is invalid' is not an intent this field can express. Checked on the DESIGN side only, by `components/variant-combinations-mismatch`: a component's code-side props are a TYPE (an enum of possible values per prop), never an enumeration of which COMBINATIONS actually get rendered together, so a static code extractor has no signal to check this against — a design tool's component set genuinely enumerates its variants, and does. Requires a bindings gather; see docs/contract-authoring-guide.md for the matching semantics."
     },
     "subcomponents": {
       "type": "object",
@@ -345,7 +345,7 @@
             "gates": {
               "type": "string",
               "minLength": 1,
-              "description": "`toggle` only, and only on a prop whose own `type` is `slot` (issue #503): the design-side SLOT property the toggle shows and hides, when the design component carries one beside the boolean (a slot plus a `has*` boolean is the usual shape of an optional region). The binding's true branch then renders that slot instead of a placeholder, and the slot is checked to exist and to be a slot, so it is compared rather than assumed. The code type is restricted because that true branch is a component instance: binding one to a `string` or `boolean` prop would be wrong, and nothing downstream reports it."
+              "description": "`toggle` only, and only on a prop whose own `type` is `slot`: the design-side SLOT property the toggle shows and hides, when the design component carries one beside the boolean (a slot plus a `has*` boolean is the usual shape of an optional region). The binding's true branch then renders that slot instead of a placeholder, and the slot is checked to exist and to be a slot, so it is compared rather than assumed. The code type is restricted because that true branch is a component instance: binding one to a `string` or `boolean` prop would be wrong, and nothing downstream reports it."
             }
           },
           "allOf": [
@@ -415,7 +415,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "DOM attributes this node must carry, by name, with the literal value expected (`role`, `aria-label`, `type`, …) — the accessibility surface a contract pins (issue #364). A bare boolean attribute is `\"true\"`. Only what is declared is checked: an attribute the code sets that the contract does not name is not drift. A value the code computes is reported as unresolved (review), never as a mismatch."
+          "description": "DOM attributes this node must carry, by name, with the literal value expected (`role`, `aria-label`, `type`, …) — the accessibility surface a contract pins. A bare boolean attribute is `\"true\"`. Only what is declared is checked: an attribute the code sets that the contract does not name is not drift. A value the code computes is reported as unresolved (review), never as a mismatch."
         },
         "instanceOf": {
           "type": "string",

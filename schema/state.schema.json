@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://chrisgriffin.io/schemas/design-delta/state.schema.json",
   "title": "design-delta run state",
-  "description": "Per-entity hashes from the most recent `design-delta snapshot` run (ADR-001 D6, roadmap #216). Written ONLY by `snapshot` — `audit`/`verify` read this file if present but never write it, preserving the audit path's read-only guarantee. `designHash` is optional: the design census's own per-component hash for the entity's design counterpart, written when a provider is configured and the contract's `sources.design` resolves (issue #481); an entity with no design counterpart omits it, never a null placeholder.",
+  "description": "Per-entity hashes from the most recent `design-delta snapshot` run (ADR-001 D6). Written ONLY by `snapshot` — `audit`/`verify` read this file if present but never write it, preserving the audit path's read-only guarantee. `designHash` is optional: the design census's own per-component hash for the entity's design counterpart, written when a provider is configured and the contract's `sources.design` resolves; an entity with no design counterpart omits it, never a null placeholder.",
   "type": "object",
   "additionalProperties": false,
   "patternProperties": {
@@ -51,7 +51,7 @@
         },
         "designHash": {
           "type": "string",
-          "description": "The design census's own hash (`design-components.json`'s `treeHash`) for the entity's design counterpart, read verbatim by `snapshot` when `sources.design` resolves (issue #481). Omitted, not null, when there is no design counterpart to hash."
+          "description": "The design census's own hash (`design-components.json`'s `treeHash`) for the entity's design counterpart, read verbatim by `snapshot` when `sources.design` resolves. Omitted, not null, when there is no design counterpart to hash."
         },
         "lastSeen": {
           "type": "string",
