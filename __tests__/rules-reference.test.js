@@ -36,8 +36,8 @@ import {
   SURFACES,
   SURFACE_DESCRIPTIONS,
 } from "../src/core/findings.mjs"
-import { trackerCitations } from "./helpers/adr-citations.mjs"
 import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
+import { linesCitingIssues } from "./helpers/tracker-citations.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const SRC = join(ROOT, "src")
@@ -77,14 +77,6 @@ function rulesDocumented(markdown) {
   return [
     ...markdown.matchAll(/^\|\s*`([a-z]+\/[a-z-]+)`\s*\|\s*([a-z]+)\s*\|/gm),
   ].map(match => ({ id: match[1], defaultSeverity: match[2] }))
-}
-
-/**
- * The lines of `markdown` that cite a tracker issue by number, through the
- * one tracker scan in `helpers/adr-citations.mjs`.
- */
-function linesCitingIssues(markdown) {
-  return markdown.split("\n").filter(line => trackerCitations(line).length > 0)
 }
 
 /** The `### \`<surface>\`` headings, in document order. */

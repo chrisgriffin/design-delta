@@ -65,7 +65,7 @@ Nothing needs a build, a browser or a registry token first.
   fixture reaches is held too), every string at any depth in `schema/*.json`,
   and every line of every file under `skills/`, whatever its extension. The
   same schema strings are held to cite no tracker issue by number
-  (`issue #481` reads as the consumer's own issue), through the tracker scan
+  (an issue number reads as the consumer's own issue), through the tracker scan
   `rules-reference.test.js` applies to `docs/rules.md`, as is the generated
   `docs/config-reference.md`, which also renders each provider's config.
   Its scan lives once in `helpers/adr-citations.mjs`; `helpers/rule-arrays.mjs`

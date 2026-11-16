@@ -70,7 +70,7 @@
         },
         "value": {
           "type": "string",
-          "description": "The resolved value as a comparable string — the default mode's value for a variable, a deterministic rendering for a text style. Always present, so a reader from before the structured fields below still works; those fields are what a newer reader compares."
+          "description": "The resolved value as a comparable string — the default mode's value for a variable, a deterministic rendering for a text style. Always present, so a reader from before the structured fields below existed still works; those fields are what a newer reader compares."
         },
         "kind": {
           "enum": ["variable", "textStyle"],
@@ -82,7 +82,7 @@
         },
         "values": {
           "type": "object",
-          "description": "A variable's typed value per mode NAME: a hex color, a number, a string, a boolean, or `{alias}` when the alias could not be resolved. What `tokens/design-token-mismatch` compares mode by mode, and what `tokens/design-mode-missing` reads the design side's mode vocabulary from — absent (a snapshot gathered before this structured field existed), the comparison degrades to the single folded `value` above and no mode finding is raised.",
+          "description": "A variable's typed value per mode NAME: a hex color, a number, a string, a boolean, or `{alias}` when the alias could not be resolved. What `tokens/design-token-mismatch` compares mode by mode, and what `tokens/design-mode-missing` reads the design side's mode vocabulary from — absent (a snapshot gathered before these structured fields existed), the comparison degrades to the single folded `value` above and no mode finding is raised.",
           "additionalProperties": {
             "type": ["string", "number", "boolean", "object"]
           }
