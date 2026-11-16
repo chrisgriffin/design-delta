@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://chrisgriffin.io/schemas/design-delta/design-components.schema.json",
   "title": "design-delta design-side component snapshot",
-  "description": "One of D7's two design-side snapshot files (`design-components.json`), written by `design-delta ingest` from a provider's raw gather envelope, read by `audit`/`verify`. Provider-agnostic (ADR-001 D12) — a census unit is 'the published component,' matched by `nodeId`, whatever tool produced it. Every snapshot is optional and degrades like missing if invalid (ADR-001 D7); this file is never hand-authored.",
+  "description": "One of D7's two design-side snapshot files (`design-components.json`), written by `design-delta ingest` from a provider's raw gather envelope, read by `audit`/`verify`. Provider-agnostic (design-delta's ADR-001 D12) — a census unit is 'the published component,' matched by `nodeId`, whatever tool produced it. Every snapshot is optional and degrades like missing if invalid (design-delta's ADR-001 D7); this file is never hand-authored.",
   "type": "object",
   "additionalProperties": false,
   "patternProperties": {
@@ -16,7 +16,7 @@
     },
     "components": {
       "type": "array",
-      "description": "One entry per PUBLISHED component, across every configured design file (ADR-003: census scope is the union of every loaded contract's `sources.design.fileKey` — a project addressing several files still gets exactly one of this snapshot, ADR-001 D7). Census unit is a `COMPONENT_SET` or a variant-less `COMPONENT`, never a variant child.",
+      "description": "One entry per PUBLISHED component, across every configured design file (design-delta's ADR-003: census scope is the union of every loaded contract's `sources.design.fileKey` — a project addressing several files still gets exactly one of this snapshot, design-delta's ADR-001 D7). Census unit is a `COMPONENT_SET` or a variant-less `COMPONENT`, never a variant child.",
       "items": {
         "$ref": "#/$defs/designComponent"
       }
@@ -62,7 +62,7 @@
         "^_": {}
       },
       "required": ["name"],
-      "description": "One node of a design component's layer tree, in the engine's own vocabulary — never a design tool's raw node shape (ADR-001 D12). A contract's `anatomy` node is compared against this: by NAME (or the node's `designLayer`, when the two differ) and by `type`.",
+      "description": "One node of a design component's layer tree, in the engine's own vocabulary — never a design tool's raw node shape (design-delta's ADR-001 D12). A contract's `anatomy` node is compared against this: by NAME (or the node's `designLayer`, when the two differ) and by `type`.",
       "properties": {
         "name": {
           "type": "string",
@@ -109,15 +109,15 @@
         "fileKey": {
           "type": "string",
           "minLength": 1,
-          "description": "The design file this component was gathered from — the provider's own addressing vocabulary, opaque to the rest of the engine (ADR-001 D12). Combined with `nodeId`, the full join key against a contract's `sources.design`."
+          "description": "The design file this component was gathered from — the provider's own addressing vocabulary, opaque to the rest of the engine (design-delta's ADR-001 D12). Combined with `nodeId`, the full join key against a contract's `sources.design`."
         },
         "nodeId": {
           "type": "string",
-          "description": "Canonical, colon-separated (ADR-003: both separators accepted at ingest, normalized to `:` before this is written) — the join key against a contract's `sources.design.nodeId`, never `name`."
+          "description": "Canonical, colon-separated (design-delta's ADR-003: both separators accepted at ingest, normalized to `:` before this is written) — the join key against a contract's `sources.design.nodeId`, never `name`."
         },
         "name": {
           "type": "string",
-          "description": "Display name only — never the match key (ADR-003: name-based matching is measured evidence of mispairing on a real project)."
+          "description": "Display name only — never the match key (design-delta's ADR-003: name-based matching is measured evidence of mispairing on a real project)."
         },
         "type": {
           "enum": ["COMPONENT_SET", "COMPONENT"],
@@ -165,7 +165,7 @@
         },
         "treeHash": {
           "type": "string",
-          "description": "Deterministic hash of this component's normalized tree (ADR-001 D6) — hashed Node-side by `ingest`, never inside a design tool's own sandbox."
+          "description": "Deterministic hash of this component's normalized tree (design-delta's ADR-001 D6) — hashed Node-side by `ingest`, never inside a design tool's own sandbox."
         }
       }
     }
