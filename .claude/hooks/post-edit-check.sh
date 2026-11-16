@@ -1,6 +1,6 @@
 #!/bin/sh
 # PostToolUse check for Edit/Write — file-scoped back-pressure.
-# design-delta stack: ESM JavaScript, prettier (no eslint).
+# design-delta stack: ESM JavaScript, prettier and eslint (this hook runs prettier only).
 # Success is silent; failures exit 2 so the error text is injected back.
 
 file=$(node -e "

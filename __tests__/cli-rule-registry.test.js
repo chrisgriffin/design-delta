@@ -16,10 +16,8 @@
  * below green while the real registry silently missed a whole surface —
  * exactly the "asking the generator what it renders and confirming it
  * rendered that" trap `rules-reference.test.js`'s own docblock names, one
- * file over. `ruleArraysOf`/`isRuleDescriptor` are that file's exact
- * mechanism, duplicated rather than imported (test files in this repo are
- * self-contained, `docs-parity.test.js`/`layering.test.js` do the same) —
- * `Object.values(index)` is scanned for anything shaped like an array of
+ * file over. `ruleArraysOf` is that file's exact mechanism, shared through
+ * `helpers/rule-arrays.mjs` (#12) — `Object.values(index)` is scanned for anything shaped like an array of
  * rule descriptors, so a new module's rules are found without either file
  * being told about it.
  */
@@ -30,24 +28,7 @@ import {
   validateExemptionRuleIds,
 } from "../src/core/rules.mjs"
 import * as index from "../src/index.mjs"
-
-function isRuleDescriptor(value) {
-  return (
-    value != null &&
-    typeof value === "object" &&
-    typeof value.id === "string" &&
-    typeof value.surface === "string" &&
-    typeof value.defaultSeverity === "string" &&
-    typeof value.description === "string"
-  )
-}
-
-function ruleArraysOf(namespace) {
-  return Object.values(namespace).filter(
-    value =>
-      Array.isArray(value) && value.length > 0 && value.every(isRuleDescriptor),
-  )
-}
+import { ruleArraysOf } from "./helpers/rule-arrays.mjs"
 
 const rulesFromIndex = ruleArraysOf(index).flat()
 

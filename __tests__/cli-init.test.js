@@ -232,6 +232,7 @@ describe("runInit --yes — update flow against an existing config", () => {
     write("components/widget/widget.tsx", "export const Widget = () => null")
 
     const code = await runInit(["--yes"], ctx())
+    expect(code).toBe(0)
     const config = readConfig()
     expect(config.paths.componentsDir).toBe("src/ui")
   })

@@ -49,7 +49,7 @@ function tsxSyntaxErrors(source) {
 // arrow is the LAST field, closed by the same two-line suffix.
 function spliceExampleBody(source, body) {
   return source.replace(
-    /(example: \([^)]*\) => \()\n[\s\S]*?\n(  \),\n\}\))/,
+    /(example: \([^)]*\) => \()\n[\s\S]*?\n( {2}\),\n\}\))/,
     (_m, head, tail) => `${head}\n${body}\n${tail}`,
   )
 }

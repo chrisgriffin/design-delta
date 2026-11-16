@@ -11,12 +11,21 @@ Four independent jobs, two of them required checks.
 
 `test_22`, `test_24` and `test_26` are three separate jobs rather than a
 `strategy.matrix` on one, because each calls the shared reusable workflow with
-its own `node_version` input. `test_24` and `test_26` run on push to `main`
-only: about 7 billed minutes per PR push for a version skew that has never
-differed from 22. The four fast checks share one `checks` job because GitHub
+its own `node_version` input. `test_24` and `test_26` run on a push to `main`
+or a manual run, never on a PR: about 7 billed minutes per PR push for a version skew that has never
+differed from 22. The fast checks share one `checks` job because GitHub
 bills every job rounded up to a whole minute and they did 66 seconds of work
-between them. The commands run cheapest-first as one shell block, so the
-first failure fails the job.
+between them.
+
+That job runs `npm run checks`, and nothing else: the chain lives once, in
+`package.json`'s `checks` script, run cheapest-first so the first failure
+fails the job. It was once written out in this workflow and two docs, and a
+dropped lint step went unnoticed in all three (#10). It deliberately does not
+run `npm run verify`, the local gate, which is `checks` then `npm test`: the
+suite already has its own job, `test_22`, and running it inside `checks` too
+would bill it twice on every PR. `__tests__/ci-workflow.test.js` pins both:
+the `checks` job's `run:` is the script call, and a PR runs the suite in
+exactly one job.
 
 ## Thin stubs
 

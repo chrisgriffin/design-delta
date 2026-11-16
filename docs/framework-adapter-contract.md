@@ -22,7 +22,7 @@ symmetric twin" — this one covers only the framework adapter.)
 **The adapter object itself** is
 `src/sources/<framework>/adapter.mjs`, registered in
 `src/sources/frameworks.mjs` and selected by the project's `code.framework`
-config key ([issue #117](https://github.com/chrisgriffin/design-delta/issues/117)):
+config key:
 `{ name, conventions: { componentFileExtension, nonComponentFileSuffixes },
 extractComponent, extractComponents, findComponentFiles, extractJsxComponent,
 extractJsxComponents }`. The shapes those functions return are documented
@@ -58,7 +58,7 @@ type ∈ boolean | string | number | enum | slot | function | unknown
 `name` is the declaration's own exported identifier when one was read, and
 `namedExport` says whether it is a NAMED export (`export const X`,
 `export function X`) rather than the file's default export — what a
-generated import of the component has to match (issue #453).
+generated import of the component has to match.
 
 `componentConfirmed` is the answer to a DIFFERENT question than `ok`: whether
 this file declares an exported component AT ALL, independent of whether its
@@ -66,8 +66,8 @@ props could be read. The distinction exists because the two failure modes
 need different treatment downstream — a component whose props are unreadable
 still belongs on the contract worklist; a file that declares no component
 (a re-export barrel, a constants module) does not, and adding it would invent
-authoring work. Collapsing the two into one `ok: false` was a real defect
-(issue #132): 21 of 100 components on a real design system were silently
+authoring work. Collapsing the two into one `ok: false` was a real defect:
+21 of 100 components on a real design system were silently
 absent from the coverage report because their props happened to be
 unreadable, and nothing distinguished that from "not a component."
 
@@ -194,8 +194,8 @@ Two reasons match nothing in this codebase at all. `multiple-returns` survives
 only for a branch with no nameable root. `dynamic-list` was RETIRED outright:
 a `.map(...)` child now withholds its parent's child list instead of declining
 the component, and a `.map(...)` as a whole returned expression is
-`unsupported-shape`, so no path could still produce it. [Issue #110](https://github.com/chrisgriffin/design-delta/issues/110)
-records why resolving that tail is deferred, likely permanently: it would
+`unsupported-shape`, so no path could still produce it. Resolving that tail is deferred, likely
+permanently: it would
 need symbolic execution of render paths, which a static walker cannot do
 without inventing answers.
 

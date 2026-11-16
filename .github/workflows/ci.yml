@@ -28,8 +28,10 @@ concurrency:
 
 jobs:
   # The fast checks run as one job, cheapest first, because GitHub bills each
-  # job rounded up to a whole minute and all four together take about one.
-  # `set -e` is implicit: the reusable workflow runs this as one shell block.
+  # job rounded up to a whole minute and all of them together take about one.
+  # The chain lives once, in package.json's `checks` script: add a step there
+  # and CI runs it. Never `npm run verify` here — that runs the suite too, and
+  # test_22 already does (docs/ci.md). __tests__/ci-workflow.test.js pins both.
   checks:
     permissions:
       contents: read
@@ -42,13 +44,7 @@ jobs:
       node_version: "22"
       claude_md_budget: "9500"
       docs_owed: ""
-      run: |
-        npx prettier --check .
-        bash scripts/ci/check-action.sh
-        bash scripts/ci/check-package.sh
-        node scripts/ci/check-schemas.mjs
-        node scripts/generate-config-reference.mjs --check
-        node scripts/generate-rules-reference.mjs --check
+      run: npm run checks
   test_22:
     permissions:
       contents: read
