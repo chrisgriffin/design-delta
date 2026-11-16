@@ -62,5 +62,8 @@
     "jest": "^30.4.2",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "minimatch@>=7 <12": "^11.0.1"
   }
 }
