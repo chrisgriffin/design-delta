@@ -84,8 +84,10 @@ design-delta mcp          # read-only MCP server: contracts and tokens for a cod
 
 `verify` is the one command a project's CI actually wires in: it needs no design
 tool (contract↔code parity only, D13) and fails on either an invalid contract or
-an error-severity finding from `audit` — `review`/`warn` findings are reported,
-never gating. It also runs the `lint` pass internally on every non-staged
+an error-severity finding from `audit`. By default `review`/`warn` findings are
+reported only; `--fail-on <error|warn|review|none>` moves that threshold, so
+`--fail-on warn` gates on `warn` too (see [`docs/cli.md`](./docs/cli.md#verify--the-composed-ci-gate-phase-2)).
+It also runs the `lint` pass internally on every non-staged
 invocation to compute the run's [health score](./docs/report-structure.md#health-score),
 which `--fail-below <0-100>` can gate on alongside severity; `lint` stays a
 separate command for reading those findings on their own.
