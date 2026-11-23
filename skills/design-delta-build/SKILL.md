@@ -35,20 +35,29 @@ One contract, given as a path to a `*.contract.json` file or as a component
 npx design-delta contracts --json
 ```
 
-The `contracts` array lists every contract the project has as
-`{ id, file, valid }`. Match the path or the `id` you were given.
+The `contracts` array lists, as `{ id, file, valid }`, every contract that
+validated. A contract that fails its schema or semantic check is **not** in
+that array: it appears only in `diagnostics`, under its `file`. So check
+`diagnostics` before deciding there is no contract:
 
-- **No match: stop.** Say there is no contract for that component. Do not
+- **Any entry in `diagnostics` naming this contract's file: stop.** Given a
+  path, match it against each diagnostic's `file`. Given an `id` that is not
+  in `contracts`, open each file the diagnostics name and read its `id`; the
+  one that carries yours is this contract. Report the diagnostics as they
+  are. An invalid contract is the fixed point every check compares against,
+  so nothing built on it can be verified.
+- **`valid: false` in `contracts`: stop**, the same way. It appears only when
+  two files declare the same `id` (a `duplicate-contract-id` diagnostic):
+  each one validated on its own, and which is this component's is a question
+  for whoever owns them.
+- **No match in `contracts` or `diagnostics`: stop.** Say there is no
+  contract for that component. Do not
   write one from the request and build against your own guess: a contract is
   a decision about the component's API, and a silently invented one makes the
   audit prove nothing. Point at
   [the authoring guide](../../docs/contract-authoring-guide.md) for writing
   one by hand, and at `design-delta scaffold`, which drafts one from code
   that already exists.
-- **`valid: false`, or any entry in `diagnostics` naming this contract's
-  file: stop.** Report the diagnostics as they are. An invalid contract is
-  the fixed point every check compares against, so nothing built on it can be
-  verified.
 
 ### 2. Read the contract and the project before writing anything
 
@@ -174,14 +183,29 @@ Three things make an empty list mean something:
   project's gate by default, and they are still findings. The target is none
   of any severity.
 
-For each finding: read the file it names, change **the code** so it matches
-the contract, and run the audit again. Repeat until the list is empty. The
-rule behind any `ruleId` is described in [rules.md](../../docs/rules.md).
+**Some of those findings are not the code's to clear.** Every finding carries
+a `side`. A `side: "design"` finding is about the design tool's component,
+and a `side: "spec"` finding other than `coverage/contract-only` is about the
+contract itself: `coverage/unfinished-contract` (its `_scaffold` keys),
+`coverage/design-missing` (its `sources.design` resolves to nothing),
+`components/intent-unverified` and `components/intent-stale` (its `intent`
+hash). No change to the code removes any of them, and the contract and the
+design tool are not yours to edit here. Set them aside as the **reported**
+list for step 7; do not loop on them. Everything else for this component is
+the **loop** list (`coverage/contract-only` among it: writing the file at
+`sources.code.path` clears it).
+
+For each finding on the loop list: read the file it names, change **the
+code** so it matches the contract, and run the audit again. Repeat until the
+loop list is empty, or until what is left is step 6's. The rule behind any
+`ruleId` is described in [rules.md](../../docs/rules.md).
 
 ### 6. When the code cannot match: stop, and say which kind it is
 
-Some findings cannot be cleared from the code side. There are two kinds, and
-they are reported differently.
+Some findings on step 5's loop list cannot be cleared from the code side.
+There are two kinds, and they are reported differently. (The spec-side and
+design-side findings step 5 set aside are neither: they go into the report
+as they are.)
 
 **A contract question.** The contract asks for something the code cannot
 truthfully do:
@@ -222,9 +246,11 @@ do not fix unrelated code under this task.
 ### 7. Report
 
 - **Created**: every file written or changed, one line each.
-- **Audit**: the command run, the number of findings for this component
-  (zero, or each one that remains with its `ruleId` and which of step 6's two
-  kinds it is), and whether any surface was skipped.
+- **Audit**: the command run, the number of loop-list findings left for this
+  component (zero, or each one that remains with its `ruleId` and which of
+  step 6's two kinds it is), each spec-side or design-side finding step 5
+  set aside with its `ruleId` and `side`, and whether any surface was
+  skipped.
 - **Gate**: the project's gate command and its result.
 - **Ambiguous**: everything in the contract you had to interpret, every
   `_scaffold` note, every contract question from step 6, and every file from
