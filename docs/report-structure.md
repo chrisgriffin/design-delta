@@ -182,8 +182,8 @@ a token the contract declares that no variable the design
 component binds maps to — component-level, from the `usedVars` field
 `ingest --bindings` merges onto the design component census. When the
 component binds a token that the declared token aliases at any depth,
-the finding stays (a component binds the declared token, not the one under
-it), and its message names the bound token (as a primitive when it aliases
+the finding stays ([ADR-005](./adr/ADR-005-primitive-binding-is-drift.md)),
+and its message names the bound token (as a primitive when it aliases
 nothing itself) and says to bind the declared token, with the bound token's
 id in `data.boundAliasTarget`. A snapshot
 without `usedVars` produces no design-side styles findings at all: the

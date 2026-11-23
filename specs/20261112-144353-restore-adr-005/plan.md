@@ -20,8 +20,8 @@
    the thing a record is for.
 2. **Historical links keep pointing where the history is.** Issues #684, #686, #697 and pull
    requests #685, #687, and the two comments the record cites, happened in the repo this
-   engine was copied from. They stay as links to that repo. Only references to *this
-   package* — the rule's owner, the ADR's own path — are renamed. A link rewritten to this
+   engine was copied from. They stay as links to that repo. Only references to _this
+   package_ — the rule's owner, the ADR's own path — are renamed. A link rewritten to this
    repo would 404 and would also claim the decision happened here.
 3. **The reason gets one home again.** `docs/report-structure.md` currently restates why the
    finding stays. The restatement is removed and replaced by a link, which is what the record's

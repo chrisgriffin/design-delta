@@ -20,6 +20,19 @@ So the engine ships an alias walk that deliberately removes no finding, with not
 why — the exact state ADR-005's own Context describes as the defect it was written to fix.
 This restores the record and every pointer to it. It changes no behaviour.
 
+## Build note (2026-11-23)
+
+- The Overview's premise was corrected on the issue before this build: the record was written in
+  the source two days after its 0.26.0 cut, so the rename dropped nothing and the README's
+  "four" was true until this change. The decision taken there: restore the record as first
+  written, which matches this engine's code (the alias diagnosis runs after the three #492
+  skips, not ahead of them; FR-4's "ahead of" clause is the later amendment and stays out).
+- The record names no person and links no private repo, since this repo is public: the source's
+  issue and PR numbers are kept as plain references to that history.
+- The citations go in the description and the four alias-walk comments (`buildAliasIndex`,
+  `expandThroughAliases`, `runDesignBindingsCheck` and the walk's call site), which is what the
+  success criteria count.
+
 ## User scenarios
 
 - A contributor reads the alias walk in `src/modules/styles.mjs` and the docblock points at
@@ -58,8 +71,7 @@ This restores the record and every pointer to it. It changes no behaviour.
 ## Success criteria
 
 - [ ] **Runnable:** `grep -q "design-delta's ADR-005" src/modules/styles.mjs` exits 0 — the rule
-      description cites the record again. It exits 1 on `develop` today: `grep -c "ADR-005"
-      src/modules/styles.mjs` prints 0.
+      description cites the record again. It exits 1 on `develop` today: `grep -c "ADR-005" src/modules/styles.mjs` prints 0.
 - [ ] `docs/adr/ADR-005-primitive-binding-is-drift.md` exists and carries the record's Context,
       Decision and Consequences with `status: accepted` and `date: 2026-10-26`.
 - [ ] `grep -c "ADR-005" src/modules/styles.mjs` prints 4 or more, covering the description and the four docblocks.
