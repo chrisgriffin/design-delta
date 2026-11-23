@@ -419,6 +419,7 @@ describe("rule and scaffold ADR citations (#12)", () => {
     expect(files).toEqual(
       expect.arrayContaining([
         join("skills", "design-delta", "SKILL.md"),
+        join("skills", "design-delta-author", "SKILL.md"),
         join("skills", "design-delta-build", "SKILL.md"),
         join("skills", "design-delta-doctor", "SKILL.md"),
       ]),

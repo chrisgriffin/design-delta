@@ -115,11 +115,14 @@ first, then the project's `design-delta.json` `_`-prefixed keys for local
 decisions. The stub carries no engine prose, so it never goes stale; this
 file versions with the engine, so it can't disagree with the installed CLI.
 
-**Building from a contract** is a sibling skill,
-[`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md): the
-procedure that takes a contract to code and then uses the audit above as the
-proof. `dock` writes its stub at `.claude/skills/design-delta-build/SKILL.md`
-the same way.
+**Writing a contract** and **building from one** are sibling skills.
+[`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)
+takes a request to a validated contract, asking rather than inventing where
+the request leaves the component's API open.
+[`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md) takes
+that contract to code and then uses the audit above as the proof. `dock`
+writes a stub for each, at `.claude/skills/design-delta-author/SKILL.md` and
+`.claude/skills/design-delta-build/SKILL.md`, the same way.
 
 Migrating an existing hand-written skill: delete every statement about
 engine behavior (commands, flags, rules, severities, snapshot semantics) in

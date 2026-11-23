@@ -123,12 +123,18 @@ engine's own instruction set, versioned with it. Skills inside
 triggers only, so engine behavior is never restated where it can go stale.
 The skill's own last section documents the stub and the migration path.
 
-A second skill,
-[`skills/design-delta-build/SKILL.md`](./skills/design-delta-build/SKILL.md),
-goes the other way: it builds a component from its contract, matching the
-project's existing components, and runs the audit until that component
-reports no findings. It never writes or edits a contract. `design-delta dock`
-lays a stub for it at `.claude/skills/design-delta-build/SKILL.md`. A third,
+Two more skills go the other way, from a request to code.
+[`skills/design-delta-author/SKILL.md`](./skills/design-delta-author/SKILL.md)
+writes a component's contract from a description, a design-snapshot
+component or existing code: it asks rather than invents wherever the request
+leaves the component's API open, binds only tokens the project has, and hands
+the validated contract on.
+[`skills/design-delta-build/SKILL.md`](./skills/design-delta-build/SKILL.md)
+builds the component from that contract, matching the project's existing
+components, and runs the audit until that component reports no findings. It
+never writes or edits a contract. `design-delta dock` lays a stub for each,
+at `.claude/skills/design-delta-author/SKILL.md` and
+`.claude/skills/design-delta-build/SKILL.md`. A fourth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

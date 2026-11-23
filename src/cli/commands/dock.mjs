@@ -1,8 +1,9 @@
 /**
  * dock.mjs — the `design-delta dock` subcommand (issue #221): scaffold
- * generic Claude Code artifacts into a consumer's own `.claude/` — a hook
- * and three skills — that wrap `verify --json` for agent self-correction and
- * link the consumer to this package's canonical skill and its build skill.
+ * generic Claude Code artifacts into a consumer's own `.claude/` — a hook,
+ * a verify skill and a linked stub per consumer-facing packaged skill — that
+ * wrap `verify --json` for agent self-correction and link the consumer to
+ * this package's canonical skill and each procedure skill beside it.
  *
  *   design-delta dock [--dir <path>] [--json]
  *
@@ -13,13 +14,13 @@
  * generated artifacts live in the CONSUMER repo (default `.claude/`, same
  * directory `init`'s suggested npm scripts already assume a project has).
  *
- * Four templates: the hook, the verify skill, and two linked stubs — one
- * pointing at the canonical audit skill, one at the build skill. The third
- * (issue #336), the audit skill's stub, is the one `init` also offers:
- * `renderSkillStubTemplate` and `writeTemplateFile` are exported for that —
- * `init` invokes `dock`'s own template + writer rather than growing a second
- * scaffold path, per the grooming note on #336. The fourth, the build
- * skill's stub, only `dock` writes.
+ * The templates: the hook, the verify skill, and the linked stubs — one
+ * pointing at the canonical audit skill, one at each skill `LINKED_SKILLS`
+ * names. The third (issue #336), the audit skill's stub, is the one `init`
+ * also offers: `renderSkillStubTemplate` and `writeTemplateFile` are exported
+ * for that — `init` invokes `dock`'s own template + writer rather than
+ * growing a second scaffold path, per the grooming note on #336. The
+ * `LINKED_SKILLS` stubs only `dock` writes.
  *
  * GENERIC ONLY — CLAUDE.md's non-negotiable rule. Every path, command, and
  * name in the templates below is either a literal `design-delta` CLI
@@ -32,7 +33,7 @@
  * preserve — same posture the deleted `codegen --write` took (issue #400). `dock`
  * is meant to be re-run after an engine upgrade to pick up template changes.
  *
- * The exception is the two linked stubs (issue #336; the build skill's stub
+ * The exception is the linked stubs (issue #336; each `LINKED_SKILLS` stub
  * follows the same rule for the same reason). `skills/design-delta/` is
  * the natural name a consumer's OWN hand-maintained skill occupies — unlike
  * `skills/design-delta-verify/` and `hooks/design-delta-verify.mjs`, which
@@ -65,18 +66,21 @@ const SKILL_RELATIVE_PATH = "skills/design-delta-verify/SKILL.md"
 // the packaged canonical skill (`skills/design-delta/SKILL.md` in this
 // package) so its name matches the canonical skill's own.
 export const SKILL_STUB_RELATIVE_PATH = "skills/design-delta/SKILL.md"
-// The second linked stub: the packaged contract-to-code skill
-// (`skills/design-delta-build/SKILL.md` in this package). Same shape and same
-// guard as the stub above — a pointer, never a copy of the procedure.
-export const BUILD_SKILL_STUB_RELATIVE_PATH =
-  "skills/design-delta-build/SKILL.md"
+// The other linked stubs: one per packaged procedure skill
+// (`skills/<name>/SKILL.md` in this package), in the order `dock` writes
+// them. Same shape and same guard as the stub above — a pointer, never a
+// copy of the procedure. Adding a name here is all a new skill's stub needs.
+export const LINKED_SKILLS = ["design-delta-build", "design-delta-author"]
+
+/** Where a packaged skill lives, in this package and under `--dir` alike. */
+export const skillRelativePath = name => `skills/${name}/SKILL.md`
 
 const PACKAGE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 
 /**
  * The literal string that identifies a file at `SKILL_STUB_RELATIVE_PATH` or
- * `BUILD_SKILL_STUB_RELATIVE_PATH` as one THIS package generated, and
- * therefore may regenerate. Both stub templates are built from this constant
+ * a `LINKED_SKILLS` path as one THIS package generated, and
+ * therefore may regenerate. Every stub template is built from this constant
  * so the marker and the text can never drift apart. A file at either path
  * lacking it is a consumer's own — skipped, never overwritten.
  */
@@ -210,29 +214,29 @@ after an engine upgrade. Delete that line to claim this file as your own:
 }
 
 /**
- * The generated stub for the packaged build skill. Its frontmatter
+ * The generated stub for one packaged procedure skill. Its frontmatter
  * `description` is READ from the packaged skill rather than restated here:
  * the description is what makes an agent reach for the skill, so a second
  * copy would be the one line of this stub that could go stale. Everything
  * else is the same pointer-plus-marker shape `renderSkillStubTemplate` has.
+ *
+ * @param {string} name a `LINKED_SKILLS` entry
  */
-export function renderBuildSkillStubTemplate() {
-  const packaged = readFileSync(
-    join(PACKAGE_ROOT, BUILD_SKILL_STUB_RELATIVE_PATH),
-    "utf8",
-  )
+export function renderPackagedSkillStubTemplate(name) {
+  const relative = skillRelativePath(name)
+  const packaged = readFileSync(join(PACKAGE_ROOT, relative), "utf8")
   const description = packaged.match(/^description: (.+)$/m)[1]
   return `---
-name: design-delta-build
+name: ${name}
 description: ${description}
 ---
 
-# design-delta build
+# ${name.replace(/^design-delta-/, "design-delta ")}
 
 This is a stub — the real procedure lives in the installed package and
 versions with it, so read it first and follow it:
 
-    node_modules/design-delta/${BUILD_SKILL_STUB_RELATIVE_PATH}
+    node_modules/design-delta/${relative}
 
 ${GENERATED_MARKER} — safe to overwrite, and
 refreshed by re-running \`dock\` after an engine upgrade. Delete that line
@@ -350,16 +354,16 @@ export function runDock(cmdArgv, ctx) {
     {
       relative: SKILL_STUB_RELATIVE_PATH,
       content: renderSkillStubTemplate(),
-      // One of the two guarded templates — see GENERATED_MARKER above.
+      // One of the guarded templates — see GENERATED_MARKER above.
       options: { requireMarker: GENERATED_MARKER },
     },
-    {
-      relative: BUILD_SKILL_STUB_RELATIVE_PATH,
-      content: renderBuildSkillStubTemplate(),
-      // Guarded like the stub above: this name is new in this version, so a
-      // project may already keep a skill of its own here.
+    // Guarded like the stub above: a project may already keep a skill of
+    // its own under any of these names.
+    ...LINKED_SKILLS.map(name => ({
+      relative: skillRelativePath(name),
+      content: renderPackagedSkillStubTemplate(name),
       options: { requireMarker: GENERATED_MARKER },
-    },
+    })),
   ]
 
   const files = templates.map(({ relative, content, options }) =>

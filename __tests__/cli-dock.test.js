@@ -23,8 +23,9 @@ import { dirname, join } from "node:path"
 
 import {
   GENERATED_MARKER,
-  renderBuildSkillStubTemplate,
+  LINKED_SKILLS,
   renderHookTemplate,
+  renderPackagedSkillStubTemplate,
   renderSkillStubTemplate,
   renderSkillTemplate,
   runDock,
@@ -63,7 +64,7 @@ function ctx(overrides = {}) {
 // ---------------------------------------------------------------------------
 
 describe("runDock", () => {
-  it("writes the hook and all three skills under the default .claude dir", () => {
+  it("writes the hook, the verify skill and every linked stub under the default .claude dir", () => {
     const code = runDock([], ctx())
     expect(code).toBe(0)
     expect(
@@ -77,6 +78,9 @@ describe("runDock", () => {
     )
     expect(
       existsSync(join(root, ".claude/skills/design-delta-build/SKILL.md")),
+    ).toBe(true)
+    expect(
+      existsSync(join(root, ".claude/skills/design-delta-author/SKILL.md")),
     ).toBe(true)
   })
 
@@ -127,6 +131,7 @@ describe("runDock --json", () => {
       },
       { path: ".claude/skills/design-delta/SKILL.md", action: "wrote" },
       { path: ".claude/skills/design-delta-build/SKILL.md", action: "wrote" },
+      { path: ".claude/skills/design-delta-author/SKILL.md", action: "wrote" },
     ])
 
     const secondRun = runJson(["--json"])
@@ -145,6 +150,10 @@ describe("runDock --json", () => {
         path: ".claude/skills/design-delta-build/SKILL.md",
         action: "up-to-date",
       },
+      {
+        path: ".claude/skills/design-delta-author/SKILL.md",
+        action: "up-to-date",
+      },
     ])
   })
 
@@ -157,6 +166,7 @@ describe("runDock --json", () => {
       "agent-config/skills/design-delta-verify/SKILL.md",
       "agent-config/skills/design-delta/SKILL.md",
       "agent-config/skills/design-delta-build/SKILL.md",
+      "agent-config/skills/design-delta-author/SKILL.md",
     ])
   })
 
@@ -299,34 +309,35 @@ describe("renderSkillStubTemplate", () => {
 })
 
 // ---------------------------------------------------------------------------
-// The build skill's linked stub — same shape as the stub above, pointing at
-// the packaged contract-to-code skill, with its trigger description read
+// The linked stub of each packaged procedure skill — same shape as the stub
+// above, pointing at the packaged skill, with its trigger description read
 // from that skill so the two cannot disagree.
 // ---------------------------------------------------------------------------
 
-const BUILD_STUB_PATH = ".claude/skills/design-delta-build/SKILL.md"
-const PACKAGED_BUILD_SKILL = join(
-  import.meta.dirname,
-  "../skills/design-delta-build/SKILL.md",
-)
+describe("the packaged procedure skills dock links", () => {
+  it("are the build and authoring skills", () => {
+    expect(LINKED_SKILLS).toEqual(["design-delta-build", "design-delta-author"])
+  })
+})
 
-describe("renderBuildSkillStubTemplate", () => {
-  it("declares frontmatter naming the build skill, with the packaged skill's own description", () => {
-    const stub = renderBuildSkillStubTemplate()
+describe.each(LINKED_SKILLS)("renderPackagedSkillStubTemplate(%s)", name => {
+  const stubPath = `.claude/skills/${name}/SKILL.md`
+  const packagedPath = join(import.meta.dirname, `../skills/${name}/SKILL.md`)
+
+  it("declares frontmatter naming the skill, with the packaged skill's own description", () => {
+    const stub = renderPackagedSkillStubTemplate(name)
     expect(stub.startsWith("---\n")).toBe(true)
     const frontmatter = stub.slice(4, stub.indexOf("\n---", 4))
-    expect(frontmatter).toMatch(/^name: design-delta-build$/m)
-    const packaged = readFileSync(PACKAGED_BUILD_SKILL, "utf8")
+    expect(frontmatter).toMatch(new RegExp(`^name: ${name}$`, "m"))
+    const packaged = readFileSync(packagedPath, "utf8")
     const [description] = packaged.match(/^description: .+$/m)
     expect(description.length).toBeGreaterThan("description: ".length)
     expect(frontmatter).toContain(description)
   })
 
   it("links to the packaged skill, carries the marker and no procedure of its own", () => {
-    const stub = renderBuildSkillStubTemplate()
-    expect(stub).toContain(
-      "node_modules/design-delta/skills/design-delta-build/SKILL.md",
-    )
+    const stub = renderPackagedSkillStubTemplate(name)
+    expect(stub).toContain(`node_modules/design-delta/skills/${name}/SKILL.md`)
     expect(stub).toContain(GENERATED_MARKER)
     // A pointer, not a copy: no command of the engine's is restated here.
     expect(stub).not.toMatch(/npx design-delta/)
@@ -336,26 +347,28 @@ describe("renderBuildSkillStubTemplate", () => {
   })
 
   it("leaves a consumer's own skill at that path untouched, reporting 'skipped'", () => {
-    const hand = "---\nname: design-delta-build\n---\n\nOur own build steps.\n"
-    const abs = join(root, BUILD_STUB_PATH)
+    const hand = `---\nname: ${name}\n---\n\nOur own steps.\n`
+    const abs = join(root, stubPath)
     mkdirSync(dirname(abs), { recursive: true })
     writeFileSync(abs, hand)
 
     const { out } = runJson(["--json"])
     expect(JSON.parse(out).files).toContainEqual({
-      path: BUILD_STUB_PATH,
+      path: stubPath,
       action: "skipped",
     })
     expect(readFileSync(abs, "utf8")).toBe(hand)
   })
 
   it("refreshes a stale generated stub at that path", () => {
-    const abs = join(root, BUILD_STUB_PATH)
+    const abs = join(root, stubPath)
     mkdirSync(dirname(abs), { recursive: true })
     writeFileSync(abs, `An older stub.\n\n${GENERATED_MARKER} — old wording.\n`)
 
     runJson(["--json"])
-    expect(readFileSync(abs, "utf8")).toBe(renderBuildSkillStubTemplate())
+    expect(readFileSync(abs, "utf8")).toBe(
+      renderPackagedSkillStubTemplate(name),
+    )
   })
 })
 
