@@ -65,7 +65,7 @@ import { parseFlags } from "../flags.mjs"
 // documented it as repeatable; teaching the shared parser that is a change to
 // every command's argument handling and does not belong in this slice, so the
 // honest move is to take one value and say so in `--help`.
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: ["--json"],
   value: ["--rule"],
 }

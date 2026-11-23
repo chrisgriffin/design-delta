@@ -30,7 +30,7 @@ import { resolvePaths, resolveRunConfig } from "../../core/config.mjs"
 import { loadContracts } from "../../spec/contracts.mjs"
 import { parseFlags } from "../flags.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: ["--json"],
   value: ["--dir"],
 }

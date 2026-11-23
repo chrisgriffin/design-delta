@@ -206,7 +206,7 @@ import {
 import { parseFlags } from "../flags.mjs"
 import { stagedFileScope } from "../staged.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: [
     "--components",
     "--tokens",

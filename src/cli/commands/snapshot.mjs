@@ -29,7 +29,7 @@ import { resolveFramework } from "../../sources/frameworks.mjs"
 import { readDesignSnapshot } from "../design-snapshot.mjs"
 import { parseFlags } from "../flags.mjs"
 
-const FLAG_SPEC = { boolean: ["--json"], value: [] }
+export const FLAG_SPEC = { boolean: ["--json"], value: [] }
 
 /**
  * Compute a `component:<id>` entity state for every loaded contract with a

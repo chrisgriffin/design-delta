@@ -40,7 +40,7 @@ import { parseFlags } from "../flags.mjs"
 import { matchComponentFiles, TITLE_PATTERN } from "./scaffold.mjs"
 import { toPosixRelative } from "../../core/paths.mjs"
 
-const FLAG_SPEC = { boolean: ["--json"], value: [], positional: true }
+export const FLAG_SPEC = { boolean: ["--json"], value: [], positional: true }
 
 function componentImpact(entity, config, root, bus) {
   const { files } = resolveFramework(config).findComponentFiles(config, {

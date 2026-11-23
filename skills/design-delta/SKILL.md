@@ -45,7 +45,7 @@ The short map:
 | `verify`                                              | the composed CI gate — invalid contract or gating finding fails it                                                    |
 | `lint`                                                | static token-system rules (separate from `verify`, never run by it)                                                   |
 | `report`                                              | render findings to artifacts (`md,terminal,sarif,pr-comment`)                                                         |
-| `init` / `dock`                                       | scaffold config / a Claude Code hook + skill into the consumer                                                        |
+| `init` / `dock`                                       | scaffold config / a Claude Code hook + skills into the consumer                                                       |
 | `gather` / `ingest`                                   | design-side census: `gather` prints a plan, `ingest` normalizes results                                               |
 | `scaffold` / `snapshot` / `movers` / `impact` / `map` | draft contracts; write the `isNew` baseline; diff since it; blast radius; ownership overview — **all code-side only** |
 | `mcp`                                                 | read-only MCP server over stdio: contracts + tokens for a coding agent, every answer version-stamped                  |
@@ -62,8 +62,9 @@ the generated [rules.md](../../docs/rules.md); what the engine deliberately
 does not check is in [deferred-rules.md](../../docs/deferred-rules.md).
 The load-bearing facts:
 
-- **Only `error`-severity findings gate** `verify`, `audit --check`, and
-  `lint` exit codes. `warn`/`review` are reported, never gating.
+- **By default only `error`-severity findings gate** `verify` and
+  `audit --check`. `warn`/`review` are reported; `verify --fail-on` can
+  lower the threshold so they gate too. `lint` reports and never gates.
 - A project can override any rule's severity (`rules` in config) or waive a
   specific entity (`exemptions`) — check the project's config before
   reasoning about why a finding does or doesn't fail a run.
@@ -113,6 +114,12 @@ file** (`node_modules/design-delta/skills/design-delta/SKILL.md`)
 first, then the project's `design-delta.json` `_`-prefixed keys for local
 decisions. The stub carries no engine prose, so it never goes stale; this
 file versions with the engine, so it can't disagree with the installed CLI.
+
+**Building from a contract** is a sibling skill,
+[`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md): the
+procedure that takes a contract to code and then uses the audit above as the
+proof. `dock` writes its stub at `.claude/skills/design-delta-build/SKILL.md`
+the same way.
 
 Migrating an existing hand-written skill: delete every statement about
 engine behavior (commands, flags, rules, severities, snapshot semantics) in

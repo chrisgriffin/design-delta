@@ -47,7 +47,7 @@ import { loadContracts } from "../../spec/contracts.mjs"
 import { loadProvider } from "../../providers/index.mjs"
 import { parseFlags } from "../flags.mjs"
 
-const FLAG_SPEC = { boolean: ["--tokens", "--bindings"], value: [] }
+export const FLAG_SPEC = { boolean: ["--tokens", "--bindings"], value: [] }
 
 /**
  * Run the subcommand. Returns the exit code; never calls `process.exit`, so

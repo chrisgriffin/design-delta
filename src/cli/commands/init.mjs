@@ -63,7 +63,7 @@ import { detectProject } from "../init-detect.mjs"
 import { parseFlags } from "../flags.mjs"
 import { listProviders } from "../../providers/index.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: ["--yes"],
 }
 
