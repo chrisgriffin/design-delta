@@ -69,11 +69,15 @@ export const SKILL_STUB_RELATIVE_PATH = "skills/design-delta/SKILL.md"
 // The other linked stubs: one per packaged procedure skill
 // (`skills/<name>/SKILL.md` in this package), in the order `dock` writes
 // them. Same shape and same guard as the stub above — a pointer, never a
-// copy of the procedure. Adding a name here is all a new skill's stub needs.
+// copy of the procedure. Adding a name here writes its stub, and two other
+// files pin this list and change with it: the procedure-skill loop and the
+// stub-count floor in `scripts/ci/check-package.sh`, and the `LINKED_SKILLS`
+// list and the written paths `__tests__/cli-dock.test.js` expects.
 export const LINKED_SKILLS = [
   "design-delta-build",
   "design-delta-author",
   "design-delta-refresh",
+  "design-delta-resolve",
 ]
 
 /** Where a packaged skill lives, in this package and under `--dir` alike. */
@@ -279,7 +283,9 @@ function writeFile(fs, path, content) {
  * @param {object} fs injectable `node:fs`-shaped object
  * @param {string} root the project root the `dir` is resolved against
  * @param {string} dir the `--dir` value (or default), as given
- * @param {string} relative one of the `*_RELATIVE_PATH` constants above
+ * @param {string} relative the path under `dir`: one of the
+ *   `*_RELATIVE_PATH` constants above, or `skillRelativePath(name)` for a
+ *   `LINKED_SKILLS` stub
  * @param {string} content the rendered template
  * @param {{requireMarker?: string}} [options]
  * @returns {{path: string, action: "wrote" | "up-to-date" | "skipped"}}

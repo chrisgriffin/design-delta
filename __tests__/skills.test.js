@@ -139,7 +139,7 @@ function problems(skill) {
 }
 
 describe("the packaged skills", () => {
-  it("ships the audit, authoring, build, doctor and refresh skills", () => {
+  it("ships the audit, authoring, build, doctor, refresh and resolve skills", () => {
     expect(SKILLS.map(skill => skill.name)).toEqual(
       expect.arrayContaining([
         "design-delta",
@@ -147,6 +147,7 @@ describe("the packaged skills", () => {
         "design-delta-build",
         "design-delta-doctor",
         "design-delta-refresh",
+        "design-delta-resolve",
       ]),
     )
   })

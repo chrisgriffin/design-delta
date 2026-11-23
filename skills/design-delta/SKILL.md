@@ -126,7 +126,10 @@ the request leaves the component's API open.
 [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md) takes
 that contract to code and then uses the audit above as the proof.
 [`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md)
-refreshes the design snapshot. `dock` writes a stub for each under
+refreshes the design snapshot, and
+[`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
+works a project's whole list of findings down, sorting each by who can clear
+it. `dock` writes a stub for each under
 `.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about

@@ -217,14 +217,14 @@ done
 [ "$FAILED_STUBS" -eq 0 ] || exit 1
 # Each procedure skill `dock` links must have its stub written and its
 # packaged file present: a stub that was never written links nothing to check.
-for NAME in design-delta-build design-delta-author design-delta-refresh; do
+for NAME in design-delta-build design-delta-author design-delta-refresh design-delta-resolve; do
   PACKAGED="node_modules/design-delta/skills/$NAME/SKILL.md"
   if ! grep -qF "$PACKAGED" "$DOCK_DIR/skills/$NAME/SKILL.md" 2>/dev/null || [ ! -f "$PACKAGED" ]; then
     echo "::error::dock did not write a $NAME stub linking the packaged skills/$NAME/SKILL.md" >&2
     exit 1
   fi
 done
-if [ "$STUB_COUNT" -lt 4 ]; then
+if [ "$STUB_COUNT" -lt 5 ]; then
   echo "::error::dock wrote $STUB_COUNT linked stub(s); expected one per consumer-facing skill" >&2
   exit 1
 fi
