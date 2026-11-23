@@ -22,6 +22,11 @@ it, not every field in isolation.
 Validate what you write with `design-delta contracts` — see
 [Validating what you wrote](#validating-what-you-wrote) at the end.
 
+An agent writing a contract follows the packaged skill
+[`skills/design-delta-author/SKILL.md`](../skills/design-delta-author/SKILL.md):
+the procedure for getting from a request to a contract, including what to ask
+rather than decide. This guide is the reference that procedure points at.
+
 ## Start from `scaffold`, not a blank file
 
 Before hand-authoring, run `design-delta scaffold <Component>` (or
@@ -586,11 +591,13 @@ engine never learns a design tool's own addressing vocabulary — Figma's
 not by `contract.schema.json`. An absent `sources.design` declares no design
 counterpart, which is itself a checkable fact — not an error.
 
-**This release checks contract↔code only** (ADR-001 D13/D15). A
-`sources.design` block is accepted and stored today, but nothing yet reads
-it to check contract↔design parity — that lands in Phase 5, post-release.
-Authoring it now is not wasted: the field is already the right shape for
-when that check exists.
+**The design side is checked only when a provider is configured and a
+snapshot exists.** With `design.provider` set and `design-components.json`
+written by `ingest`, `audit` resolves each contract's `sources.design`
+against that snapshot and compares the contract's props to the design
+component's — see the `audit` section of [`docs/cli.md`](./cli.md).
+Without both, a `sources.design` block is accepted and stored, and nothing
+reads it.
 
 ## `invalidVariantCombinations` — checked on the design side
 

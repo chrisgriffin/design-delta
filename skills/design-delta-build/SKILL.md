@@ -54,10 +54,10 @@ that array: it appears only in `diagnostics`, under its `file`. So check
   contract for that component. Do not
   write one from the request and build against your own guess: a contract is
   a decision about the component's API, and a silently invented one makes the
-  audit prove nothing. Point at
-  [the authoring guide](../../docs/contract-authoring-guide.md) for writing
-  one by hand, and at `design-delta scaffold`, which drafts one from code
-  that already exists.
+  audit prove nothing. Writing one is the sibling skill
+  [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)
+  (`design-delta-author`): it takes the request to a validated contract,
+  asking what the request leaves open, and hands back here.
 
 ### 2. Read the contract and the project before writing anything
 
@@ -114,7 +114,7 @@ contract becomes something in the code, and nothing else does:
 | `code: "none"` on a prop                               | **no prop.** A design-only axis: realize it the way the styles say (below), never as a passed value                                              |
 | `design: "none"`, or any other `design` marker         | an ordinary prop; `design` markers describe the design tool's side and change nothing in code                                                    |
 | an `anatomy` node with `element`                       | that element, at that place in the tree; `children` gives the order                                                                              |
-| `codeClass`                                            | that class on that element                                                                                                                       |
+| `codeClass`                                            | that class on that element, and a rule for it in the stylesheet: the audit reports a node it finds no rule for (`styles/element-unmapped`)       |
 | `content: { "$prop": "x" }`                            | that element renders prop `x`                                                                                                                    |
 | `presentIf: "x"`                                       | that element renders only when prop `x` is set                                                                                                   |
 | `attributes`                                           | each attribute, with that literal value, on that element                                                                                         |
@@ -170,7 +170,7 @@ component. Take from `findings` every entry whose `entity` is the contract's
 findings. Leave every other finding alone: it predates you, and fixing it is
 a different task.
 
-Three things make an empty list mean something:
+Four things make an empty list mean something:
 
 - **`skipped`**: if the payload has a `skipped` entry for `components` or
   `anatomy`, that surface did not run and the component is
@@ -182,6 +182,13 @@ Three things make an empty list mean something:
 - **Every severity counts.** `warn` and `review` findings do not fail the
   project's gate by default, and they are still findings. The target is none
   of any severity.
+- **Shorthands are not compared.** A token written inside a shorthand
+  declaration (`background: var(…)`, `border: 1px solid var(…)`) does not say
+  which property it satisfies, so the audit stays silent about that binding
+  rather than guess, even when the token is the wrong one. Write the longhand
+  the contract's property names (`background-color` for `background`) where
+  the project's stylesheets allow it; where they do not, check each such
+  binding against the contract by eye and say so in the report.
 
 **Some of those findings are not the code's to clear.** Every finding carries
 a `side`. A `side: "design"` finding is about the design tool's component,
@@ -271,7 +278,9 @@ project's gate then reports.
 
 ## What this does not cover
 
-- **Writing or changing a contract.** That is authoring:
+- **Writing or changing a contract.** That is the authoring skill,
+  [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md);
+  what each contract construct means is in
   [contract-authoring-guide.md](../../docs/contract-authoring-guide.md).
 - **The design tool.** Nothing here creates or edits a design-tool component,
   and a design-side finding (`side: "design"`) for the component is reported,
@@ -283,7 +292,11 @@ project's gate then reports.
 - **New tokens.** A value with no token is a contract question or a token
   task, never a literal in the stylesheet.
 - **Visual correctness.** A clean audit says the code binds what the contract
-  declares. It does not say the result looks right.
+  declares. It does not say the result looks right. The complement is a
+  visual before/after check: render the component in each of its variants
+  and states, look at it, and for an update compare it against how it
+  rendered before the change. Use whatever this project has for that; say in
+  the report whether it was done.
 
 ## Hard limits
 

@@ -215,12 +215,16 @@ for GENERATED in "$DOCK_DIR"/skills/*/SKILL.md; do
   done < <(grep -oE 'node_modules/design-delta/skills/[A-Za-z0-9_./-]+' "$GENERATED" || true)
 done
 [ "$FAILED_STUBS" -eq 0 ] || exit 1
-BUILD_SKILL="$PKG_DIR/skills/design-delta-build/SKILL.md"
-if ! grep -qF "node_modules/design-delta/skills/design-delta-build/SKILL.md" "$DOCK_DIR/skills/design-delta-build/SKILL.md" 2>/dev/null || [ ! -f "$BUILD_SKILL" ]; then
-  echo "::error::dock did not write a build-skill stub linking the packaged skills/design-delta-build/SKILL.md" >&2
-  exit 1
-fi
-if [ "$STUB_COUNT" -lt 2 ]; then
+# Each procedure skill `dock` links must have its stub written and its
+# packaged file present: a stub that was never written links nothing to check.
+for NAME in design-delta-build design-delta-author; do
+  PACKAGED="node_modules/design-delta/skills/$NAME/SKILL.md"
+  if ! grep -qF "$PACKAGED" "$DOCK_DIR/skills/$NAME/SKILL.md" 2>/dev/null || [ ! -f "$PACKAGED" ]; then
+    echo "::error::dock did not write a $NAME stub linking the packaged skills/$NAME/SKILL.md" >&2
+    exit 1
+  fi
+done
+if [ "$STUB_COUNT" -lt 3 ]; then
   echo "::error::dock wrote $STUB_COUNT linked stub(s); expected one per consumer-facing skill" >&2
   exit 1
 fi
