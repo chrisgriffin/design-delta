@@ -54,7 +54,9 @@ npx design-delta audit --json
 ```
 
 Save the document somewhere outside the project's tracked files; step 7
-compares against it. Then read its `provenance`:
+compares against it. Copy `design-components.json` and `design-tokens.json`
+(under `paths.snapshotDir`) aside with it, as they are now: step 6 restores
+one of them if an ingest has to be re-run. Then read its `provenance`:
 
 | `provenance` says                              | Means                                                                                      |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -66,6 +68,9 @@ compares against it. Then read its `provenance`:
 
 The two snapshots (`design-components.json` and `design-tokens.json`, under
 `paths.snapshotDir`) are dated separately and refreshed by separate passes.
+The bindings pass is not dated at all: `ingest --bindings` merges into
+`design-components.json` and leaves its `provenance` as it was, so that date
+is the components pass's, never the bindings pass's.
 
 **Compare that age to the design source, if you can.** If the session's
 design-tool tools can say when the design file last changed, or list its
@@ -96,14 +101,24 @@ Run each chosen pass's `gather` and read the plan: `tool` at the top, and a
 `tool` on each target where targets differ. Those names are the provider's;
 this file does not list them, because the plan is where they live.
 
+Check `targets` on **each** pass's plan, not just the components plan from
+step 1. The passes do not draw on the same addresses, so one plan can be empty
+while another is not. A pass whose plan has `"targets": []` has nothing to
+gather: do not run its `ingest` (with no files it exits `1`), and report it
+under "Not run" with that reason.
+
 For each name, check the session actually has that tool. Then:
 
 - **All present**: carry on.
 - **Some missing**: run the passes whose tools you have, and report each pass
-  you could not run, naming the tool it needs. A components-only ingest keeps
-  the bindings pass's fields from the previous snapshot rather than dropping
-  them, so a partial refresh is safe; it is also partial, and the report has
-  to say which half is still at the old date.
+  you could not run, naming the tool it needs. A components-only ingest
+  carries the bindings pass's fields forward from the previous snapshot, but
+  only for components that are in the new census. A component missing from
+  it (a skipped file, an incomplete response) loses those fields, and nothing
+  but a bindings pass puts them back. So a components-only refresh is safe
+  only when its ingest skipped nothing and `bindingsDropped` is `0` (step 6);
+  either way it is partial, and the report has to say the bindings-pass
+  fields were not refreshed.
 - **None present**: stop. Report the tools the plans name and that this
   session has none of them. The refresh needs a session connected to the
   design tool.
@@ -117,9 +132,12 @@ a design system with those parts missing.
 
 For every target in the plan:
 
-1. Call the target's tool with exactly its `args`. Where a target carries a
-   `fileUrl`, that file has to be the one the design tool has open before the
-   call.
+1. Call the target's `tool` (or, where the target names none, the plan's
+   `tool`) with exactly its `args`. Where a target names a file to open, as
+   `fileUrl` on the target or `args.fileUrl` in its arguments, that file has
+   to be the one the design tool has open before the call: a tool that reads
+   the open file returns another file's data under this target's `fileKey`,
+   and `ingest` accepts it.
 2. Write one JSON file at the target's `outputPath`, in this shape:
 
 ```
@@ -167,18 +185,29 @@ payload:
 - `counts.filesIngested` against the number of files you passed, and
   `skipped`, which names each file left out and why. A skipped file means the
   snapshot was written **without** it. Fix the file (the reason says what is
-  wrong with it) and run the same `ingest` again with all of that pass's
-  files, not just the fixed one: each run writes the whole snapshot from the
-  files it is given.
+  wrong with it), then run that pass's `ingest` again with all of its files,
+  not just the fixed one. How depends on the pass:
+  - **components**: the first run already wrote a census without the skipped
+    file's components, and dropped their bindings-pass fields with them. A
+    re-run carries forward from that damaged snapshot, so first put back the
+    `design-components.json` you copied aside in step 2, then re-run. If you
+    cannot put it back, the bindings pass has to run after this one.
+  - **tokens**: each run writes the whole snapshot from the files it is
+    given; re-run it.
+  - **bindings**: each run merges into the existing `design-components.json`
+    rather than writing it whole; re-run it, after the components pass if
+    that one was re-run too.
 - `counts.bindingsCarriedForward`: on a components-only ingest, how many
   components kept their bindings-pass fields from the previous snapshot.
   Those fields are still at their old date.
 - `counts.bindingsDropped`: previous bindings records whose component is not
   in the new census. Either the component was removed from the design file,
   or the components response was incomplete. Check which before going on.
+  Their bindings-pass fields are gone from the snapshot; if the component is
+  still in the design file, the bindings pass has to run to put them back.
 
-Exit `1` writes nothing. The message says why: no files given, no census for
-a bindings pass to merge onto, or a snapshot that failed its own schema.
+Exit `1` writes nothing, and the previous snapshot stands. The message says
+why; report it as it is.
 
 ### 7. Audit again, and compare
 
@@ -187,23 +216,39 @@ npx design-delta audit --json
 ```
 
 First check the refresh took: `provenance` now shows the new `gatheredAt` for
-each snapshot you refreshed, and no `normalizationStale`. Then read `skipped`.
-A pass you did not run leaves its reason there, and that is expected: after a
-components-only refresh, `skipped.designAnatomy` says no component carries a
-layer tree and names the bindings pass. Each such entry belongs under "Not
-run" in the report. An entry for a pass you did run means that pass's
-snapshot did not load; go back to step 6.
+each snapshot a components or tokens pass refreshed, and no
+`normalizationStale`. A bindings pass changes no `provenance`, so it cannot
+be checked this way; its evidence is step 6's ingest output. Then read
+`skipped`:
 
-Then compare the findings with step 2's, matching on `ruleId` and `entity`
-together. Only the design side should have moved: findings with
-`"side": "design"`, the rules `coverage/design-only` and
-`coverage/design-missing`, and the `tokens` rules whose name starts with
-`design-`. For each one that appeared and each one that disappeared,
+- `skipped.design` or `skipped.designTokens` means that snapshot did not
+  load: the components snapshot, or the tokens snapshot. If that pass ran, go
+  back to step 6.
+- `skipped.designBindings` and `skipped.designAnatomy` can appear on a
+  healthy run. `designBindings` counts declared bindings the comparison did
+  not reach; `designAnatomy` says no component carries a layer tree, which
+  is expected after a components-only refresh, and can stay after a bindings
+  pass whose responses carry no layer tree. Report them; neither means a
+  snapshot failed to load, and neither is a reason to re-ingest.
+
+A pass you did not run belongs under "Not run" in the report, with whatever
+`skipped` says about it.
+
+Then compare the findings with step 2's, matching on `ruleId`, `entity`,
+`side` and `data` together (`message` where a finding has no `data`).
+`ruleId` and `entity` alone are not unique: one rule can fire several times
+on one component, once per prop, with the prop in `data`, and a pair that
+lost one prop and gained another would read as no change. Only the design
+side should have moved: findings with `"side": "design"`, the rules
+`coverage/design-only` and `coverage/design-missing`, the `tokens` rules
+whose name starts with `design-`, and `tokens/code-token-undesigned`, which
+is `side: "code"` but fires only under groups the design token snapshot
+covers, so a tokens refresh moves it. For each one that appeared and each one that disappeared,
 say which and, where the snapshot shows it, why (a component added to the
 design file, a variant renamed, a variable's value changed).
 
-A code-side finding that changed between the two audits did not come from
-the refresh. Something else in the project moved while you worked; report it
+Any other code-side finding that changed between the two audits did not
+come from the refresh. Something else in the project moved while you worked; report it
 separately.
 
 ### 8. Report
@@ -213,12 +258,13 @@ separately.
   session lacks, a response that could not be saved whole, a call that
   errored). "None" is a valid entry; leaving the section out is not.
 - **Age**: each snapshot's date before and after, and what the comparison
-  with the design source in step 2 showed, or that it could not be made.
+  with the design source in step 2 showed, or that it could not be made. For
+  a bindings pass, that it ran and when; it has no date in the snapshot.
 - **Ingest**: per pass, files given, files ingested, each skipped file with
   its reason, and the carried-forward and dropped counts.
 - **What changed on the design side**: findings that appeared and findings
-  that disappeared, by `ruleId` and `entity`, and the design-side counts
-  before and after.
+  that disappeared, by `ruleId`, `entity` and what in `data` tells them
+  apart, and the design-side counts before and after.
 - **Files changed**: the snapshot files written. They are uncommitted;
   committing them follows the project's own workflow.
 
