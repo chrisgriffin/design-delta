@@ -191,7 +191,7 @@ npx design-delta report
 A real codebase can falsify claims a unit suite structurally cannot, because
 the suite writes its own inputs. Check each one:
 
-- **Determinism** (ADR-001's central claim). Run the audit twice against an
+- **Determinism** (the central claim of design-delta's ADR-001). Run the audit twice against an
   unchanged tree and byte-compare the two JSON documents; do the same for
   `report --no-timestamp`, which exists for exactly this. Any difference is
   a bug — filesystem or Map iteration order leaking into output is the

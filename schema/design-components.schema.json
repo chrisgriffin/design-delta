@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://chrisgriffin.io/schemas/design-delta/design-components.schema.json",
   "title": "design-delta design-side component snapshot",
-  "description": "One of D7's two design-side snapshot files (`design-components.json`), written by `design-delta ingest` from a provider's raw gather envelope, read by `audit`/`verify`. Provider-agnostic (ADR-001 D12) — a census unit is 'the published component,' matched by `nodeId`, whatever tool produced it. Every snapshot is optional and degrades like missing if invalid (ADR-001 D7); this file is never hand-authored.",
+  "description": "One of D7's two design-side snapshot files (`design-components.json`), written by `design-delta ingest` from a provider's raw gather envelope, read by `audit`/`verify`. Provider-agnostic (design-delta's ADR-001 D12) — a census unit is 'the published component,' matched by `nodeId`, whatever tool produced it. Every snapshot is optional and degrades like missing if invalid (design-delta's ADR-001 D7); this file is never hand-authored.",
   "type": "object",
   "additionalProperties": false,
   "patternProperties": {
@@ -16,7 +16,7 @@
     },
     "components": {
       "type": "array",
-      "description": "One entry per PUBLISHED component, across every configured design file (ADR-003: census scope is the union of every loaded contract's `sources.design.fileKey` — a project addressing several files still gets exactly one of this snapshot, ADR-001 D7). Census unit is a `COMPONENT_SET` or a variant-less `COMPONENT`, never a variant child.",
+      "description": "One entry per PUBLISHED component, across every configured design file (design-delta's ADR-003: census scope is the union of every loaded contract's `sources.design.fileKey` — a project addressing several files still gets exactly one of this snapshot, design-delta's ADR-001 D7). Census unit is a `COMPONENT_SET` or a variant-less `COMPONENT`, never a variant child.",
       "items": {
         "$ref": "#/$defs/designComponent"
       }
@@ -27,7 +27,7 @@
       "patternProperties": {
         "^_": {}
       },
-      "description": "When and how this snapshot was gathered (issue #389) — kept from the raw envelopes by `ingest`, never from the clock, so a report can state whether it rests on a fresh gather or a months-old committed file. Absent on a snapshot written before this field existed.",
+      "description": "When and how this snapshot was gathered — kept from the raw envelopes by `ingest`, never from the clock, so a report can state whether it rests on a fresh gather or a months-old committed file. Absent on a snapshot written before this field existed.",
       "properties": {
         "gatheredAt": {
           "type": "string",
@@ -44,7 +44,7 @@
         },
         "engineVersion": {
           "type": "string",
-          "description": "The design-delta version that normalized this snapshot (issue #458). Normalization runs at `ingest`, so stored values are only as current as this engine; `audit` compares it against the provider's `normalizationSince`. Absent on a snapshot written before 0.19.0."
+          "description": "The design-delta version that normalized this snapshot. Normalization runs at `ingest`, so stored values are only as current as this engine; `audit` compares it against the provider's `normalizationSince`. Absent on a snapshot written before 0.19.0."
         },
         "files": {
           "type": "integer",
@@ -62,7 +62,7 @@
         "^_": {}
       },
       "required": ["name"],
-      "description": "One node of a design component's layer tree, in the engine's own vocabulary — never a design tool's raw node shape (ADR-001 D12). A contract's `anatomy` node is compared against this: by NAME (or the node's `designLayer`, when the two differ) and by `type`.",
+      "description": "One node of a design component's layer tree, in the engine's own vocabulary — never a design tool's raw node shape (design-delta's ADR-001 D12). A contract's `anatomy` node is compared against this: by NAME (or the node's `designLayer`, when the two differ) and by `type`.",
       "properties": {
         "name": {
           "type": "string",
@@ -109,15 +109,15 @@
         "fileKey": {
           "type": "string",
           "minLength": 1,
-          "description": "The design file this component was gathered from — the provider's own addressing vocabulary, opaque to the rest of the engine (ADR-001 D12). Combined with `nodeId`, the full join key against a contract's `sources.design`."
+          "description": "The design file this component was gathered from — the provider's own addressing vocabulary, opaque to the rest of the engine (design-delta's ADR-001 D12). Combined with `nodeId`, the full join key against a contract's `sources.design`."
         },
         "nodeId": {
           "type": "string",
-          "description": "Canonical, colon-separated (ADR-003: both separators accepted at ingest, normalized to `:` before this is written) — the join key against a contract's `sources.design.nodeId`, never `name`."
+          "description": "Canonical, colon-separated (design-delta's ADR-003: both separators accepted at ingest, normalized to `:` before this is written) — the join key against a contract's `sources.design.nodeId`, never `name`."
         },
         "name": {
           "type": "string",
-          "description": "Display name only — never the match key (ADR-003: name-based matching is measured evidence of mispairing on a real project)."
+          "description": "Display name only — never the match key (design-delta's ADR-003: name-based matching is measured evidence of mispairing on a real project)."
         },
         "type": {
           "enum": ["COMPONENT_SET", "COMPONENT"],
@@ -125,7 +125,7 @@
         },
         "unit": {
           "enum": ["variant-set", "component"],
-          "description": "What kind of census unit this is, in the engine's own vocabulary (issue #658): a `variant-set`'s gathered `layers` children are its variants, each a whole component; a `component`'s are its own layers. Derived from `type` at ingest, so it never disagrees with it; absent on a snapshot written before it, where `audit` derives the same answer itself."
+          "description": "What kind of census unit this is, in the engine's own vocabulary: a `variant-set`'s gathered `layers` children are its variants, each a whole component; a `component`'s are its own layers. Derived from `type` at ingest, so it never disagrees with it; absent on a snapshot written before it, where `audit` derives the same answer itself."
         },
         "variantProperties": {
           "type": "object",
@@ -137,7 +137,7 @@
         },
         "variantCombinations": {
           "type": "array",
-          "description": "Which variant combinations this component set actually PUBLISHES — one entry per combination, each a full `variant property name -> value` assignment (issue #403). Distinct from `variantProperties`, which says only which options each property offers: the product of those options is what a contract IMPLIES, this is what the design tool enumerates. Written by the bindings pass, which reads the one gather surface that returns a set's variant children; ABSENT (never `[]`) when that pass has not run or the component has no variants, so a reader can tell 'not gathered' from 'gathered, none'.",
+          "description": "Which variant combinations this component set actually PUBLISHES — one entry per combination, each a full `variant property name -> value` assignment. Distinct from `variantProperties`, which says only which options each property offers: the product of those options is what a contract IMPLIES, this is what the design tool enumerates. Written by the bindings pass, which reads the one gather surface that returns a set's variant children; ABSENT (never `[]`) when that pass has not run or the component has no variants, so a reader can tell 'not gathered' from 'gathered, none'.",
           "items": {
             "type": "object",
             "minProperties": 1,
@@ -153,7 +153,7 @@
         },
         "layers": {
           "$ref": "#/$defs/designLayer",
-          "description": "This component's own layer tree, normalized into the engine's node vocabulary, when the provider's gather surface reports it (issue #402) — what `anatomy/*` compares a contract's declared anatomy against on the design side. Absent means the tree was never gathered, which is never reported as drift."
+          "description": "This component's own layer tree, normalized into the engine's node vocabulary, when the provider's gather surface reports it — what `anatomy/*` compares a contract's declared anatomy against on the design side. Absent means the tree was never gathered, which is never reported as drift."
         },
         "rawProps": {
           "type": "object",
@@ -165,7 +165,7 @@
         },
         "treeHash": {
           "type": "string",
-          "description": "Deterministic hash of this component's normalized tree (ADR-001 D6) — hashed Node-side by `ingest`, never inside a design tool's own sandbox."
+          "description": "Deterministic hash of this component's normalized tree (design-delta's ADR-001 D6) — hashed Node-side by `ingest`, never inside a design tool's own sandbox."
         }
       }
     }
