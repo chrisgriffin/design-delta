@@ -250,7 +250,7 @@ separately.
 ## How a consumer links this file
 
 Claude Code does not discover skills inside `node_modules`. `design-delta
-dock` writes a stub at `.claude/skills/design-delta-refresh/SKILL.md` that
-points here, the same way it links the other packaged skills; the stub
+init` and `design-delta dock` each write a stub at `.claude/skills/design-delta-refresh/SKILL.md` that
+points here, the same way they link the other packaged skills; the stub
 carries no procedure of its own, so it cannot disagree with the installed
 version.

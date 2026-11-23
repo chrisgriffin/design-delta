@@ -3,7 +3,7 @@
  * #98/#102/#103/#104): runs every implemented contract↔code check end to
  * end.
  *
- *   design-delta audit [--components] [--tokens] [--styles] [--anatomy] [--code-only] [--staged] [--json] [--check] [--config <path>]
+ *   design-delta audit [--components] [--tokens] [--styles] [--anatomy] [--code-only] [--staged] [--contract <id>] [--json] [--check] [--config <path>]
  *
  * Four independent surfaces exist so far:
  *   - **components** (Phase 1, #98): load contracts, extract the code-side
@@ -78,6 +78,14 @@
  *     again: `designTokenCensus` is a project-wide value census, never
  *     staged-scoped, so staging one component would still report every
  *     other untracked design value regardless of what changed.
+ *
+ * `--contract <id>` scopes the REPORT to one contract's component: `findings`
+ * and `decided` keep only the entries `contractScope` matches. It is applied
+ * last, to the finished lists, so every surface still runs over the whole
+ * project and the scoped answer is the full run's answer for that component,
+ * never a recomputed one. The project-wide totals move to `scope`, and
+ * `--check` gates on the list the run shows. An id that is not a loaded
+ * contract is fatal: a typo must not read as a clean component.
  *
  * `--code-only` skips the design side entirely (ADR-003 Phase 5.1/5.3) — no
  * provider load, no snapshot read, `coverage/design-only`/`coverage/design-
@@ -217,7 +225,26 @@ export const FLAG_SPEC = {
     "--json",
     "--check",
   ],
-  value: [],
+  value: ["--contract"],
+}
+
+/**
+ * The predicate `--contract <id>` filters with: a finding belongs to a
+ * contract's component when its `entity` is the contract's id, one of its
+ * elements (`<id>.<element>`), or a file its `sources.code` names.
+ *
+ * @param {{id: string, contract: object}} entry a loaded contract
+ * @returns {(finding: {entity?: string}) => boolean}
+ */
+export function contractScope({ id, contract }) {
+  const files = new Set(
+    Object.values(contract?.sources?.code || {}).filter(
+      value => typeof value === "string",
+    ),
+  )
+  return ({ entity }) =>
+    typeof entity === "string" &&
+    (entity === id || entity.startsWith(`${id}.`) || files.has(entity))
 }
 
 // The rules a `--staged` run does not evaluate at all, and the reason it
@@ -308,6 +335,11 @@ function renderHuman(result, { componentsDirLabel, tokensFileLabel }) {
     )
   }
   lines.push(`design-delta audit: ${headerParts.join("; ")}`)
+  if (result.scope) {
+    lines.push(
+      `  scoped to contract "${result.scope.contract}": ${result.findings.length} of ${result.scope.findings} finding(s), ${result.decided.length} of ${result.scope.exempted} exempted`,
+    )
+  }
   const parity = result.counts.tokenParity
   if (parity) {
     lines.push(
@@ -431,6 +463,29 @@ export async function runAudit(cmdArgv, ctx) {
   let contractsResult = { contracts: [], diagnostics: [] }
   if (needsContracts) {
     contractsResult = loadContracts(config, { root, onProgress: bus })
+  }
+
+  // `--contract <id>` — see the module docblock. Resolved here, before any
+  // surface runs, so a wrong id costs nothing and writes no report.
+  let inContract = null
+  if (opts.contract !== undefined) {
+    if (!needsContracts) {
+      io.stderr.write(
+        "design-delta audit: --contract needs a surface that loads contracts; --tokens alone loads none\n",
+      )
+      return 1
+    }
+    const entry = contractsResult.contracts.find(
+      candidate => candidate.id === opts.contract,
+    )
+    if (!entry) {
+      const ids = contractsResult.contracts.map(candidate => candidate.id)
+      io.stderr.write(
+        `design-delta audit: no contract with id "${opts.contract}"; loaded: ${ids.sort().join(", ") || "none"}\n`,
+      )
+      return 1
+    }
+    inContract = contractScope(entry)
   }
 
   // Both the components and anatomy surfaces walk the SAME `.tsx` files
@@ -937,12 +992,15 @@ export async function runAudit(cmdArgv, ctx) {
   // absent or unreadable state file changes nothing about the run: every
   // finding stays exactly as `sortedFindings` built it, unmarked.
   const stateResult = readState(join(root, stateFile), stateFile)
-  const findings = markIsNew(
+  const allFindings = markIsNew(
     sortedFindings,
     stateResult.state,
     contractsResult.contracts,
     { root, config },
   )
+  const findings = inContract ? allFindings.filter(inContract) : allFindings
+  const allDecided = sortFindings(decided)
+  const shownDecided = inContract ? allDecided.filter(inContract) : allDecided
 
   const skipped = {
     ...(scopes.components && census.skipped
@@ -967,6 +1025,17 @@ export async function runAudit(cmdArgv, ctx) {
     command: "audit",
     componentsDir: componentsDirLabel,
     tokensFile: tokensFileLabel,
+    // Present only under `--contract`: the project-wide totals the scoped
+    // `counts.findings`/`counts.exempted` below no longer carry.
+    ...(inContract
+      ? {
+          scope: {
+            contract: opts.contract,
+            findings: allFindings.length,
+            exempted,
+          },
+        }
+      : {}),
     // The design side's BASIS (issue #389): present whenever a design
     // provider is configured; each snapshot's own `provenance` (or `null`
     // when that snapshot is absent/invalid, `{}` when it predates
@@ -1048,13 +1117,14 @@ export async function runAudit(cmdArgv, ctx) {
       // Reported ALWAYS, not only when nonzero: a run can go from N findings
       // to zero and the number that matters is the one explaining why. An
       // engine whose product is honest output cannot let a waiver silently
-      // account for the difference.
-      exempted,
+      // account for the difference. Under `--contract` both numbers count
+      // the scoped lists, so `exempted` stays `decided.length`.
+      exempted: inContract ? shownDecided.length : exempted,
     },
     findings,
     // Every exempted finding, still visible, tagged with the decision that
     // covers it. Never gates and never counts toward severity totals.
-    decided: sortFindings(decided),
+    decided: shownDecided,
     // Deduplicated because the props and anatomy censuses parse the SAME
     // files independently, so a file that is missing, unloadable, or not a
     // component at all is discovered — correctly — by both, and was reported

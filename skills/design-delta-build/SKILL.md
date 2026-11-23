@@ -160,14 +160,18 @@ each slot, each conditional node.
 ### 5. Audit the component until it has no findings
 
 ```
-npx design-delta audit --json
+npx design-delta audit --json --contract <id>
 ```
 
-The audit covers the whole project; there is no flag that scopes it to one
-component. Take from `findings` every entry whose `entity` is the contract's
-`id`, or starts with the `id` followed by a `.` (an element of it, as in
-`<id>.root`), or is the path of a file you wrote. Those are this component's
-findings. Leave every other finding alone: it predates you, and fixing it is
+`--contract` takes the contract's `id` and scopes the report to that
+component: `findings` holds every entry whose `entity` is the `id`, or starts
+with the `id` followed by a `.` (an element of it, as in `<id>.root`), or is
+a file the contract's `sources.code` names. The audit still runs over the
+whole project, so these are the same findings the full run reports, and
+`scope.findings` says how many the project has in all. A file you wrote that
+the contract does not name is not in the scoped list: if you added one,
+check the unscoped `audit --json` for its path too. Leave every finding
+outside the scope alone: it predates you, and fixing it is
 a different task, the one
 [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
 describes for a project's whole list.
@@ -313,6 +317,6 @@ project's gate then reports.
 ## How a consumer links this file
 
 Claude Code does not discover skills inside `node_modules`. `design-delta
-dock` writes a stub at `.claude/skills/design-delta-build/SKILL.md` that
-points here, the same way it links the audit skill; the stub carries no
+init` and `design-delta dock` each write a stub at `.claude/skills/design-delta-build/SKILL.md` that
+points here, the same way they link the audit skill; the stub carries no
 procedure of its own, so it cannot disagree with the installed version.

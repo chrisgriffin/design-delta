@@ -41,7 +41,7 @@ The short map:
 | Command                                               | What it does                                                                                                          |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `contracts`                                           | schema- + semantically-validate every contract                                                                        |
-| `audit`                                               | read-only census + diff across the configured surfaces                                                                |
+| `audit`                                               | read-only census + diff across the configured surfaces; `--contract <id>` scopes the report to one component          |
 | `verify`                                              | the composed CI gate — invalid contract or gating finding fails it                                                    |
 | `lint`                                                | static token-system rules (separate from `verify`, never run by it)                                                   |
 | `report`                                              | render findings to artifacts (`md,terminal,sarif,pr-comment`)                                                         |
@@ -129,7 +129,7 @@ that contract to code and then uses the audit above as the proof.
 refreshes the design snapshot, and
 [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
 works a project's whole list of findings down, sorting each by who can clear
-it. `dock` writes a stub for each under
+it. `init` and `dock` each write a stub for each under
 `.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about

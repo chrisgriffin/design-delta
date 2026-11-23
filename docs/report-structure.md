@@ -96,7 +96,9 @@ decision: {
 ```
 
 A decided finding never gates `verify` and never counts toward the severity
-totals; `counts.exempted` equals `decided.length`. The human `audit`, `lint`
+totals; `counts.exempted` equals `decided.length`, including under
+`audit --contract <id>`, where both lists are scoped to one component and
+`scope.findings`/`scope.exempted` carry the project-wide totals. The human `audit`, `lint`
 and `report` output list them in a "DECISIONS" section grouped by kind.
 
 ## Health score

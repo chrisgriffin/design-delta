@@ -243,12 +243,13 @@ found and reported as not yours. Fix every diagnostic naming your file; each
 is a mistake in what you wrote, not a question for anyone. Then:
 
 ```
-npx design-delta audit --json
+npx design-delta audit --json --contract <id>
 npx design-delta lint --json
 ```
 
-From the audit's `findings`, take the entries whose `entity` is the new `id`
-or starts with the `id` followed by a `.`. For a contract whose code does not
+`--contract` scopes the audit's `findings` to the new `id` and its elements;
+an id the engine did not load exits `1`, which means the contract is not
+where the project looks for contracts. For a contract whose code does not
 exist yet, these are expected:
 
 - `coverage/contract-only`: the contract names a code path with nothing
@@ -363,7 +364,7 @@ in the code.
 ## How a consumer links this file
 
 Claude Code does not discover skills inside `node_modules`. `design-delta
-dock` writes a stub at `.claude/skills/design-delta-author/SKILL.md` that
-points here, the same way it links the audit and build skills; the stub
+init` and `design-delta dock` each write a stub at `.claude/skills/design-delta-author/SKILL.md` that
+points here, the same way they link the audit and build skills; the stub
 carries no procedure of its own, so it cannot disagree with the installed
 version.
