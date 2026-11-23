@@ -422,6 +422,7 @@ describe("rule and scaffold ADR citations (#12)", () => {
         join("skills", "design-delta-author", "SKILL.md"),
         join("skills", "design-delta-build", "SKILL.md"),
         join("skills", "design-delta-doctor", "SKILL.md"),
+        join("skills", "design-delta-refresh", "SKILL.md"),
       ]),
     )
     expect(

@@ -87,6 +87,10 @@ The engine has no agent inside it and never calls a design tool:
    check when the snapshot files last changed (`git log` on them), not when
    the audit ran.
 
+The procedure for bringing that snapshot up to date, step by step and with
+what to do when a session lacks the design tool's tools, is the sibling skill
+[`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md).
+
 `snapshot`/`movers`/`impact`/`map` are a separate, **code-side-only**
 mechanism (`state.json`, documented in
 [state-shape.md](../../docs/state-shape.md)) — don't mistake them for the
@@ -120,9 +124,10 @@ file versions with the engine, so it can't disagree with the installed CLI.
 takes a request to a validated contract, asking rather than inventing where
 the request leaves the component's API open.
 [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md) takes
-that contract to code and then uses the audit above as the proof. `dock`
-writes a stub for each, at `.claude/skills/design-delta-author/SKILL.md` and
-`.claude/skills/design-delta-build/SKILL.md`, the same way.
+that contract to code and then uses the audit above as the proof.
+[`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md)
+refreshes the design snapshot. `dock` writes a stub for each under
+`.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about
 engine behavior (commands, flags, rules, severities, snapshot semantics) in

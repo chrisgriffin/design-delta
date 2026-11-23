@@ -134,7 +134,12 @@ builds the component from that contract, matching the project's existing
 components, and runs the audit until that component reports no findings. It
 never writes or edits a contract. `design-delta dock` lays a stub for each,
 at `.claude/skills/design-delta-author/SKILL.md` and
-`.claude/skills/design-delta-build/SKILL.md`. A fourth,
+`.claude/skills/design-delta-build/SKILL.md`.
+[`skills/design-delta-refresh/SKILL.md`](./skills/design-delta-refresh/SKILL.md)
+is the procedure for the design side: it runs `gather`, executes the plan
+with the session's design-tool tools, runs `ingest` and reports what changed,
+and says what to do when the session lacks those tools; `dock` lays its stub
+too. A fifth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

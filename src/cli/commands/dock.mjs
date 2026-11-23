@@ -70,7 +70,11 @@ export const SKILL_STUB_RELATIVE_PATH = "skills/design-delta/SKILL.md"
 // (`skills/<name>/SKILL.md` in this package), in the order `dock` writes
 // them. Same shape and same guard as the stub above — a pointer, never a
 // copy of the procedure. Adding a name here is all a new skill's stub needs.
-export const LINKED_SKILLS = ["design-delta-build", "design-delta-author"]
+export const LINKED_SKILLS = [
+  "design-delta-build",
+  "design-delta-author",
+  "design-delta-refresh",
+]
 
 /** Where a packaged skill lives, in this package and under `--dir` alike. */
 export const skillRelativePath = name => `skills/${name}/SKILL.md`
