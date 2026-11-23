@@ -41,7 +41,7 @@ import { censusTokens, findStyleFiles } from "../../sources/code.mjs"
 import { censusStyles } from "../../sources/styles.mjs"
 import { parseFlags } from "../flags.mjs"
 
-const FLAG_SPEC = { boolean: ["--json"], value: [], positional: true }
+export const FLAG_SPEC = { boolean: ["--json"], value: [], positional: true }
 
 /** The subjects `query` knows how to answer, in help order. */
 const SUBJECTS = ["raw-values"]

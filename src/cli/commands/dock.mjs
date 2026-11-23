@@ -1,8 +1,8 @@
 /**
  * dock.mjs — the `design-delta dock` subcommand (issue #221): scaffold
  * generic Claude Code artifacts into a consumer's own `.claude/` — a hook
- * and two skills — that wrap `verify --json` for agent self-correction and
- * link the consumer to this package's canonical skill.
+ * and three skills — that wrap `verify --json` for agent self-correction and
+ * link the consumer to this package's canonical skill and its build skill.
  *
  *   design-delta dock [--dir <path>] [--json]
  *
@@ -29,7 +29,8 @@
  * preserve — same posture the deleted `codegen --write` took (issue #400). `dock`
  * is meant to be re-run after an engine upgrade to pick up template changes.
  *
- * The exception is the linked stub (issue #336). `skills/design-delta/` is
+ * The exception is the two linked stubs (issue #336; the build skill's stub
+ * follows the same rule for the same reason). `skills/design-delta/` is
  * the natural name a consumer's OWN hand-maintained skill occupies — unlike
  * `skills/design-delta-verify/` and `hooks/design-delta-verify.mjs`, which
  * this package named for itself — so writing it unconditionally would
@@ -46,10 +47,11 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { parseFlags } from "../flags.mjs"
 
-const FLAG_SPEC = { boolean: ["--json"], value: ["--dir"] }
+export const FLAG_SPEC = { boolean: ["--json"], value: ["--dir"] }
 
 export const DEFAULT_DIR = ".claude"
 
@@ -60,6 +62,13 @@ const SKILL_RELATIVE_PATH = "skills/design-delta-verify/SKILL.md"
 // the packaged canonical skill (`skills/design-delta/SKILL.md` in this
 // package) so its name matches the canonical skill's own.
 export const SKILL_STUB_RELATIVE_PATH = "skills/design-delta/SKILL.md"
+// The second linked stub: the packaged contract-to-code skill
+// (`skills/design-delta-build/SKILL.md` in this package). Same shape and same
+// guard as the stub above — a pointer, never a copy of the procedure.
+export const BUILD_SKILL_STUB_RELATIVE_PATH =
+  "skills/design-delta-build/SKILL.md"
+
+const PACKAGE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 
 /**
  * The literal string that identifies a file at `SKILL_STUB_RELATIVE_PATH` as
@@ -197,6 +206,38 @@ after an engine upgrade. Delete that line to claim this file as your own:
 `
 }
 
+/**
+ * The generated stub for the packaged build skill. Its frontmatter
+ * `description` is READ from the packaged skill rather than restated here:
+ * the description is what makes an agent reach for the skill, so a second
+ * copy would be the one line of this stub that could go stale. Everything
+ * else is the same pointer-plus-marker shape `renderSkillStubTemplate` has.
+ */
+export function renderBuildSkillStubTemplate() {
+  const packaged = readFileSync(
+    join(PACKAGE_ROOT, BUILD_SKILL_STUB_RELATIVE_PATH),
+    "utf8",
+  )
+  const description = packaged.match(/^description: (.+)$/m)[1]
+  return `---
+name: design-delta-build
+description: ${description}
+---
+
+# design-delta build
+
+This is a stub — the real procedure lives in the installed package and
+versions with it, so read it first and follow it:
+
+    node_modules/design-delta/${BUILD_SKILL_STUB_RELATIVE_PATH}
+
+${GENERATED_MARKER} — safe to overwrite, and
+refreshed by re-running \`dock\` after an engine upgrade. Delete that line
+to claim this file as your own: \`dock\` skips a file here that does not
+carry it.
+`
+}
+
 function readIfExists(fs, path) {
   try {
     return fs.readFileSync(path, "utf8")
@@ -307,6 +348,13 @@ export function runDock(cmdArgv, ctx) {
       relative: SKILL_STUB_RELATIVE_PATH,
       content: renderSkillStubTemplate(),
       // The one guarded template — see GENERATED_MARKER above.
+      options: { requireMarker: GENERATED_MARKER },
+    },
+    {
+      relative: BUILD_SKILL_STUB_RELATIVE_PATH,
+      content: renderBuildSkillStubTemplate(),
+      // Guarded like the stub above: this name is new in this version, so a
+      // project may already keep a skill of its own here.
       options: { requireMarker: GENERATED_MARKER },
     },
   ]

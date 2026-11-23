@@ -58,7 +58,7 @@ import { loadProvider } from "../../providers/index.mjs"
 import { parseFlags } from "../flags.mjs"
 import { compareStrings } from "../../core/text.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: ["--json", "--tokens", "--bindings"],
   value: [],
   positional: true,

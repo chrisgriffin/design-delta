@@ -76,7 +76,7 @@ design-delta movers       # entities changed since the last snapshot
 design-delta impact       # blast-radius query for a component or token
 design-delta map          # system-wide ownership overview
 design-delta query        # read-only inventory questions: raw-values lists literal CSS declarations
-design-delta dock         # scaffold a Claude Code hook + skill
+design-delta dock         # scaffold a Claude Code hook + skills
 
 # Phase 7 — Agent access
 design-delta mcp          # read-only MCP server: contracts and tokens for a coding agent
@@ -113,7 +113,7 @@ every rule, what it reports, and its default severity. For what the engine
 deliberately doesn't check yet, and why, see [deferred
 rules](./docs/deferred-rules.md).
 
-## Agent skill
+## Agent skills
 
 The package ships its canonical Claude Code skill at
 [`skills/design-delta/SKILL.md`](./skills/design-delta/SKILL.md) — the
@@ -122,6 +122,15 @@ engine's own instruction set, versioned with it. Skills inside
 `.claude/skills/design-delta/SKILL.md` that links to it; the stub carries
 triggers only, so engine behavior is never restated where it can go stale.
 The skill's own last section documents the stub and the migration path.
+
+A second skill,
+[`skills/design-delta-build/SKILL.md`](./skills/design-delta-build/SKILL.md),
+goes the other way: it builds a component from its contract, matching the
+project's existing components, and runs the audit until that component
+reports no findings. It never writes or edits a contract. `design-delta dock`
+lays a stub for it at `.claude/skills/design-delta-build/SKILL.md`. A third,
+[`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
+is the maintainer's procedure for testing the engine against a real project.
 
 ## Contracts
 

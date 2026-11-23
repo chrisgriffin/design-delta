@@ -12,16 +12,16 @@
 - Name: `design-delta-build`, beside `design-delta` and `design-delta-doctor`.
 - The skill is prose for an agent, not a generator: file layout, styling approach and test shape differ per project, so the skill reads a sibling and matches it, and the engine's audit is the check. No new subcommand.
 - The update case (contract changed, code must follow) is included: it is the same audit loop without the generation step.
-- `dock` gets a fourth template. `renderSkillStubTemplate` is generalized to take the skill it links, so both stubs come from one function and one marker; the audit stub's output stays byte-identical.
+- `dock` gets a fourth template, `renderBuildSkillStubTemplate`, sharing the audit stub's marker and writer. Its frontmatter description is read from the packaged skill at render time, so the trigger text has one home; the audit stub is untouched and stays byte-identical.
 - `FLAG_SPEC` becomes an export in each `src/cli/commands/*.mjs`, and `GLOBAL_FLAGS_HELP` in `main.mjs`, so the new test reads accepted flags from the parser's own input.
-- New suite `__tests__/skills.test.js`: every `skills/*/SKILL.md` has frontmatter with `name` equal to its directory and a `description`; the three shipped names are present; every `design-delta <word>` in a code span or fence is a subcommand; every `--flag` on such an invocation is in that command's `FLAG_SPEC` or a global flag; every code span shaped like a rule id is in the registry; each check has a negative control. One more test pins the entity form the build skill filters on, against a real audit run of a fixture.
+- New suite `__tests__/skills.test.js`: every `skills/*/SKILL.md` has frontmatter with `name` equal to its directory and a `description`; the three shipped names are present; every `design-delta <word>` in a code span or fence is a subcommand; every `--flag` on such an invocation is in that command's `FLAG_SPEC` or a global flag; every code span shaped like a rule id is in the registry, and every `paths.*`/`conventions.*` key is in the config schema; each check has a negative control. One more test pins the entity form the build skill filters on, against a real audit run of a fixture.
 - `check-package.sh` runs `dock` in the throwaway consumer and resolves every `node_modules/design-delta/skills/...` path each generated stub names.
 
 ## Surfaces touched
 
 - `skills/design-delta-build/SKILL.md` — new.
 - `skills/design-delta/SKILL.md` — names the build skill and its stub; its "never gating" sentence is corrected to match `--fail-on`, since the file is edited.
-- `src/cli/commands/dock.mjs` — fourth template, generalized stub renderer.
+- `src/cli/commands/dock.mjs` — fourth template.
 - `src/cli/commands/*.mjs`, `src/cli/main.mjs` — `FLAG_SPEC` and `GLOBAL_FLAGS_HELP` exported; no behavior change.
 - `__tests__/skills.test.js` — new; `__tests__/cli-dock.test.js`, `__tests__/adr-citations.test.js` — the new file in their expectations.
 - `scripts/ci/check-package.sh` — every `dock` stub's link resolves in the tarball.

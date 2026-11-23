@@ -57,6 +57,11 @@ Nothing needs a build, a browser or a registry token first.
   `cli-subcommand-docs.test.js`, `rules-reference.test.js` and
   `coupled-files.test.js` compare a doc's tables and paths against the schema,
   registry, `action.yml` or CLAUDE.md section they mirror.
+- **Packaged skills** — `__tests__/skills.test.js` holds every
+  `skills/*/SKILL.md` to frontmatter naming its own directory, and to naming
+  in code only subcommands, flags, rule ids and config keys the engine has,
+  each read from the engine's own registry. `check-package.sh` resolves every
+  stub `dock` writes against the installed tarball.
 - **Consumer-read strings** — `__tests__/adr-citations.test.js` holds every
   ADR a rule description, a drafted `_scaffold` note, a shipped JSON schema
   or a shipped skill cites to the form `design-delta's ADR-NNN`, since all

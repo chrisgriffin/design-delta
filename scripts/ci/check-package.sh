@@ -194,3 +194,34 @@ if [ "$(cat "$STUB")" != "$(printf '%s' "$HAND")" ]; then
   exit 1
 fi
 echo "OK    init left a consumer-owned stub untouched"
+
+echo "==> Verifying every stub \`dock\` writes links a skill the tarball ships"
+# `dock` lays a stub per consumer-facing skill, each pointing at a path under
+# node_modules/design-delta/skills/. A skill dropped from the tarball, or a
+# stub naming a path that moved, leaves an agent told to read a file that is
+# not there. Every stub is checked by what it links, not from a named list.
+DOCK_DIR="dock-check"
+node "$PKG_DIR/src/cli/main.mjs" dock --dir "$DOCK_DIR" >/dev/null
+STUB_COUNT=0
+FAILED_STUBS=0
+for GENERATED in "$DOCK_DIR"/skills/*/SKILL.md; do
+  [ -f "$GENERATED" ] || continue
+  while IFS= read -r target; do
+    STUB_COUNT=$((STUB_COUNT + 1))
+    if [ ! -f "$target" ]; then
+      echo "::error::$GENERATED links $target, which is not in the installed package" >&2
+      FAILED_STUBS=1
+    fi
+  done < <(grep -oE 'node_modules/design-delta/skills/[A-Za-z0-9_./-]+' "$GENERATED" || true)
+done
+[ "$FAILED_STUBS" -eq 0 ] || exit 1
+BUILD_SKILL="$PKG_DIR/skills/design-delta-build/SKILL.md"
+if ! grep -qF "node_modules/design-delta/skills/design-delta-build/SKILL.md" "$DOCK_DIR/skills/design-delta-build/SKILL.md" 2>/dev/null || [ ! -f "$BUILD_SKILL" ]; then
+  echo "::error::dock did not write a build-skill stub linking the packaged skills/design-delta-build/SKILL.md" >&2
+  exit 1
+fi
+if [ "$STUB_COUNT" -lt 2 ]; then
+  echo "::error::dock wrote $STUB_COUNT linked stub(s); expected one per consumer-facing skill" >&2
+  exit 1
+fi
+echo "OK    $STUB_COUNT linked stub(s) from dock; each resolves in the installed package"

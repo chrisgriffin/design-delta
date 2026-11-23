@@ -162,13 +162,13 @@ export const SUBCOMMANDS = {
   },
   dock: {
     summary:
-      "scaffold a generic Claude Code hook + skill wrapping verify/lint --json",
+      "scaffold a generic Claude Code hook + skills: verify/lint --json wiring, linked stubs",
     phase: 6,
     run: runDock,
   },
 }
 
-const GLOBAL_FLAGS_HELP = [
+export const GLOBAL_FLAGS_HELP = [
   ["--quiet", "silence progress output"],
   [
     "--config <path>",

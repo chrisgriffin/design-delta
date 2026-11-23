@@ -105,7 +105,7 @@ import { censusStyles } from "../../sources/styles.mjs"
 import { parseFlags } from "../flags.mjs"
 import { toPosixRelative } from "../../core/paths.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: ["--json", "--uncontracted"],
   value: [],
   positional: true,

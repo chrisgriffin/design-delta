@@ -1,7 +1,8 @@
 /**
  * cli-dock.test.js — `design-delta dock` (`src/cli/commands/dock.mjs`),
  * issue #221: scaffolds a generic Claude Code hook + skill wrapping
- * `verify`/`lint --json` for agent self-correction.
+ * `verify`/`lint --json` for agent self-correction, plus a linked stub for
+ * each consumer-facing skill this package ships.
  *
  * Real temp directories for the fs side, same convention `cli-init.test.js`
  * uses — `runDock` takes an injectable `root`, production omitting it and
@@ -22,6 +23,7 @@ import { dirname, join } from "node:path"
 
 import {
   GENERATED_MARKER,
+  renderBuildSkillStubTemplate,
   renderHookTemplate,
   renderSkillStubTemplate,
   renderSkillTemplate,
@@ -57,11 +59,11 @@ function ctx(overrides = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Writes the two templates, under the default dir and a custom one.
+// Writes every template, under the default dir and a custom one.
 // ---------------------------------------------------------------------------
 
 describe("runDock", () => {
-  it("writes the hook and both skills under the default .claude dir", () => {
+  it("writes the hook and all three skills under the default .claude dir", () => {
     const code = runDock([], ctx())
     expect(code).toBe(0)
     expect(
@@ -73,6 +75,9 @@ describe("runDock", () => {
     expect(existsSync(join(root, ".claude/skills/design-delta/SKILL.md"))).toBe(
       true,
     )
+    expect(
+      existsSync(join(root, ".claude/skills/design-delta-build/SKILL.md")),
+    ).toBe(true)
   })
 
   it("honors --dir", () => {
@@ -121,6 +126,7 @@ describe("runDock --json", () => {
         action: "wrote",
       },
       { path: ".claude/skills/design-delta/SKILL.md", action: "wrote" },
+      { path: ".claude/skills/design-delta-build/SKILL.md", action: "wrote" },
     ])
 
     const secondRun = runJson(["--json"])
@@ -135,6 +141,10 @@ describe("runDock --json", () => {
         path: ".claude/skills/design-delta/SKILL.md",
         action: "up-to-date",
       },
+      {
+        path: ".claude/skills/design-delta-build/SKILL.md",
+        action: "up-to-date",
+      },
     ])
   })
 
@@ -146,6 +156,7 @@ describe("runDock --json", () => {
       "agent-config/hooks/design-delta-verify.mjs",
       "agent-config/skills/design-delta-verify/SKILL.md",
       "agent-config/skills/design-delta/SKILL.md",
+      "agent-config/skills/design-delta-build/SKILL.md",
     ])
   })
 
@@ -284,6 +295,67 @@ describe("renderSkillStubTemplate", () => {
       "utf8",
     )
     expect(stub).not.toContain(root)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The build skill's linked stub — same shape as the stub above, pointing at
+// the packaged contract-to-code skill, with its trigger description read
+// from that skill so the two cannot disagree.
+// ---------------------------------------------------------------------------
+
+const BUILD_STUB_PATH = ".claude/skills/design-delta-build/SKILL.md"
+const PACKAGED_BUILD_SKILL = join(
+  import.meta.dirname,
+  "../skills/design-delta-build/SKILL.md",
+)
+
+describe("renderBuildSkillStubTemplate", () => {
+  it("declares frontmatter naming the build skill, with the packaged skill's own description", () => {
+    const stub = renderBuildSkillStubTemplate()
+    expect(stub.startsWith("---\n")).toBe(true)
+    const frontmatter = stub.slice(4, stub.indexOf("\n---", 4))
+    expect(frontmatter).toMatch(/^name: design-delta-build$/m)
+    const packaged = readFileSync(PACKAGED_BUILD_SKILL, "utf8")
+    const [description] = packaged.match(/^description: .+$/m)
+    expect(description.length).toBeGreaterThan("description: ".length)
+    expect(frontmatter).toContain(description)
+  })
+
+  it("links to the packaged skill, carries the marker and no procedure of its own", () => {
+    const stub = renderBuildSkillStubTemplate()
+    expect(stub).toContain(
+      "node_modules/design-delta/skills/design-delta-build/SKILL.md",
+    )
+    expect(stub).toContain(GENERATED_MARKER)
+    // A pointer, not a copy: no command of the engine's is restated here.
+    expect(stub).not.toMatch(/npx design-delta/)
+    for (const term of ["example-org/example-app", "acme", "widget", "figma"]) {
+      expect(stub.toLowerCase()).not.toContain(term.toLowerCase())
+    }
+  })
+
+  it("leaves a consumer's own skill at that path untouched, reporting 'skipped'", () => {
+    const hand = "---\nname: design-delta-build\n---\n\nOur own build steps.\n"
+    const abs = join(root, BUILD_STUB_PATH)
+    mkdirSync(dirname(abs), { recursive: true })
+    writeFileSync(abs, hand)
+
+    const { out } = runJson(["--json"])
+    expect(JSON.parse(out).files).toContainEqual({
+      path: BUILD_STUB_PATH,
+      action: "skipped",
+    })
+    expect(readFileSync(abs, "utf8")).toBe(hand)
+  })
+
+  it("refreshes a stale generated stub at that path", () => {
+    const abs = join(root, BUILD_STUB_PATH)
+    mkdirSync(dirname(abs), { recursive: true })
+    writeFileSync(abs, `An older stub.\n\n${GENERATED_MARKER} — old wording.\n`)
+
+    runJson(["--json"])
+    expect(readFileSync(abs, "utf8")).toBe(renderBuildSkillStubTemplate())
   })
 })
 
