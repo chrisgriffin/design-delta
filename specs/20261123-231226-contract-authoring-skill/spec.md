@@ -25,7 +25,7 @@ The package can audit a project, test the engine and build a component from its 
 - FR-007: The skill says what it does not cover.
 - FR-008: `dock` writes a linked stub at `skills/design-delta-author/SKILL.md` under its `--dir`, guarded like the other linked stubs.
 - FR-009: The build skill's "no contract: stop" step and its "What this does not cover" section name the authoring skill; the audit skill names it too.
-- FR-010: `README.md`, `docs/cli.md` and `docs/testing.md` say the authoring skill exists and how a consumer reaches it.
+- FR-010: `README.md` and `docs/cli.md` say the authoring skill exists and how a consumer reaches it. (`docs/testing.md` § What is tested was confirmed still true and is unchanged: its rule covers every packaged skill, this one included.)
 
 ## Success criteria
 
@@ -39,5 +39,5 @@ The package can audit a project, test the engine and build a component from its 
 
 - `init` writing this stub: `init` keeps writing the one audit stub until that question is settled on its own issue.
 - A subcommand that writes a contract from a description: the open decisions are a person's, so the procedure is prose for an agent.
-- A contract check that a bound token exists: the skill resolves tokens by reading the tokens file.
+- A contract check that a bound token exists: the skill resolves each bound token with `design-delta impact`, which exits 1 for a token the tokens file lacks.
 - Refreshing a stale design snapshot: the skill reads the snapshot that exists and says how old it is.
