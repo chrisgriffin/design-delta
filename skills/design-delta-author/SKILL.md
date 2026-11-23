@@ -101,7 +101,9 @@ the design side. Find the component's entry by `name` and read its
 - The snapshot can be stale and still read as current. Its `provenance`
   block says when it was gathered; state that date in your report, and if the
   component is not in the snapshot at all, say so and stop or continue from
-  the description. Refreshing a snapshot is a separate task.
+  the description. Refreshing a snapshot is a separate task, the sibling
+  skill
+  [`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md).
 - What the snapshot says is a fact about the **design side**. It is not yet
   the code API. A design property becomes a contract prop under the name the
   code will use, with the design name recorded on it when the two differ; a
@@ -323,7 +325,8 @@ in the code.
 - **The design tool.** Nothing here creates, edits or reads a design-tool
   component directly; the design side is whatever the snapshot on disk says.
 - **Refreshing the design snapshot.** A stale or missing snapshot is
-  reported, and the contract is written from what is there.
+  reported, and the contract is written from what is there; the refresh is
+  `design-delta-refresh`.
 - **New tokens.** A value with no token is a question, never a new token
   written by this procedure.
 - **Behavior a contract cannot state.** Interaction logic, focus management
