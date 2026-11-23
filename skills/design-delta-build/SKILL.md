@@ -168,7 +168,9 @@ component. Take from `findings` every entry whose `entity` is the contract's
 `id`, or starts with the `id` followed by a `.` (an element of it, as in
 `<id>.root`), or is the path of a file you wrote. Those are this component's
 findings. Leave every other finding alone: it predates you, and fixing it is
-a different task.
+a different task, the one
+[`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
+describes for a project's whole list.
 
 Four things make an empty list mean something:
 

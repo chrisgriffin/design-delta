@@ -74,6 +74,7 @@ export const LINKED_SKILLS = [
   "design-delta-build",
   "design-delta-author",
   "design-delta-refresh",
+  "design-delta-resolve",
 ]
 
 /** Where a packaged skill lives, in this package and under `--dir` alike. */

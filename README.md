@@ -139,7 +139,12 @@ at `.claude/skills/design-delta-author/SKILL.md` and
 is the procedure for the design side: it runs `gather`, executes the plan
 with the session's design-tool tools, runs `ingest` and reports what changed,
 and says what to do when the session lacks those tools; `dock` lays its stub
-too. A fifth,
+too.
+[`skills/design-delta-resolve/SKILL.md`](./skills/design-delta-resolve/SKILL.md)
+is for a project with many findings: it sorts each by who can clear it, fixes
+the code-side ones a component at a time through the build skill, and reports
+what is left and who owns it, without ever editing a contract, an exemption
+or a rule severity to shrink the list; `dock` lays its stub as well. A sixth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 
