@@ -51,8 +51,9 @@ Before reading a single finding:
   surface into the report as unchecked.
 - **`diagnostics`**: read them. They say what the run could not check.
 - **`decided`**: findings an exemption in the project's config already hid.
-  Note how many. They are decisions somebody made; they are not on your list,
-  and their number must be the same at the end.
+  Note how many, and keep the list. They are decisions somebody made; they
+  are not on your list, and at the end the only ones allowed to be gone are
+  those step 7 accounts for.
 - The project's own instructions, and its `design-delta.json`, `_`-prefixed
   keys included: a project records known findings and local decisions there,
   and a finding it already explains goes to the report as explained, not
@@ -81,20 +82,27 @@ change that was half made.
 can clear it: a token no component uses is `side: "code"`, and no code change
 is the right fix for it. Sort by rule first:
 
-| Pile                  | What goes in it                                                                                                                                                                                                                                                                                                              | Owner                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **Code**              | `side: "code"` findings at `error` or `warn` on the `components`, `styles` and `anatomy` surfaces, for a component whose contract is valid; `tokens/var-unresolved`; `coverage/contract-only` when the contract is right and the component was never built                                                                   | you, through the build skill (step 5)                   |
-| **Contract**          | every `side: "spec"` finding; `coverage/uncontracted-component` (the component needs a contract, which is a decision); `coverage/unfinished-contract`; `components/intent-unverified` and `components/intent-stale`; `coverage/contract-only` when the path is what is wrong; any component whose contract failed validation | whoever owns the contract                               |
-| **Design side**       | every `side: "design"` finding; `coverage/design-only`; `coverage/design-missing`; `styles/design-binding-missing`; the `tokens` rules whose name starts with `design-`                                                                                                                                                      | whoever owns the design file, after the check in step 4 |
-| **Tokens and config** | `tokens/token-unreferenced`, `tokens/token-unemitted`, `tokens/token-untracked`, `tokens/emitted-value-mismatch`; `coverage/stale-exemption`; every `lint` finding                                                                                                                                                           | whoever owns the token system, or the project's config  |
-| **Review**            | every remaining `review` finding: the engine could not reach a verdict (`anatomy/coverage-partial`, `anatomy/coverage-declined`, `styles/element-unmapped`, `styles/variant-unmapped`, `components/prop-type-unresolved`, `anatomy/attribute-unresolved`), or the answer is a person's (`components/unused-component`)       | a person, with what you found when you read it yourself |
+| Pile                  | What goes in it                                                                                                                                                                                                                                                                                                                                           | Owner                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **Code**              | `side: "code"` findings at `error` or `warn` on the `components`, `styles` and `anatomy` surfaces, for a component whose contract is valid; `tokens/var-unresolved`; `coverage/contract-only` when the contract is right and the component was never built                                                                                                | you, through the build skill (step 5)                   |
+| **Contract**          | every `side: "spec"` finding of a rule no other row names; `coverage/uncontracted-component` (the component needs a contract, which is a decision); `coverage/unfinished-contract`; `components/intent-unverified` and `components/intent-stale`; `coverage/contract-only` when the path is what is wrong; any component whose contract failed validation | whoever owns the contract                               |
+| **Design side**       | every `side: "design"` finding; `coverage/design-only`; `coverage/design-missing`; `styles/design-binding-missing`; the `tokens` rules whose name starts with `design-`                                                                                                                                                                                   | whoever owns the design file, after the check in step 4 |
+| **Tokens and config** | `tokens/token-unreferenced`, `tokens/token-unemitted`, `tokens/token-untracked`, `tokens/emitted-value-mismatch`; `coverage/stale-exemption`; every `lint` finding                                                                                                                                                                                        | whoever owns the token system, or the project's config  |
+| **Review**            | every remaining `review` finding: the engine could not reach a verdict (`anatomy/coverage-partial`, `anatomy/coverage-declined`, `styles/element-unmapped`, `styles/variant-unmapped`, `components/prop-type-unresolved`, `anatomy/attribute-unresolved`), or the answer is a person's (`components/unused-component`)                                    | a person, with what you found when you read it yourself |
 
 For a rule the table does not name, read its description in
 [rules.md](../../docs/rules.md) and place it by what would have to change to
 clear it. If that is not code in a component, it is not the code pile.
 
-A finding goes in exactly one pile. When two seem to fit, it is the one that
-is **not** code: a wrong guess there costs a question, and a wrong guess the
+A finding goes in exactly one pile. A row that names the finding's rule wins
+over a row that only catches its `side`: `coverage/design-missing`,
+`coverage/stale-exemption` and the `lint` findings are `side: "spec"` too, and
+each goes to the row that names it, not to the contract pile.
+`coverage/contract-only` is named in two rows, and its condition decides:
+whether the contract's path is right and the component was never built, or
+the path is what is wrong. When that cannot be told from the project, or a
+rule the table does not name could go either way, it is the pile that is
+**not** code: a wrong guess there costs a question, and a wrong guess the
 other way costs a change nobody asked for.
 
 Two piles deserve a second look before they leave your hands:
@@ -137,8 +145,11 @@ Order the components:
 3. then by count, most findings first.
 
 For each component, follow the build skill's **Updating a component whose
-contract changed** with that component's contract. Do not improvise a
-shorter loop: that procedure is what says which findings code can clear,
+contract changed** with that component's contract. A component in the pile
+for `coverage/contract-only` was never built, and that procedure skips the
+generation step, so it would create none of the component's files: follow
+the build skill's full **Steps** for it instead, from step 1. Do not
+improvise a shorter loop: that procedure is what says which findings code can clear,
 when to stop, and that the contract is never edited. It ends for each finding
 in one of three ways, and you record which:
 
@@ -199,7 +210,14 @@ Compare with step 1's, by `ruleId` and `entity`:
   that you did not fix is not good news: find out why before reporting it (a
   surface that is now skipped, a file that stopped being scanned);
 - **every finding that appeared** is explained, or it is a regression;
-- `decided` has the same length as in step 1;
+- `decided` has the same length as in step 1, with one exception. A code fix
+  in step 5 can clear a finding an exemption was covering. That finding then
+  leaves `decided`, and when the exemption names it literally (not a glob),
+  `coverage/stale-exemption` appears for that exemption. That is the right
+  outcome: accept it only when the finding that left `decided` belongs to a
+  component you fixed in step 5, and list each one in the report with its
+  exemption, for the config's owner to remove. Removing it is theirs, never
+  yours. Any other change to `decided` is a regression;
 - `skipped` lists nothing it did not list before;
 - the project's `design-delta.json` and every contract file show no change.
   Check with the project's version control, and put the result in the
@@ -224,7 +242,8 @@ Compare with step 1's, by `ruleId` and `entity`:
   invalid contract, and whether the design pile was verified against a
   current snapshot.
 - **Untouched**: that the config and the contracts show no change, and that
-  `decided` is the same length.
+  `decided` is the same length, or each finding that left it, the component
+  fixed in step 5 that cleared it, and the exemption now stale.
 - **Gate**: the project's gate command and its result. If it still fails,
   name the findings it fails on and their pile: an `error` that belongs to an
   owner keeps the gate red until they decide, and that is the report's first
