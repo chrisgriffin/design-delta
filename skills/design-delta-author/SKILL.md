@@ -236,9 +236,11 @@ Write the contract where the sibling's lives, in the sibling's shape, then:
 npx design-delta contracts --json
 ```
 
-`ok` must be `true` and the new `id` must be in `contracts` with
-`"valid": true`. Fix every diagnostic naming the file; each is a mistake in
-what you wrote, not a question for anyone. Then:
+The new `id` must be in `contracts` with `"valid": true`, and no diagnostic
+may name the file you wrote. Do not require `ok` to be `true`: it is `false`
+while any contract in the project has a diagnostic, including one step 1
+found and reported as not yours. Fix every diagnostic naming your file; each
+is a mistake in what you wrote, not a question for anyone. Then:
 
 ```
 npx design-delta audit --json
@@ -247,12 +249,25 @@ npx design-delta lint --json
 
 From the audit's `findings`, take the entries whose `entity` is the new `id`
 or starts with the `id` followed by a `.`. For a contract whose code does not
-exist yet, exactly these are expected:
+exist yet, these are expected:
 
 - `coverage/contract-only`: the contract names a code path with nothing
   there. The build clears it.
 - `coverage/unfinished-contract`: one or more `_scaffold` notes remain. It
   lists where; that list must match the pending decisions in your report.
+
+When the contract declares `sources.design` (the design-snapshot starting
+point), the design side is compared too, so these are expected as well:
+
+- `components/binding-file-missing`, when the project configures a
+  binding-file convention: no binding file is committed yet. The build
+  writes it, from the finding's `data.expected`.
+- Any other design-side finding for the `id` (a `components/*`, `styles/*`,
+  `anatomy/*` or `coverage/design-missing` finding comparing the contract
+  with the design census) is a place the contract and the snapshot
+  disagree. Read each: either the contract is wrong, and you fix it, or the
+  difference is a decision, and it goes in the report with the finding's
+  rule id. Never edit the contract only to make a finding go away.
 
 Anything else for that `id` is worth reading before you hand off. For a
 contract written over existing code, every finding for the `id` is a place
@@ -292,8 +307,9 @@ from it with nothing else:
 - **Tokens**: every path bound, and that each one resolved in step 5.
 - **New to this project**: every construct or combination from step 6 that no
   sibling has, and whether the project's own checks were found to accept it.
-- **Audit**: the findings for the new `id`, which should be the expected ones
-  from step 7 and no others.
+- **Audit**: the findings for the new `id`: the expected ones from step 7
+  for this starting point, and each design-side finding with what you
+  decided about it. Any other finding is named with why it remains.
 
 Then hand off to the build skill, **`design-delta-build`**, with the
 contract's path. It builds what the contract states and leaves alone what a
