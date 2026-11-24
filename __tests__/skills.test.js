@@ -138,6 +138,19 @@ function problems(skill) {
   return found
 }
 
+/**
+ * Each piece of a skill's code that names a fixed path under a system
+ * temporary directory. A fixed path outlives an interrupted run and is shared
+ * by every run on the machine, so the next run fails on it or reads another
+ * run's files (#39). A path built from `mktemp`'s template
+ * (`"${TMPDIR:-/tmp}/name.XXXXXX"`) is not fixed and is not matched.
+ */
+function fixedTempPaths(skill) {
+  return codeOf(skill.text)
+    .filter(code => /(?:^|[^\w.-])\/(?:private\/)?(?:var\/)?tmp\//.test(code))
+    .map(code => `${skill.file}: fixed temporary path in \`${code}\``)
+}
+
 describe("the packaged skills", () => {
   it("ships the audit, authoring, build, doctor, refresh and resolve skills", () => {
     expect(SKILLS.map(skill => skill.name)).toEqual(
@@ -178,6 +191,28 @@ describe("the packaged skills", () => {
     it("has code to check", () => {
       expect(codeOf(skill.text).length).toBeGreaterThan(0)
     })
+
+    it("#39 names no fixed path under a system temporary directory", () => {
+      expect(fixedTempPaths(skill)).toEqual([])
+    })
+  })
+
+  it("#39 the doctor skill makes one temporary directory per run and removes it", () => {
+    const code = codeOf(
+      SKILLS.find(skill => skill.name === "design-delta-doctor").text,
+    )
+    const made = code.filter(line => line.includes("mktemp -d"))
+    expect(made).toHaveLength(1)
+    // The worktree's branch carries a per-run suffix, never one fixed name.
+    const added = code.filter(line => line.startsWith("git worktree add "))
+    expect(added).toHaveLength(1)
+    expect(added[0]).toMatch(/ -b \S*<suffix>/)
+    expect(code).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^git worktree remove --force "?<work>/),
+        expect.stringMatching(/^rm -rf "?<work>"?$/),
+      ]),
+    )
   })
 
   // The failure paths. Without these, a scrape that found nothing would pass
@@ -218,6 +253,23 @@ describe("the packaged skills", () => {
           "Ask for a design-delta frobnication. Run `npx design-delta audit --json --config x.json`, " +
             "then `verify --fail-on warn`; see `coverage/uncontracted-component` and `paths.tokensFile`.\n" +
             "`gh release view --repo owner/design-delta --json tagName`, `npm view design-delta version` and `design-delta@1.0.0` are not invocations.\n",
+        ),
+      ).toEqual([])
+    })
+
+    it("#39 is caught naming a fixed temporary path, and a mktemp template is not", () => {
+      const paths = text => fixedTempPaths({ file: "skills/x/SKILL.md", text })
+      expect(
+        paths("Run:\n\n```\ngit worktree add /tmp/trial main\n```\n"),
+      ).toEqual([
+        "skills/x/SKILL.md: fixed temporary path in `git worktree add /tmp/trial main`",
+      ])
+      expect(paths("Write `audit --json > /var/tmp/a.json`.\n")).toHaveLength(1)
+      expect(paths("Read `/private/tmp/a.json`.\n")).toHaveLength(1)
+      expect(
+        paths(
+          'Run `mktemp -d "${TMPDIR:-/tmp}/trial.XXXXXX"`, then `cd <work>/project`; ' +
+            "see `docs/tmp/notes.md`. A run in /tmp/prose is not code.\n",
         ),
       ).toEqual([])
     })
