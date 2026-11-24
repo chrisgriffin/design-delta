@@ -26,11 +26,11 @@ The build skill brings one component in line with its contract, and the audit sk
 
 ## Success criteria
 
-- [ ] The package ships `skills/design-delta-resolve/SKILL.md`, a procedure that groups a project's findings by rule, side and entity, separates what code can clear from contract questions, design-side findings and findings that need a person, fixes code-side drift component by component through the build skill's update procedure, and ends with a report of what was cleared, what is left and who owns each remainder.
-- [ ] The skill never clears a finding by editing a contract, an exemption or a rule severity, and its report shows the count by rule before and after.
-- [ ] `design-delta dock` writes a stub for that skill that links to the packaged file, and never overwrites a file at that path it did not generate.
-- [ ] The audit skill, `README.md` and `docs/cli.md` name the skill and the stub `dock` writes for it.
-- [ ] **Runnable:** `test -f skills/design-delta-resolve/SKILL.md && npm run verify` exits 0 (exits 1 on `develop`, where the skill does not exist).
+- [x] The package ships `skills/design-delta-resolve/SKILL.md`, a procedure that groups a project's findings by rule, side and entity, separates what code can clear from contract questions, design-side findings and findings that need a person, fixes code-side drift component by component through the build skill's update procedure, and ends with a report of what was cleared, what is left and who owns each remainder.
+- [x] The skill never clears a finding by editing a contract, an exemption or a rule severity, and its report shows the count by rule before and after.
+- [x] `design-delta dock` writes a stub for that skill that links to the packaged file, and never overwrites a file at that path it did not generate.
+- [x] The audit skill, `README.md` and `docs/cli.md` name the skill and the stub `dock` writes for it.
+- [x] **Runnable:** `test -f skills/design-delta-resolve/SKILL.md && npm run verify` exits 0 (exits 1 on `develop`, where the skill does not exist).
 
 ## Out of scope
 

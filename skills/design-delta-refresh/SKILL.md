@@ -182,11 +182,30 @@ npx design-delta ingest <raw-file...> --json
 went in: it is also the exit code when every file was skipped. Read the
 payload:
 
-- `counts.filesIngested` against the number of files you passed, and
-  `skipped`, which names each file left out and why. A skipped file means the
-  snapshot was written **without** it. Fix the file (the reason says what is
-  wrong with it), then run that pass's `ingest` again with all of its files,
-  not just the fixed one. How depends on the pass:
+- `counts.filesIngested` against the number of files you passed: the
+  difference is how many files were left out. Then `skipped`, whose entries
+  are of three kinds, and only the first is a file to fix:
+  - **A file left out.** The file could not be read, lacks a required
+    envelope field, its payload is not the shape the plan's tool returns, or
+    it carries no node results. The snapshot was written **without** it. Fix
+    it by going back to step 5 for that target: write the envelope fields
+    the plan gives, or call the tool again and save its response whole. Never
+    edit the payload. Then run that pass's `ingest` again with all of its
+    files, as below.
+  - **Entries left out of a file that went in.** The reason counts raw
+    entries skipped, or names one token or one node (`<fileKey>:<nodeId>`)
+    and why it could not be read or matched. The rest of that file is in the
+    snapshot (a bindings file that addresses one node is that one entry, so
+    nothing of it went in). Report each as it is. The payload is the tool's response and
+    stays as it was: editing it to make an entry go in is the corruption this
+    procedure exists to prevent.
+  - **The previous snapshot**, as `file: "design-components.json"`: the
+    previous `design-components.json` could not be read, so nothing was
+    carried forward, or some of its bindings records match no component in
+    this gather (`bindingsDropped`, below). Report it; there is no file to
+    fix.
+
+  To re-run a pass after fixing a file left out:
   - **components**: the first run already wrote a census without the skipped
     file's components, and dropped their bindings-pass fields with them. A
     re-run carries forward from that damaged snapshot, so first put back the
@@ -197,6 +216,7 @@ payload:
   - **bindings**: each run merges into the existing `design-components.json`
     rather than writing it whole; re-run it, after the components pass if
     that one was re-run too.
+
 - `counts.bindingsCarriedForward`: on a components-only ingest, how many
   components kept their bindings-pass fields from the previous snapshot.
   Those fields are still at their old date.
@@ -226,10 +246,14 @@ be checked this way; its evidence is step 6's ingest output. Then read
   back to step 6.
 - `skipped.designBindings` and `skipped.designAnatomy` can appear on a
   healthy run. `designBindings` counts declared bindings the comparison did
-  not reach; `designAnatomy` says no component carries a layer tree, which
-  is expected after a components-only refresh, and can stay after a bindings
-  pass whose responses carry no layer tree. Report them; neither means a
-  snapshot failed to load, and neither is a reason to re-ingest.
+  not reach; `designAnatomy` says no component in the snapshot carries a
+  layer tree. After a components-only refresh it appears only when no earlier
+  bindings pass left a layer tree to carry forward. When one did, the
+  components ingest carried those `layers` forward and the entry is absent,
+  but those layers are still at the earlier bindings pass's date, not this
+  refresh's: say so in the report. It can also stay after a bindings pass
+  whose responses carry no layer tree. Report them; neither means a snapshot
+  failed to load, and neither is a reason to re-ingest.
 
 A pass you did not run belongs under "Not run" in the report, with whatever
 `skipped` says about it.
