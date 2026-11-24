@@ -142,13 +142,34 @@ function problems(skill) {
  * Each piece of a skill's code that names a fixed path under a system
  * temporary directory. A fixed path outlives an interrupted run and is shared
  * by every run on the machine, so the next run fails on it or reads another
- * run's files (#39). A path built from `mktemp`'s template
- * (`"${TMPDIR:-/tmp}/name.XXXXXX"`) is not fixed and is not matched.
+ * run's files (#39). The directory is named literally (`/tmp/`, `/var/tmp/`,
+ * `/private/tmp/`) or through `$TMPDIR` (`$TMPDIR/x`, `"${TMPDIR:-/tmp}/x"`);
+ * only `mktemp`'s own template argument (`"${TMPDIR:-/tmp}/name.XXXXXX"`)
+ * makes a path that is not fixed, so that argument is the one not matched.
  */
+const MKTEMP_ARGUMENT =
+  /\bmktemp((?:\s+-[A-Za-z]+)*)\s+(?:"[^"]*"|'[^']*'|\S+)/g
+const LITERAL_TEMP_DIR = /(?:^|[^\w.-])\/(?:private\/)?(?:var\/)?tmp\//
+const TMPDIR_VARIABLE = /\$\{?TMPDIR\b/
+
 function fixedTempPaths(skill) {
   return codeOf(skill.text)
-    .filter(code => /(?:^|[^\w.-])\/(?:private\/)?(?:var\/)?tmp\//.test(code))
+    .filter(code => {
+      const rest = code.replace(MKTEMP_ARGUMENT, "mktemp$1")
+      return LITERAL_TEMP_DIR.test(rest) || TMPDIR_VARIABLE.test(rest)
+    })
     .map(code => `${skill.file}: fixed temporary path in \`${code}\``)
+}
+
+/**
+ * Each piece of a skill's code that pastes a `<work>` path unquoted. `mktemp`
+ * prints a path under `$TMPDIR`, which can hold a space, and an unquoted
+ * `rm -rf <work>` then removes the wrong paths and leaves the real one.
+ */
+function unquotedWorkPaths(skill) {
+  return codeOf(skill.text)
+    .filter(code => code !== "<work>" && /(?:^|[^"])<work>/.test(code))
+    .map(code => `${skill.file}: unquoted <work> in \`${code}\``)
 }
 
 describe("the packaged skills", () => {
@@ -209,10 +230,20 @@ describe("the packaged skills", () => {
     expect(added[0]).toMatch(/ -b \S*<suffix>/)
     expect(code).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/^git worktree remove --force "?<work>/),
-        expect.stringMatching(/^rm -rf "?<work>"?$/),
+        expect.stringMatching(
+          /^git worktree remove --force "<work>\/project"$/,
+        ),
+        expect.stringMatching(/^rm -rf "<work>"$/),
       ]),
     )
+  })
+
+  it("#39 the doctor skill quotes every <work> path it pastes into a command", () => {
+    const doctor = SKILLS.find(skill => skill.name === "design-delta-doctor")
+    expect(codeOf(doctor.text).some(code => code.includes('"<work>'))).toBe(
+      true,
+    )
+    expect(unquotedWorkPaths(doctor)).toEqual([])
   })
 
   // The failure paths. Without these, a scrape that found nothing would pass
@@ -266,10 +297,40 @@ describe("the packaged skills", () => {
       ])
       expect(paths("Write `audit --json > /var/tmp/a.json`.\n")).toHaveLength(1)
       expect(paths("Read `/private/tmp/a.json`.\n")).toHaveLength(1)
+      // The same fixed path, written through $TMPDIR.
+      expect(
+        paths(
+          'Write `audit --json > "${TMPDIR:-/tmp}/drift-baseline.json"`.\n',
+        ),
+      ).toHaveLength(1)
+      expect(paths("Run `cd $TMPDIR/doctor`.\n")).toHaveLength(1)
+      expect(paths('Run `cd "${TMPDIR}/doctor"`.\n')).toHaveLength(1)
+      expect(
+        paths(
+          'Run `mktemp -d "${TMPDIR:-/tmp}/a.XXXXXX" && cd "$TMPDIR/doctor"`.\n',
+        ),
+      ).toHaveLength(1)
       expect(
         paths(
           'Run `mktemp -d "${TMPDIR:-/tmp}/trial.XXXXXX"`, then `cd <work>/project`; ' +
             "see `docs/tmp/notes.md`. A run in /tmp/prose is not code.\n",
+        ),
+      ).toEqual([])
+    })
+
+    it("#39 is caught pasting <work> unquoted, and a quoted one is not", () => {
+      const unquoted = text =>
+        unquotedWorkPaths({ file: "skills/x/SKILL.md", text })
+      expect(unquoted("Run:\n\n```\nrm -rf <work>\n```\n")).toEqual([
+        "skills/x/SKILL.md: unquoted <work> in `rm -rf <work>`",
+      ])
+      expect(unquoted("Run `cd <work>/project`.\n")).toHaveLength(1)
+      expect(unquoted("Write `audit --json > <work>/a.json`.\n")).toHaveLength(
+        1,
+      )
+      expect(
+        unquoted(
+          'That path is `<work>`. Run `rm -rf "<work>"` and `cd "<work>/project"`.\n',
         ),
       ).toEqual([])
     })

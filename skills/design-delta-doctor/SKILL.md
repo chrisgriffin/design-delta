@@ -102,13 +102,14 @@ mktemp -d "${TMPDIR:-/tmp}/design-delta-doctor.XXXXXX"
 ```
 
 `mktemp` prints the directory it made. That path is `<work>` in every command
-below, and the characters it put in place of `XXXXXX` are `<suffix>`. Write
-both down: each command an agent runs starts a new shell, so a variable set
+below, always inside double quotes as written, since a temporary directory
+can hold a space; the characters it put in place of `XXXXXX` are `<suffix>`.
+Write both down: each command an agent runs starts a new shell, so a variable set
 here is gone by step 2, and so is an exit trap. Then:
 
 ```
-git worktree add <work>/project <integration-branch> -b chore/design-delta-doctor-<suffix>
-cd <work>/project
+git worktree add "<work>/project" <integration-branch> -b chore/design-delta-doctor-<suffix>
+cd "<work>/project"
 npm ci
 ```
 
@@ -130,7 +131,7 @@ Before installing anything, run the audit on whatever version the target
 already has, and keep the output:
 
 ```
-npx design-delta audit --json > <work>/baseline.json
+npx design-delta audit --json > "<work>/baseline.json"
 node -p "require('./node_modules/design-delta/package.json').version"
 ```
 
@@ -150,25 +151,40 @@ step.
 
 ```
 cd <design-delta-repo> && npm pack
-cd <work>/project
+cd "<work>/project"
 npm install <design-delta-repo>/design-delta-<version>.tgz
 ```
 
 **Post-release** — the newest published version:
 
 ```
-LATEST=$(npm view design-delta version)
-CURRENT=$(node -p "require('./package.json').dependencies['design-delta']")
-npm install "design-delta@${LATEST}"
+npm view design-delta version
+node -p "require('./node_modules/design-delta/package.json').version"
+```
+
+The first prints the newest published version, `<latest>`; the second prints
+the version installed now, `<current>`, before anything changes it. Write both
+down, then:
+
+```
+npm install design-delta@<latest>
 ```
 
 The package is on the public npm registry, so `npm view` answers with no
 auth and names no repository.
 
-Either way, confirm what actually landed before trusting a single finding:
-`node -p "require('./node_modules/design-delta/package.json').version"`.
-In post-release mode, `CURRENT` already equalling `LATEST` is a legitimate
-reportable outcome, not a failure to find work.
+Either way, confirm what actually landed before trusting a single finding,
+and record what the install changed in the worktree (it rewrites
+`package.json` and `package-lock.json`), which step 5's read-only check
+compares against:
+
+```
+node -p "require('./node_modules/design-delta/package.json').version"
+git status --short > "<work>/installed-status.txt"
+```
+
+In post-release mode, `<current>` already equalling `<latest>` is a
+legitimate reportable outcome, not a failure to find work.
 
 ### 4. Confirm the project still lines up with this build
 
@@ -199,7 +215,7 @@ Read the target's `package.json` for how it invokes the engine (projects
 commonly wrap it in scripts) and use those. With nothing wired:
 
 ```
-npx design-delta audit --json > <work>/audit.json
+npx design-delta audit --json > "<work>/audit.json"
 npx design-delta verify
 npx design-delta report
 ```
@@ -227,8 +243,17 @@ the suite writes its own inputs. Check each one:
   and `audit --check` return `1` on an error-severity finding and `0` when
   clean, and that `lint` reports without gating.
 - **The read-only claim.** The audit path is documented as never editing.
-  After a full run, `git status --short` in the worktree must show nothing
-  beyond the report/state files the commands were actually asked to write.
+  Step 3's install already changed `package.json` and `package-lock.json`,
+  so compare against what it left rather than against a clean tree. After a
+  full run, in the worktree:
+
+  ```
+  git status --short | diff "<work>/installed-status.txt" -
+  ```
+
+  must show nothing beyond the report/state files the commands were actually
+  asked to write.
+
 - **Cross-command agreement.** `audit`, `verify`, and `report` each
   re-derive the same census. Confirm they agree about the same tree — a
   disagreement between the JSON findings, the rendered report, and the
@@ -291,9 +316,9 @@ repository, not in the worktree, so removing the worktree loses no commit:
 
 ```
 cd <target-project>
-git worktree remove --force <work>/project
+git worktree remove --force "<work>/project"
 git worktree prune
-rm -rf <work>
+rm -rf "<work>"
 git branch -D chore/design-delta-doctor-<suffix>
 ```
 
@@ -301,7 +326,7 @@ git branch -D chore/design-delta-doctor-<suffix>
 there; use it only on the worktree this run created. Skip the last line when
 the branch was pushed for a PR, and say in the report which branch is left.
 Finish with `git worktree list` and `git status --short` in the target: the
-first no longer lists `<work>/project`, the second shows nothing.
+first no longer lists this run's worktree, the second shows nothing.
 
 **What an interrupted run left.** In the target, the first command lists any
 worktree whose path contains `design-delta-doctor.`, and the second lists its
