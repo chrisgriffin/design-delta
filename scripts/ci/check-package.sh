@@ -182,6 +182,17 @@ if [ ! -f "$STUB_LINK" ]; then
 fi
 echo "OK    init wrote a linked stub that resolves to the packaged canonical skill"
 
+# `init` lays the same procedure stubs `dock` does, so a project that never
+# runs `dock` can still find each packaged skill.
+for NAME in design-delta-build design-delta-author design-delta-refresh design-delta-resolve; do
+  PACKAGED="node_modules/design-delta/skills/$NAME/SKILL.md"
+  if ! grep -qF "$PACKAGED" ".claude/skills/$NAME/SKILL.md" 2>/dev/null || [ ! -f "$PACKAGED" ]; then
+    echo "::error::init did not write a $NAME stub linking the packaged skills/$NAME/SKILL.md" >&2
+    exit 1
+  fi
+done
+echo "OK    init wrote a stub for every procedure skill dock links"
+
 echo "==> Verifying \`init\` never destroys a consumer's own skill at that path"
 # `skills/design-delta/` is a name a project may already use for its own
 # hand-maintained skill — the guard that keeps `init` off it is the one

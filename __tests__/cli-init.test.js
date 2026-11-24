@@ -21,6 +21,8 @@ import { join } from "node:path"
 
 import {
   GENERATED_MARKER,
+  LINKED_SKILLS,
+  linkedStubTemplates,
   renderSkillStubTemplate,
 } from "../src/cli/commands/dock.mjs"
 import { runInit } from "../src/cli/commands/init.mjs"
@@ -172,6 +174,48 @@ describe("runInit — the linked skill stub", () => {
     ).toBe(hand)
     expect(out()).toContain("skipped .claude/skills/design-delta/SKILL.md")
     expect(out()).toContain("left untouched")
+  })
+
+  // Every skill `dock` links, not only the audit skill: a project set up
+  // with `init` alone must be able to find each packaged procedure.
+  describe.each(LINKED_SKILLS)("the %s stub", name => {
+    const path = `.claude/skills/${name}/SKILL.md`
+
+    it("is written, linking to the packaged skill, and reported", async () => {
+      const { io, out } = fakeIo()
+      const code = await runInit(["--yes"], { globalOpts: {}, io, root })
+      expect(code).toBe(0)
+      expect(readFileSync(join(root, path), "utf8")).toContain(
+        `node_modules/design-delta/skills/${name}/SKILL.md`,
+      )
+      expect(out()).toContain(`wrote ${path}`)
+    })
+
+    it("is left untouched when the consumer owns a file at that path", async () => {
+      const hand = `---\nname: ${name}\n---\n\nOur own procedure.\n`
+      write(path, hand)
+      const { io, out } = fakeIo()
+      const code = await runInit(["--yes"], { globalOpts: {}, io, root })
+      expect(code).toBe(0)
+      expect(readFileSync(join(root, path), "utf8")).toBe(hand)
+      expect(out()).toContain(`skipped ${path}`)
+    })
+  })
+
+  it("writes the same linked stubs dock does, byte for byte", async () => {
+    await runInit(["--yes"], ctx())
+    for (const { relative, content } of linkedStubTemplates())
+      expect(readFileSync(join(root, ".claude", relative), "utf8")).toBe(
+        content,
+      )
+  })
+
+  it("writes no hook and no verify skill: those stay dock's", async () => {
+    await runInit(["--yes"], ctx())
+    expect(existsSync(join(root, ".claude/hooks"))).toBe(false)
+    expect(existsSync(join(root, ".claude/skills/design-delta-verify"))).toBe(
+      false,
+    )
   })
 
   it("still refreshes a stale stub that carries the generated-by marker", async () => {

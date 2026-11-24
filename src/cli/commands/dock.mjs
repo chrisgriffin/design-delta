@@ -16,11 +16,13 @@
  *
  * The templates: the hook, the verify skill, and the linked stubs — one
  * pointing at the canonical audit skill, one at each skill `LINKED_SKILLS`
- * names. The third (issue #336), the audit skill's stub, is the one `init`
- * also offers: `renderSkillStubTemplate` and `writeTemplateFile` are exported
- * for that — `init` invokes `dock`'s own template + writer rather than
- * growing a second scaffold path, per the grooming note on #336. The
- * `LINKED_SKILLS` stubs only `dock` writes.
+ * names. `init` writes every linked stub too: `linkedStubTemplates` and
+ * `writeTemplateFile` are exported for that — `init` invokes `dock`'s own
+ * templates + writer rather than growing a second scaffold path, per the
+ * grooming note on #336. The hook and the verify skill stay `dock`'s alone:
+ * they change how an agent behaves and need wiring. The doctor skill has no
+ * stub on purpose: it is the maintainer's procedure and takes a target
+ * project a generated file cannot know.
  *
  * GENERIC ONLY — CLAUDE.md's non-negotiable rule. Every path, command, and
  * name in the templates below is either a literal `design-delta` CLI
@@ -246,10 +248,9 @@ versions with it, so read it first and follow it:
 
     node_modules/design-delta/${relative}
 
-${GENERATED_MARKER} — safe to overwrite, and
-refreshed by re-running \`dock\` after an engine upgrade. Delete that line
-to claim this file as your own: \`dock\` skips a file here that does not
-carry it.
+${GENERATED_MARKER} — safe to overwrite, and refreshed by re-running either
+after an engine upgrade. Delete that line to claim this file as your own:
+\`init\`/\`dock\` skip a file here that does not carry it.
 `
 }
 
@@ -337,6 +338,31 @@ function renderJson(result) {
 }
 
 /**
+ * Every linked skill stub, as `{relative, content, options}`: the audit stub
+ * and one per packaged procedure skill. `dock` and `init` both write from
+ * this one list, each entry guarded by `GENERATED_MARKER`.
+ *
+ * @returns {Array<{relative: string, content: string, options: object}>}
+ */
+export function linkedStubTemplates() {
+  return [
+    {
+      relative: SKILL_STUB_RELATIVE_PATH,
+      content: renderSkillStubTemplate(),
+      // One of the guarded templates — see GENERATED_MARKER above.
+      options: { requireMarker: GENERATED_MARKER },
+    },
+    // Guarded like the stub above: a project may already keep a skill of
+    // its own under any of these names.
+    ...LINKED_SKILLS.map(name => ({
+      relative: skillRelativePath(name),
+      content: renderPackagedSkillStubTemplate(name),
+      options: { requireMarker: GENERATED_MARKER },
+    })),
+  ]
+}
+
+/**
  * Run the subcommand. Returns the exit code; never calls `process.exit`.
  *
  * @param {string[]} cmdArgv
@@ -361,19 +387,7 @@ export function runDock(cmdArgv, ctx) {
   const templates = [
     { relative: HOOK_RELATIVE_PATH, content: renderHookTemplate(dir) },
     { relative: SKILL_RELATIVE_PATH, content: renderSkillTemplate() },
-    {
-      relative: SKILL_STUB_RELATIVE_PATH,
-      content: renderSkillStubTemplate(),
-      // One of the guarded templates — see GENERATED_MARKER above.
-      options: { requireMarker: GENERATED_MARKER },
-    },
-    // Guarded like the stub above: a project may already keep a skill of
-    // its own under any of these names.
-    ...LINKED_SKILLS.map(name => ({
-      relative: skillRelativePath(name),
-      content: renderPackagedSkillStubTemplate(name),
-      options: { requireMarker: GENERATED_MARKER },
-    })),
+    ...linkedStubTemplates(),
   ]
 
   const files = templates.map(({ relative, content, options }) =>

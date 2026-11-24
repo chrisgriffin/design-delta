@@ -159,9 +159,19 @@ in one of three ways, and you record which:
 - **not checkable**: a `review` finding the code cannot clear. It moves to
   the review pile with what you read by hand.
 
+While working one component, `npx design-delta audit --json --contract <id>`
+shows that component's findings alone, which is what the build skill's
+procedure reads. It scopes the report, not the project: its count is never
+the number you report. Nor does it show every code-pile finding:
+`tokens/var-unresolved`, and any other code-pile finding whose `entity` is
+not the component's `id`, one of its elements or a file its contract names,
+is never in the scoped list. Track those in the unscoped audit, and clear
+them in the component whose code references the custom property.
+
 After each component, before starting the next:
 
-- take the audit again and compare it with the one before this component, by
+- take the whole audit again, without `--contract`, and compare it with the
+  one before this component, by
   `ruleId` and `entity`. This component's cleared findings are gone, and
   **nothing new appeared anywhere else**. A new finding on another component
   is your change breaking something shared (a style both use, a component
@@ -285,7 +295,7 @@ work not done.
 ## How a consumer links this file
 
 Claude Code does not discover skills inside `node_modules`. `design-delta
-dock` writes a stub at `.claude/skills/design-delta-resolve/SKILL.md` that
-points here, the same way it links the other packaged skills; the stub
+init` and `design-delta dock` each write a stub at `.claude/skills/design-delta-resolve/SKILL.md` that
+points here, the same way they link the other packaged skills; the stub
 carries no procedure of its own, so it cannot disagree with the installed
 version.
