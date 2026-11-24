@@ -20,7 +20,7 @@ import {
 } from "./snapshot.mjs"
 import { parseFlags } from "../flags.mjs"
 
-const FLAG_SPEC = { boolean: ["--json"], value: [] }
+export const FLAG_SPEC = { boolean: ["--json"], value: [] }
 
 // `"component:button"` -> `{kind: "component", id: "button"}`. `split` (not
 // a two-group regex) so an id that itself contains a colon still round-trips.

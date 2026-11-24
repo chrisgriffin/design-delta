@@ -34,7 +34,7 @@ const PACKAGE_ROOT = join(
   "..",
   "..",
 )
-const FLAG_SPEC = { boolean: [], value: [] }
+export const FLAG_SPEC = { boolean: [], value: [] }
 
 function packageVersion() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))

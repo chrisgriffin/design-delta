@@ -41,11 +41,11 @@ The short map:
 | Command                                               | What it does                                                                                                          |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `contracts`                                           | schema- + semantically-validate every contract                                                                        |
-| `audit`                                               | read-only census + diff across the configured surfaces                                                                |
+| `audit`                                               | read-only census + diff across the configured surfaces; `--contract <id>` scopes the report to one component          |
 | `verify`                                              | the composed CI gate — invalid contract or gating finding fails it                                                    |
 | `lint`                                                | static token-system rules (separate from `verify`, never run by it)                                                   |
 | `report`                                              | render findings to artifacts (`md,terminal,sarif,pr-comment`)                                                         |
-| `init` / `dock`                                       | scaffold config / a Claude Code hook + skill into the consumer                                                        |
+| `init` / `dock`                                       | scaffold config / a Claude Code hook + skills into the consumer                                                       |
 | `gather` / `ingest`                                   | design-side census: `gather` prints a plan, `ingest` normalizes results                                               |
 | `scaffold` / `snapshot` / `movers` / `impact` / `map` | draft contracts; write the `isNew` baseline; diff since it; blast radius; ownership overview — **all code-side only** |
 | `mcp`                                                 | read-only MCP server over stdio: contracts + tokens for a coding agent, every answer version-stamped                  |
@@ -62,8 +62,9 @@ the generated [rules.md](../../docs/rules.md); what the engine deliberately
 does not check is in [deferred-rules.md](../../docs/deferred-rules.md).
 The load-bearing facts:
 
-- **Only `error`-severity findings gate** `verify`, `audit --check`, and
-  `lint` exit codes. `warn`/`review` are reported, never gating.
+- **By default only `error`-severity findings gate** `verify` and
+  `audit --check`. `warn`/`review` are reported; `verify --fail-on` can
+  lower the threshold so they gate too. `lint` reports and never gates.
 - A project can override any rule's severity (`rules` in config) or waive a
   specific entity (`exemptions`) — check the project's config before
   reasoning about why a finding does or doesn't fail a run.
@@ -85,6 +86,10 @@ The engine has no agent inside it and never calls a design tool:
    stale snapshot reads as current — before trusting a design-side result,
    check when the snapshot files last changed (`git log` on them), not when
    the audit ran.
+
+The procedure for bringing that snapshot up to date, step by step and with
+what to do when a session lacks the design tool's tools, is the sibling skill
+[`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md).
 
 `snapshot`/`movers`/`impact`/`map` are a separate, **code-side-only**
 mechanism (`state.json`, documented in
@@ -113,6 +118,23 @@ file** (`node_modules/design-delta/skills/design-delta/SKILL.md`)
 first, then the project's `design-delta.json` `_`-prefixed keys for local
 decisions. The stub carries no engine prose, so it never goes stale; this
 file versions with the engine, so it can't disagree with the installed CLI.
+
+**Writing a contract** and **building from one** are sibling skills.
+[`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)
+takes a request to a validated contract, asking rather than inventing where
+the request leaves the component's API open.
+[`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md) takes
+that contract to code and then uses the audit above as the proof.
+[`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md)
+refreshes the design snapshot, and
+[`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
+works a project's whole list of findings down, sorting each by who can clear
+it.
+[`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md) writes a
+component's documentation page from its contract, in the project's own
+documentation format, and rewrites only its generated sections when the
+contract changes. `init` and `dock` each write a stub for each under
+`.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about
 engine behavior (commands, flags, rules, severities, snapshot semantics) in

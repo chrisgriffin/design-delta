@@ -24,7 +24,7 @@ exactly one shape:
 | `entity`   | the thing the finding is about — a token path, a component/file path, or a shared identity a group of findings collapsed onto |
 | `message`  | the human-readable sentence                                                                                                   |
 | `data`     | optional, rule-specific detail (e.g. a grouped token finding's `tokens`/`expectedVar`)                                        |
-| `isNew`    | optional (issue #243) — see below                                                                                             |
+| `isNew`    | optional — see below                                                                                                          |
 
 ### `isNew` — new since the last `snapshot`
 
@@ -96,12 +96,14 @@ decision: {
 ```
 
 A decided finding never gates `verify` and never counts toward the severity
-totals; `counts.exempted` equals `decided.length`. The human `audit`, `lint`
+totals; `counts.exempted` equals `decided.length`, including under
+`audit --contract <id>`, where both lists are scoped to one component and
+`scope.findings`/`scope.exempted` carry the project-wide totals. The human `audit`, `lint`
 and `report` output list them in a "DECISIONS" section grouped by kind.
 
 ## Health score
 
-`verify` and `report` (issue #219, `core/health-score.mjs`) turn a run's
+`verify` and `report` (`core/health-score.mjs`) turn a run's
 findings into a single 0-100 score, so a project can track drift as one
 trending number instead of a raw finding count that only ever grows with the
 codebase. `audit`/`lint` on their own do not compute it — it is a composed
@@ -177,15 +179,15 @@ otherwise report the same unreadable file twice.
 ### The design side of the `styles` surface
 
 `styles` findings carry `side: "code"` when the comparison is contract ↔
-stylesheet, and `side: "design"` for `styles/design-binding-missing`
-(issue #401): a token the contract declares that no variable the design
+stylesheet, and `side: "design"` for `styles/design-binding-missing`:
+a token the contract declares that no variable the design
 component binds maps to — component-level, from the `usedVars` field
 `ingest --bindings` merges onto the design component census. When the
 component binds a token that the declared token aliases at any depth,
-the finding stays (a component binds the declared token, not the one under
-it), and its message names the bound token (as a primitive when it aliases
+the finding stays ([ADR-005](./adr/ADR-005-primitive-binding-is-drift.md)),
+and its message names the bound token (as a primitive when it aliases
 nothing itself) and says to bind the declared token, with the bound token's
-id in `data.boundAliasTarget` (issue #686). A snapshot
+id in `data.boundAliasTarget`. A snapshot
 without `usedVars` produces no design-side styles findings at all: the
 bindings gather is opt-in, and absence of data is never reported as drift.
 

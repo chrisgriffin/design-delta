@@ -15,28 +15,33 @@ mirrors code says what the code says.
 
 ## Running tests
 
+- `npm run verify` — the whole local gate, one command: `npm run checks`,
+  then `npm test`. Run it before pushing.
+- `npm run checks` — the fast checks chain. Its steps are listed once, in
+  `package.json`'s `checks` script, run cheapest-first so the first failure
+  stops it; CI's `checks` job runs this script and nothing else, so a step
+  added there is a step CI runs.
 - `npm test` — the whole Jest suite. The script sets
   `NODE_OPTIONS=--experimental-vm-modules`, which is what lets Jest's VM load
   this native-ESM source with no transform step, so run the script and never
   bare `jest`. CI runs it as the `test_22` job on Node 22, and again on Node
   24 and 26 on a push to `main`.
-- `npx prettier --check .` — formatting. `.prettierignore` carves out only
-  generated files, `package.json`/`package-lock.json`, build/scratch output
-  (`coverage/`, `tmp-*/`), and the laid `.agents/` and `.specify/`
-  trees.
-- `bash scripts/ci/check-action.sh` — `action.yml` is a valid composite
-  action.
-- `bash scripts/ci/check-package.sh` — the published surface: `files`,
-  `bin`, `exports` and the `npm pack` contents.
-- `node scripts/ci/check-schemas.mjs` — every JSON Schema under `schema/`
-  compiles.
-- `node scripts/generate-config-reference.mjs --check` and
-  `node scripts/generate-rules-reference.mjs --check` — the two generated
-  docs match their sources; re-run either without `--check` to regenerate.
 
-The last five are one `checks` job in CI, run cheapest-first, so the first
-failure fails the job. Nothing needs a build, a browser or a registry token
-first.
+What each step of the chain checks:
+
+- Prettier — formatting. `.prettierignore` carves out only generated files,
+  `package.json`/`package-lock.json`, build/scratch output (`coverage/`,
+  `tmp-*/`), and the laid `.agents/` and `.specify/` trees.
+- `npm run lint` — ESLint, from the shared `@chrisgriffin/config` base plus
+  the overrides in `eslint.config.mjs`, each with its reason.
+- `check-action.sh` — `action.yml` is a valid composite action.
+- `check-package.sh` — the published surface: `files`, `bin`, `exports` and
+  the `npm pack` contents.
+- `check-schemas.mjs` — every JSON Schema under `schema/` compiles.
+- The two reference generators with `--check` — the generated docs match
+  their sources; re-run either without `--check` to regenerate.
+
+Nothing needs a build, a browser or a registry token first.
 
 ## What is tested
 
@@ -52,6 +57,25 @@ first.
   `cli-subcommand-docs.test.js`, `rules-reference.test.js` and
   `coupled-files.test.js` compare a doc's tables and paths against the schema,
   registry, `action.yml` or CLAUDE.md section they mirror.
+- **Packaged skills** — `__tests__/skills.test.js` holds every
+  `skills/*/SKILL.md` to frontmatter naming its own directory, and to naming
+  in code only subcommands, flags, rule ids and config keys the engine has,
+  each read from the engine's own registry. `check-package.sh` resolves every
+  stub `dock` writes against the installed tarball.
+- **Consumer-read strings** — `__tests__/adr-citations.test.js` holds every
+  ADR a rule description, a drafted `_scaffold` note, a shipped JSON schema
+  or a shipped skill cites to the form `design-delta's ADR-NNN`, since all
+  are read in a consumer's own repo: the notes a scaffold run drafts, every
+  string and template literal in `src/spec/scaffold.mjs` (so a note no
+  fixture reaches is held too), every string at any depth in `schema/*.json`,
+  and every line of every file under `skills/`, whatever its extension. The
+  same schema strings are held to cite no tracker issue by number
+  (an issue number reads as the consumer's own issue), through the tracker scan
+  `rules-reference.test.js` applies to `docs/rules.md`, as is the generated
+  `docs/config-reference.md`, which also renders each provider's config.
+  Its scan lives once in `helpers/adr-citations.mjs`; `helpers/rule-arrays.mjs`
+  finds every exported rule registry by shape, shared with
+  `rules-reference.test.js` and `cli-rule-registry.test.js`.
 - **Repo invariants** — `__tests__/ci-workflow.test.js`,
   `workflow-stubs.test.js`, `workflow-timeouts.test.js` and
   `registry-url.test.js` pin the job-to-check mapping, the reusable-workflow

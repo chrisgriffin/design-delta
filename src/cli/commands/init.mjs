@@ -23,13 +23,15 @@
  * `paths.{tokensFile,componentsDir,contractsDir}`, `conventions.cssVarPrefix`,
  * and `design.provider` are ever written to that file by this command.
  *
- * The one other file is the linked skill stub (issue #336): `init` also
- * writes `.claude/skills/design-delta/SKILL.md` through `dock`'s own
- * template + writer (`writeTemplateFile` in `./dock.mjs`) — one scaffold
- * path, not two. That write is guarded by `dock`'s `GENERATED_MARKER`, and
- * so is neither this command's merge nor `dock`'s plain overwrite: a file
- * already at that path without the marker is a consumer's own skill, left
- * untouched and reported as `skipped`. `skills/design-delta/` is a name a
+ * The other files are the linked skill stubs (issue #336): `init` also
+ * writes `.claude/skills/design-delta/SKILL.md` and one stub per skill
+ * `dock` links, through `dock`'s own templates + writer
+ * (`linkedStubTemplates` and `writeTemplateFile` in `./dock.mjs`) — one
+ * scaffold path, not two, so a project set up here can find every packaged
+ * procedure without also running `dock`. Each write is guarded by `dock`'s
+ * `GENERATED_MARKER`, and so is neither this command's merge nor `dock`'s
+ * plain overwrite: a file already at one of those paths without the marker
+ * is a consumer's own skill, left untouched and reported as `skipped`. `skills/design-delta/` is a name a
  * project may well have used before installing this package.
  *
  * `@clack/prompts` (ADR-001 D8, decided 2026-07-30: adopted) is
@@ -54,16 +56,14 @@ import {
 } from "../../core/config.mjs"
 import {
   DEFAULT_DIR as DEFAULT_DOCK_DIR,
-  GENERATED_MARKER,
-  SKILL_STUB_RELATIVE_PATH,
-  renderSkillStubTemplate,
+  linkedStubTemplates,
   writeTemplateFile,
 } from "./dock.mjs"
 import { detectProject } from "../init-detect.mjs"
 import { parseFlags } from "../flags.mjs"
 import { listProviders } from "../../providers/index.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: ["--yes"],
 }
 
@@ -318,7 +318,7 @@ function suggestedScripts() {
 }
 
 /**
- * One line reporting what happened to the linked skill stub. `skipped` is
+ * One line reporting what happened to one linked skill stub. `skipped` is
  * the case worth explaining: the consumer already owns a file at that path,
  * so nothing was written and they need to know the link is not there.
  *
@@ -400,27 +400,34 @@ export async function runInit(cmdArgv, ctx) {
   fs.mkdirSync(dirname(configPath), { recursive: true })
   fs.writeFileSync(configPath, JSON.stringify(merged, null, 2) + "\n")
 
-  // The linked skill stub (issue #336) — a third `dock` template, written
+  // The linked skill stubs (issue #336) — `dock`'s own templates, written
   // through `dock`'s own writer so there is one scaffold path, not two, and
-  // guarded by `dock`'s marker so an existing file this package did not
+  // each guarded by `dock`'s marker so an existing file this package did not
   // generate is reported rather than destroyed.
-  const stub = writeTemplateFile(
-    fs,
-    root,
-    DEFAULT_DOCK_DIR,
-    SKILL_STUB_RELATIVE_PATH,
-    renderSkillStubTemplate(),
-    { requireMarker: GENERATED_MARKER },
+  const stubLines = linkedStubTemplates().map(
+    ({ relative, content, options }) =>
+      renderStubLine(
+        writeTemplateFile(
+          fs,
+          root,
+          DEFAULT_DOCK_DIR,
+          relative,
+          content,
+          options,
+        ),
+      ),
   )
 
   const scripts = suggestedScripts()
   if (opts.yes) {
     io.stdout.write(`design-delta init: wrote ${configPath}\n`)
-    io.stdout.write(`design-delta init: ${renderStubLine(stub)}\n\n`)
+    for (const line of stubLines)
+      io.stdout.write(`design-delta init: ${line}\n`)
+    io.stdout.write("\n")
     io.stdout.write(renderScripts(scripts))
   } else {
     const prompts = ctx.prompts || (await import("@clack/prompts"))
-    prompts.outro(`Wrote ${configPath}\n${renderStubLine(stub)}`)
+    prompts.outro(`Wrote ${configPath}\n${stubLines.join("\n")}`)
     io.stdout.write("\n" + renderScripts(scripts))
   }
 

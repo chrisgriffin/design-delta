@@ -54,7 +54,7 @@ export const RULES = [
     surface: "coverage",
     defaultSeverity: "review",
     description:
-      "An entity is exempted from a rule, but that rule reported nothing matching it — the exemption is stale, or the entity no longer exists. Exemptions are claims to re-verify, not permanent silence (ADR-001 D5).",
+      "An entity is exempted from a rule, but that rule reported nothing matching it — the exemption is stale, or the entity no longer exists. Exemptions are claims to re-verify, not permanent silence (design-delta's ADR-001 D5).",
   },
 ]
 

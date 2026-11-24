@@ -187,7 +187,7 @@ export const RULES = [
     surface: "styles",
     defaultSeverity: "review",
     description:
-      "The contract declares a token binding, and no variable the design component binds anywhere in its tree maps to that token — component-level coverage (issue #401): it says the design side never binds the token, not which element should. Element-level precision follows the design-side anatomy mapping (issue #402). Requires a bindings gather (`gather --bindings` + `ingest --bindings`); a snapshot without `usedVars` is skipped silently, never reported. Three declared bindings are never reported, each stated on the run's `skipped` channel with its reason (issue #492): one whose style property the active provider declares it cannot express as a node-level variable (see that provider's own `unbindableProperties`), one whose token resolves to zero (an unset value binds no variable), and one a `design.options.tokenMap` redirect sends to a different token than the contract names (out of reach by construction, whatever the design file does).",
+      "The contract declares a token binding, and no variable the design component binds anywhere in its tree maps to that token — component-level coverage: it says the design side never binds the token, not which element should. Element-level precision follows the design-side anatomy mapping. Requires a bindings gather (`gather --bindings` + `ingest --bindings`); a snapshot without `usedVars` is skipped silently, never reported. Three declared bindings are never reported, each stated on the run's `skipped` channel with its reason: one whose style property the active provider declares it cannot express as a node-level variable (see that provider's own `unbindableProperties`), one whose token resolves to zero (an unset value binds no variable), and one a `design.options.tokenMap` redirect sends to a different token than the contract names (out of reach by construction, whatever the design file does). When none of those three skips applies, a component that binds a primitive where the contract declares the semantic token aliasing it is reported, naming the token to bind: components bind semantic tokens (design-delta's ADR-005).",
   },
 ]
 
@@ -1284,7 +1284,8 @@ function declaredTokenBindings(styles) {
  * The census's alias edges, reversed: target id -> the ids of the tokens
  * that alias it, every id passed through `fold`. Reads `aliasOf` and
  * `aliasChain` exactly as `tokens.mjs` collects its alias targets — a chain
- * link is a token this one resolves through, at any depth.
+ * link is a token this one resolves through, at any depth. The walk over it
+ * only diagnoses (ADR-005, docs/adr/ADR-005-primitive-binding-is-drift.md).
  *
  * @param {Array<{id: string, aliasOf?: string, aliasChain?: string[]}>} tokens
  * @param {(id: string) => string} [fold]
@@ -1314,7 +1315,8 @@ export function buildAliasIndex(tokens, fold = id => id) {
  * finding stays — this only lets its message name the primitive and the fix.
  * Never downward: a bound token that aliases what the contract declares says
  * nothing about the declared one. The visited map is what makes a cyclic or
- * self-referential chain finish.
+ * self-referential chain finish
+ * (why: ADR-005, docs/adr/ADR-005-primitive-binding-is-drift.md).
  *
  * @param {Iterable<string>} folds
  * @param {Map<string, Set<string>>} index from `buildAliasIndex`
@@ -1365,6 +1367,12 @@ export function expandThroughAliases(folds, index) {
  *      — no change to the design file can satisfy the rule. The redirect is
  *      the project's own correct answer for the TOKEN census, so this is
  *      reported on the `skipped` channel and never as drift.
+ *
+ * A design component that binds a primitive where the contract declares the
+ * semantic token aliasing it is not a fourth skip, and it does not override
+ * the three above: when none of them applies, it has bound the wrong tier
+ * and is reported, its message naming the token to bind (why: ADR-005,
+ * docs/adr/ADR-005-primitive-binding-is-drift.md).
  *
  * @param {Array<{id: string, contract: object, designMatchKey?: string|null}>} contracts
  * @param {{entries: Array<{matchKey: string, usedVars?: string[]}>}} designCensus
@@ -1502,7 +1510,8 @@ export function runDesignBindingsCheck(
 
     // A component that binds a primitive while the contract declares the
     // semantic token aliasing it has bound the wrong tier: still a finding,
-    // but one that can name the primitive it binds instead (issue #686).
+    // but one that can name the primitive it binds instead (issue #686;
+    // why: ADR-005, docs/adr/ADR-005-primitive-binding-is-drift.md).
     const aliasOrigins = expandThroughAliases(boundFolds, aliasIndex)
 
     const declared = declaredTokenBindings(contract?.styles)

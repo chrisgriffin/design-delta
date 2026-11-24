@@ -46,7 +46,7 @@ import { parseFlags } from "../flags.mjs"
 import { runAudit } from "./audit.mjs"
 import { gatherHealthScore, sink } from "../gather-health-score.mjs"
 
-const FLAG_SPEC = {
+export const FLAG_SPEC = {
   boolean: [
     "--components",
     "--tokens",

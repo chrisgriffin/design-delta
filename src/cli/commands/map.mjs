@@ -54,7 +54,7 @@ import { parseFlags } from "../flags.mjs"
 import { runAudit } from "./audit.mjs"
 import { sink } from "../gather-health-score.mjs"
 
-const FLAG_SPEC = { boolean: ["--json"], value: [] }
+export const FLAG_SPEC = { boolean: ["--json"], value: [] }
 
 // The two halves of "nothing references this token" (issue #562): emitted
 // and unused, or never emitted. Both make a token unreferenced here.

@@ -51,6 +51,10 @@ function jobsIn(text) {
 
 const JOBS = jobsIn(CI)
 
+const PKG = JSON.parse(
+  readFileSync(join(process.cwd(), "package.json"), "utf8"),
+)
+
 describe("ci.yml reports every check the live ruleset requires, with no mirror overhead", () => {
   it("found jobs to check — an empty parse would make every assertion below vacuous", () => {
     expect(JOBS.length).toBeGreaterThan(0)
@@ -131,6 +135,29 @@ describe("ci.yml reports every check the live ruleset requires, with no mirror o
     for (const v of ["22", "24", "26"]) {
       expect(CI).toMatch(new RegExp(`node_version: "${v}"`))
     }
+  })
+
+  it("#10 the `checks` job runs `npm run checks` — package.json is the one home of the chain", () => {
+    // The chain used to be written out here, in CLAUDE.md and in
+    // docs/testing.md, and the lint step went missing from all three with
+    // nothing noticing (#10). A step added to the `checks` script is now a
+    // step CI runs, so this `run:` must stay exactly the script call.
+    const job = JOBS.find(j => j.id === "checks")
+    expect(job).toBeDefined()
+    expect(job.body).toMatch(/^ {6}run: npm run checks$/m)
+    expect(PKG.scripts.checks).toEqual(expect.any(String))
+    expect(PKG.scripts.checks).toMatch(/npm run lint/)
+  })
+
+  it("#10 a pull request runs the test suite in exactly one job", () => {
+    // `verify` is the local gate (`checks` then `npm test`); CI never calls
+    // it, or the suite would bill twice per pull request (docs/ci.md).
+    const onPullRequest = JOBS.filter(j => !PUSH_ONLY.includes(j.id))
+    expect(
+      onPullRequest.filter(j => /^ {6}run: npm test$/m.test(j.body)),
+    ).toHaveLength(1)
+    expect(PKG.scripts.checks).not.toMatch(/npm (run )?(test|verify)\b/)
+    expect(CI).not.toMatch(/^ *run:.*npm run verify/m)
   })
 
   it("the pull_request trigger fires on ready_for_review", () => {

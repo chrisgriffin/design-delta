@@ -182,6 +182,17 @@ if [ ! -f "$STUB_LINK" ]; then
 fi
 echo "OK    init wrote a linked stub that resolves to the packaged canonical skill"
 
+# `init` lays the same procedure stubs `dock` does, so a project that never
+# runs `dock` can still find each packaged skill.
+for NAME in design-delta-build design-delta-author design-delta-refresh design-delta-resolve design-delta-docs; do
+  PACKAGED="node_modules/design-delta/skills/$NAME/SKILL.md"
+  if ! grep -qF "$PACKAGED" ".claude/skills/$NAME/SKILL.md" 2>/dev/null || [ ! -f "$PACKAGED" ]; then
+    echo "::error::init did not write a $NAME stub linking the packaged skills/$NAME/SKILL.md" >&2
+    exit 1
+  fi
+done
+echo "OK    init wrote a stub for every procedure skill dock links"
+
 echo "==> Verifying \`init\` never destroys a consumer's own skill at that path"
 # `skills/design-delta/` is a name a project may already use for its own
 # hand-maintained skill — the guard that keeps `init` off it is the one
@@ -194,3 +205,38 @@ if [ "$(cat "$STUB")" != "$(printf '%s' "$HAND")" ]; then
   exit 1
 fi
 echo "OK    init left a consumer-owned stub untouched"
+
+echo "==> Verifying every stub \`dock\` writes links a skill the tarball ships"
+# `dock` lays a stub per consumer-facing skill, each pointing at a path under
+# node_modules/design-delta/skills/. A skill dropped from the tarball, or a
+# stub naming a path that moved, leaves an agent told to read a file that is
+# not there. Every stub is checked by what it links, not from a named list.
+DOCK_DIR="dock-check"
+node "$PKG_DIR/src/cli/main.mjs" dock --dir "$DOCK_DIR" >/dev/null
+STUB_COUNT=0
+FAILED_STUBS=0
+for GENERATED in "$DOCK_DIR"/skills/*/SKILL.md; do
+  [ -f "$GENERATED" ] || continue
+  while IFS= read -r target; do
+    STUB_COUNT=$((STUB_COUNT + 1))
+    if [ ! -f "$target" ]; then
+      echo "::error::$GENERATED links $target, which is not in the installed package" >&2
+      FAILED_STUBS=1
+    fi
+  done < <(grep -oE 'node_modules/design-delta/skills/[A-Za-z0-9_./-]+' "$GENERATED" || true)
+done
+[ "$FAILED_STUBS" -eq 0 ] || exit 1
+# Each procedure skill `dock` links must have its stub written and its
+# packaged file present: a stub that was never written links nothing to check.
+for NAME in design-delta-build design-delta-author design-delta-refresh design-delta-resolve design-delta-docs; do
+  PACKAGED="node_modules/design-delta/skills/$NAME/SKILL.md"
+  if ! grep -qF "$PACKAGED" "$DOCK_DIR/skills/$NAME/SKILL.md" 2>/dev/null || [ ! -f "$PACKAGED" ]; then
+    echo "::error::dock did not write a $NAME stub linking the packaged skills/$NAME/SKILL.md" >&2
+    exit 1
+  fi
+done
+if [ "$STUB_COUNT" -lt 6 ]; then
+  echo "::error::dock wrote $STUB_COUNT linked stub(s); expected one per consumer-facing skill" >&2
+  exit 1
+fi
+echo "OK    $STUB_COUNT linked stub(s) from dock; each resolves in the installed package"

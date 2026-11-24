@@ -702,7 +702,7 @@ describe("design-delta scaffold — anatomy variants (issue #431)", () => {
               // and marked for the author like every other unresolved value.
               when: "TODO: say when this branch renders",
               _scaffold: {
-                todo: "`when` is documentation for a human reader, never a condition this engine evaluates (ADR-002 D4) — say when this branch renders",
+                todo: "`when` is documentation for a human reader, never a condition this engine evaluates (design-delta's ADR-002 D4) — say when this branch renders",
               },
               // Only the node that DIFFERS from the base (D3, partial
               // override) — nothing the two branches agree on is repeated.

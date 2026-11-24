@@ -33,7 +33,7 @@ nearest known name.
 ## `audit` — read-only census and diff (Phase 1/2)
 
 ```
-design-delta audit [--components] [--tokens] [--styles] [--anatomy] [--code-only] [--staged] [--json] [--check]
+design-delta audit [--components] [--tokens] [--styles] [--anatomy] [--code-only] [--staged] [--contract <id>] [--json] [--check]
 ```
 
 Runs every implemented contract↔code surface. Four independent surfaces:
@@ -112,12 +112,12 @@ exempted finding still counts toward its outcome. A variable mapped to `null`
 in `tokenMap` is outside parity entirely. A `tokenMap` id the code census
 lacks (a typo, a renamed token) is `tokens/design-token-map-unknown` (`warn`)
 and pairs nothing: a single-id entry counts as design-only, and a per-mode
-entry compares only its known ids (#653). A mode-scoped id
+entry compares only its known ids. A mode-scoped id
 (`system/dark.color.fg`) is named with the collapsed id `tokenMap` takes
 (`system.color.fg`), and a single-id entry keeps the same-value hint in
-`data.sameValue` (#659).
+`data.sameValue`.
 
-Before the candidate step, top-level `tokenMapping` (#569) applies the
+Before the candidate step, top-level `tokenMapping` applies the
 project's naming convention: `aliasFoldingRules` rewrite a variable's name
 into a code path (`color/blue-vivid/50` → `color.vividBlue.50`), and a
 `collections` entry whose `collection` matches the variable's census
@@ -138,7 +138,7 @@ library noise entirely; `includePrivateComponents` (`true`) counts the
 tool's private components — a name or path segment starting with `.` or
 `_`, kept out of the published library by convention — under
 `coverage/design-only`, which skips them by default and states how many in
-one `design-private-components-excluded` diagnostic (issue #460); `units` (`{ "letterSpacing": "%" }`, by name prefix,
+one `design-private-components-excluded` diagnostic; `units` (`{ "letterSpacing": "%" }`, by name prefix,
 longest match wins) declares the unit a bare-number variable is in — a
 design tool's `FLOAT` carries none, and the engine never infers one, so
 without a declaration such a variable against an `em` token is incomparable
@@ -158,6 +158,39 @@ its own schema (`design-snapshot-invalid`, `skipped.design`), or `design-
 tokens.json` existing but failing its own schema (`design-token-snapshot-
 invalid`, `skipped.designTokens`) — the two snapshot files are validated,
 and reported, independently of each other.
+
+### `--contract <id>` — one component's findings
+
+`--contract` takes a contract's `id` and scopes the **report** to that
+component, in the human output and `--json` alike. `findings` and `decided`
+keep an entry when its `entity` is the id, starts with the id followed by a
+`.` (one of its elements, `<id>.root`), or is a file the contract's
+`sources.code` names. A `tokens`-surface finding is never in the scoped
+list: its entity is a token path or a custom-property name, so a token named
+`<id>.something` belongs to the token system, not the component. Nothing the
+audit computes changes: every surface runs
+over the whole project, and `diagnostics`, `skipped`, `provenance` and the
+census counts are what the unscoped run reports, so the scoped list is the
+full run's answer for that component.
+
+Under the flag, `counts.findings` and `counts.exempted` count the scoped
+lists, and the payload gains `scope`, which carries the project-wide totals:
+
+```json
+"scope": { "contract": "badge", "findings": 12, "exempted": 1 }
+```
+
+The human output states both numbers on one line. `--check` with `--contract`
+exits `1` only when an error-severity finding is in the scoped list: an exit
+code that failed on findings the run does not show could not be acted on.
+`verify` takes no such flag and stays the whole-project gate.
+
+An id that is not a loaded contract exits `1` and names the loaded ids, and
+so does a run whose surfaces load no contracts (`--tokens` alone, which
+names none loaded). When a contract file that declares the id failed to
+load, the message says so, names the file and prints its diagnostics, so an
+invalid contract does not read as a missing one. None of these writes a
+report: a typo must not read as a clean component. One id per run.
 
 ### `--staged` — audit the change, not the codebase
 
@@ -224,12 +257,12 @@ an unreadable `--config` target, or an unknown rule id in `rules`/`exemptions`.
   command: "audit",
   componentsDir: string,
   tokensFile: string,
-  provenance?: {              // present when design.provider is configured (issue #389) — ONE of:
+  provenance?: {              // present when design.provider is configured — ONE of:
     designComponents?: { gatheredAt?, planHash?, providerVersion?, engineVersion?, files?, normalizationStale? } | null,
     designTokens?:     { gatheredAt?, planHash?, providerVersion?, engineVersion?, files?, normalizationStale? } | null,
                               //   null: that snapshot is absent or invalid; {}: it predates provenance
                               //   normalizationStale: the snapshot was normalized by an engine older than the
-                              //   provider's normalizationSince for it (issue #458) — the same text as the
+                              //   provider's normalizationSince for it — the same text as the
                               //   design-[token-]snapshot-normalization-stale diagnostic; re-ingest to clear
     notConsulted?: string,    // the run never read the design side (--code-only, or a scope without components/tokens)
     unavailable?: string,     // the provider failed to load — the same text as the design-provider-invalid diagnostic
@@ -243,7 +276,7 @@ an unreadable `--config` target, or an unknown rule id in `rules`/`exemptions`.
     styleDeclarations?: number, // present when --styles ran — total CSS
                                // declarations censused in contracted style
                                // files, the "style bindings" denominator the
-                               // health score (issue #219) normalizes against
+                               // health score normalizes against
     anatomyComponents?: number, // present when --anatomy ran
     tokenParity?: {           // present when the design token census ran
       matched: number, mismatched: number, ambiguous: number,
@@ -332,7 +365,7 @@ above. Contract validation is deliberately **not** scoped: a contract that
 does not validate is a defect in the fixed point every other check compares
 against, staged or not. This is the flag a pre-commit hook wants.
 
-`--fail-below <score>` (issue #219) gates on the run's [health
+`--fail-below <score>` gates on the run's [health
 score](./report-structure.md#health-score) — an integer 0-100 — instead of
 (or alongside) severity. It **composes with `--fail-on`, never replaces it**:
 either gate can fail the run on its own, and both are always computed and
@@ -393,7 +426,7 @@ straight through to the underlying `audit`.
 | `pr-comment` | writes `drift-report-pr-comment.md` under `paths.reportDir` (or `--out`) — a compact block sized for a single PR comment, see [`docs/report-structure.md`](./report-structure.md) |
 
 `terminal`, `md`, and `pr-comment` each render a `Health score: N/100 (…)`
-line ([issue #219](./report-structure.md#health-score)) — the same score
+line ([health score](./report-structure.md#health-score)) — the same score
 `verify --fail-below` gates on, computed once and shared by both commands.
 `sarif` does not carry it (SARIF is finding-oriented; an aggregate score has
 no field to render there). `report` has no `--json` flag of its own (below),
@@ -476,8 +509,8 @@ from `apibutton.tsx`) still drafts the correct `"title": "APIButton"`.
 a flag error, not a filter.
 
 Scope is **props, anatomy, and styles** — `id`, `title`, `sources.code.path`,
-`props`, (issue #235) `anatomy` drafted from the same file's structural
-census (`sources/react/jsx.mjs`), and (issue #236) `styles` drafted from the
+`props`, `anatomy` drafted from the same file's structural
+census (`sources/react/jsx.mjs`), and `styles` drafted from the
 component's own style census (`sources/styles.mjs`). `sources.design` and
 `codegen` are omitted entirely, not placeholdered: `codegen`'s own
 model-builder already substitutes a placeholder when `sources.design` is
@@ -535,7 +568,7 @@ what still needs review. A nested custom component also carries this same
 `_scaffold` marker, drafted as `type: "instance"` since scaffold cannot
 confirm which contract it should point at.
 
-`styles` (issue #236) drafts once `anatomy` exists — `styles` keys must name
+`styles` drafts once `anatomy` exists — `styles` keys must name
 a declared `anatomy` element (schema-enforced), so with no anatomy there is
 nothing to key a `styles` block off. It reads the component's style file at
 `<component-basename><conventions.stylesSuffix>` (the co-location convention
@@ -547,13 +580,13 @@ the census cannot confidently map to a selector is simply left out of
 `styles` — never a `_scaffold` placeholder, matching the review-tier
 `styles/element-unmapped` note the audit path itself would emit for it. A
 plain CSS literal drafts as the schema's `raw(...)` escape hatch. A `var(--x)`
-reference resolves to a token binding (`{token: "<id>"}`, issue #261) when its
+reference resolves to a token binding (`{token: "<id>"}`) when its
 name matches **exactly one** token in the project's own `tokens.json`
 census — the same var-name hypothesis `tokens/token-untracked` already runs,
 so a scaffolded binding can never disagree with that check. A var matching
 **zero or 2+** tokens is left for a human via `_scaffold: {todo: "…"}`
 instead, naming every match for the 2+ case rather than guessing among them
-(several tokens can legitimately share one CSS var — issue #191). Absent
+(several tokens can legitimately share one CSS var). Absent
 `conventions.stylesSuffix`, no style file on disk, no `tokens.json`, or no
 anatomy element mapping to a selector all mean `styles`/a token binding is
 simply omitted, never a refusal reason — same as `anatomy`.
@@ -601,7 +634,7 @@ offering every provider `src/providers/index.mjs` can resolve plus an
 explicit "None" choice; picking "None" writes no `design` block (and clears
 an existing `design.provider` if the config already had one). `design.options`
 is never prompted for or written — its shape is provider-specific and out of
-scope here (issue #280). `--yes` accepts every detected/existing value
+scope here. `--yes` accepts every detected/existing value
 without asking (CI scaffolding, not a way to skip the decisions silently); an
 existing `design.provider` is kept as-is rather than being overwritten.
 Re-running against an existing config reads it first and merges in only the
@@ -611,12 +644,18 @@ fields above — everything else a prior run or hand-edit added (e.g. `lint`,
 Also writes `.claude/skills/design-delta/SKILL.md` — a generated stub that
 links to this package's canonical skill (`skills/design-delta/SKILL.md`,
 read from the installed `node_modules/design-delta`) since
-Claude Code never discovers a skill inside `node_modules` itself. This is
-`dock`'s third template (below), written through the same writer `dock` uses
-— one scaffold path, not two — so it carries no engine prose of its own and
-is safe to regenerate on every `init`/`dock` run. If a file already exists
-at that path and was not generated by design-delta, it is left untouched and
-reported as `skipped` — see `dock` below.
+Claude Code never discovers a skill inside `node_modules` itself — and one
+stub of the same kind for every procedure skill `dock` links (the build,
+authoring, refresh, resolve and docs skills), so a project set up with `init`
+alone can find each of them. These are `dock`'s own templates (below),
+written through the same writer `dock` uses — one scaffold path, not two — so
+they carry no engine prose of their own and are safe to regenerate on every
+`init`/`dock` run. If a file already exists at one of those paths and was not
+generated by design-delta, it is left untouched and reported as `skipped` —
+see `dock` below. `init` writes no hook and no verify skill: those change how
+an agent behaves and need wiring, which is `dock`'s to lay. The doctor skill
+has no generated stub from either command: it is the maintainer's procedure
+and takes a target project a generated file cannot know.
 
 Interactive — no `--json`. **Exit codes:** `0` on success, `1` on an error
 (e.g. an existing config that can't be read, or a write failure).
@@ -627,17 +666,27 @@ Interactive — no `--json`. **Exit codes:** `0` on success, `1` on an error
 design-delta dock [--dir <path>] [--json]
 ```
 
-Writes three generic templates under `--dir` (default `.claude`, resolved
+Writes eight generic templates under `--dir` (default `.claude`, resolved
 against the current working directory): a `hooks/design-delta-verify.mjs`
 PostToolUse hook that shells out to `design-delta verify --json` and turns a
 failing gate into stderr feedback + a non-zero exit, a
 `skills/design-delta-verify/SKILL.md` skill telling an agent to run
 `verify`/`lint --json` and fix what they report before calling a change done,
-and a `skills/design-delta/SKILL.md` stub (issue #336) that links to this
-package's own canonical skill instead of restating it. The generated hook is
+a `skills/design-delta/SKILL.md` stub that links to this
+package's own canonical skill instead of restating it, and one stub per
+packaged procedure skill, each linking the same way to the file of the same
+path in this package: `skills/design-delta-build/SKILL.md` (building a
+component from its contract), `skills/design-delta-author/SKILL.md`
+(writing a component's contract), `skills/design-delta-refresh/SKILL.md`
+(refreshing the design snapshot), `skills/design-delta-resolve/SKILL.md`
+(working a project's findings down) and `skills/design-delta-docs/SKILL.md`
+(writing a component's documentation page from its contract). Each of those stubs reads its
+frontmatter description from the packaged skill, so the two cannot
+disagree. The generated hook is
 not wired into `.claude/settings.json` automatically — its own top-of-file
 comment documents the exact `PostToolUse` entry to add. `init` (above) writes
-the linked stub too, through this same template and writer.
+every linked stub too, through these same templates and this writer; the
+hook and the verify skill are `dock`'s alone.
 
 Nothing in any template names a project, a path, or a convention outside
 what `design-delta verify`/`lint` themselves already read from the consumer's
@@ -648,10 +697,15 @@ generated templates at names this package chose for itself, with no user
 content to preserve, so re-running `dock` after an engine upgrade picks up
 template changes.
 
-**`skills/design-delta/SKILL.md` is the exception** — that is a name a
+**The linked stubs, `skills/design-delta/SKILL.md`,
+`skills/design-delta-build/SKILL.md`,
+`skills/design-delta-author/SKILL.md`,
+`skills/design-delta-refresh/SKILL.md`,
+`skills/design-delta-resolve/SKILL.md` and
+`skills/design-delta-docs/SKILL.md`, are the exception** — each is a name a
 project may already use for its own hand-maintained skill, which this
-package does not own. Its generated form carries the line ``Generated by
-`design-delta init`/`dock` ``, and `dock`/`init` write it only when the
+package does not own. A generated stub carries the line ``Generated by
+`design-delta init`/`dock` ``, and `dock`/`init` write one only when the
 existing file carries that marker (or does not exist yet). Anything else is
 left byte-for-byte untouched and reported with the action `skipped` — `SKIP`
 in the human output. To hand a generated stub back to your own maintenance,
@@ -673,8 +727,8 @@ move yours aside and re-run.
 }
 ```
 
-`"skipped"` only ever appears for `skills/design-delta/SKILL.md`, and means
-a consumer-owned file was found there and left alone (see above).
+`"skipped"` only ever appears for the linked stubs, and means a
+consumer-owned file was found there and left alone (see above).
 
 ## `snapshot` — write state.json with per-entity code/spec hashes (Phase 6)
 
@@ -756,7 +810,7 @@ A read-only query — never writes anything — answering "what references this,
 before I change it": every file that imports/uses a component, or every place
 a token is referenced. Both branches reuse an existing census rather than
 recomputing "what references this" a second way: the component branch is
-`sources/code.mjs`'s `censusComponentUsage` (issue #223); the token branch is
+`sources/code.mjs`'s `censusComponentUsage`; the token branch is
 the token census plus the same candidate-custom-property-name hypothesis
 `tokens/token-unreferenced` already computes (see
 [`docs/rules.md`](./rules.md)).
@@ -916,7 +970,7 @@ CSS properties (`typography`, occasionally `shadow`/`border`) has no single
 the project's own stylelint config, where it fires at edit time — an
 uncontracted literal is a fact about a stylesheet, not a disagreement between
 a contract and one of its sides, which is why the rule form of this scan was
-removed (issue #490). Use this when you want to ask what is there.
+removed. Use this when you want to ask what is there.
 
 A style file the scan finds but the census cannot read (missing, unreadable)
 is reported as a `diagnostic` beside the listing, never dropped silently — it
@@ -960,8 +1014,12 @@ The engine is a deterministic Node CLI with no agent inside it, so `gather`
 never calls a design tool itself — it decides WHAT to gather and prints that
 as one JSON document: which MCP tool to run, with which arguments, for which
 targets, and where to write each raw response. An agent reads the plan, runs
-it, and writes each raw response verbatim; `ingest` is what turns those raw
-files into the normalized snapshot `audit`/`verify` read.
+it, and writes each raw response verbatim as the `payload` of the envelope
+`ingest` reads (`{provider, planHash, fileKey, gatheredAt, payload}`, plus
+the target's `tool` for a token target); `ingest` is what turns those raw
+files into the normalized snapshot `audit`/`verify` read. The packaged skill
+[`skills/design-delta-refresh/SKILL.md`](../skills/design-delta-refresh/SKILL.md)
+is the whole procedure.
 
 No `--tokens`: the COMPONENT plan — one target per addressed contract's FILE
 KEY, since the component-listing tool has a bulk per-file form. `--tokens`:
@@ -970,7 +1028,7 @@ Bridge tools that read the file the agent has open: `figma_get_variables`
 (every local variable, with its type, typed value per mode, alias target and
 collection) and `figma_get_text_styles` (every local text style, with
 unit-bearing line height and letter spacing). Structured, file-level, any
-plan tier (issue #380). The two plans are separate (different tools,
+plan tier. The two plans are separate (different tools,
 different output files), run as two separate agent passes, matching how
 `ingest`/`ingest --tokens` write to two distinct snapshot files.
 
@@ -1015,14 +1073,14 @@ the plan's one consumer is an agent):
 }
 ```
 
-`--bindings` (issue #401, retargeted by #417) prints a third plan: **one
+`--bindings` prints a third plan: **one
 target per addressed FILE**, each naming the provider's in-plugin execution
 tool and carrying that file's node ids. `ingest --bindings` merges each node's
 result onto the matching `design-components.json` entry as `usedVars`, which
 is what `styles/design-binding-missing` compares against. A `COMPONENT_SET`'s
 result also carries its variant children, so the merge adds
 `variantCombinations` — which combinations the set actually publishes, what
-`components/variant-combinations-mismatch` compares against (issue #403).
+`components/variant-combinations-mismatch` compares against.
 Like the other plans, `gather` only prints it; an agent executes.
 
 **What the agent does, per target:** open the target's `fileUrl`, run the
@@ -1039,15 +1097,15 @@ for a `COMPONENT_SET`:
   passed off as names, so an unresolvable gather is visibly empty instead of
   quietly wrong; `ingest` rejects an opaque id reaching `usedVars` anyway.
 - `nodes` — how many nodes the walk visited, the walk's own sanity check.
-- `layers` (issue #462) — the SHAPE of that same walk: each node's `name`,
+- `layers` — the SHAPE of that same walk: each node's `name`,
   `type` and `children`. `ingest --bindings` merges it as the entry's
-  `layers`, which the design side of the anatomy surface (issue #402)
+  `layers`, which the design side of the anatomy surface
   compares a contract's declared anatomy against. An **instance's** children
   are not returned — its subtree is another component's contract to answer
   for, and the census records it as `childrenResolved: false` — though the
   walk still descends into one for `usedVars`, since what a component binds
-  includes what its instances bind. A result from before #462 carries no
-  `layers`, and the entry keeps whatever an earlier gather recorded rather
+  includes what its instances bind. A result from a gather that predates
+  `layers` carries none, and the entry keeps whatever an earlier gather recorded rather
   than reading as "carries no layers".
 - A node the script cannot find carries `{error}` instead, and `ingest` skips
   it with that reason rather than merging an empty answer.
@@ -1057,7 +1115,7 @@ for a `COMPONENT_SET`:
 skipped them would under-report. Measured live 2026-09-08: two of one
 component's nine bindings sit on hidden nodes.
 
-**Why in-plugin resolution** (issue #417): the deep-component tool this plan
+**Why in-plugin resolution**: the deep-component tool this plan
 named first returns `boundVariables` as opaque ids whenever the bound
 variables are **library** imports — every real consumer's shape. Measured
 live twice, it resolved zero names on both sampled components, where the
@@ -1080,7 +1138,7 @@ is the sole source of every hash.
 Each `<raw-file>` is one envelope a `gather` plan named as an output path,
 read relative to the working directory (a token envelope carries the `tool`
 that produced it — `figma_get_variables` or `figma_get_text_styles` — or,
-from a gather before issue #380, a `nodeId` and a flat `get_variable_defs`
+from an older gather, a `nodeId` and a flat `get_variable_defs`
 map, which still ingests). A raw file that
 doesn't parse as JSON, or doesn't match the expected envelope shape, is
 SKIPPED with a stated reason — one bad file never blocks ingesting the rest.
@@ -1092,12 +1150,12 @@ bytes regardless of argument order), and written to `design-components.json`.
 file paths are sorted before processing, so which file "wins" a name
 collision is independent of argument order), sorted by name, and written to
 `design-tokens.json` — a separate file, since D7 fixes two independent
-design-side snapshots. Both snapshots carry `provenance` (issue #389) —
+design-side snapshots. Both snapshots carry `provenance` —
 the newest `gatheredAt` across the ingested envelopes, and `planHash` /
 `providerVersion` when every envelope agrees — taken from the envelopes,
 never from the clock, so `report` can state the design side's basis. Since
-0.19.0 it also carries `engineVersion`, this package's own version (issue
-#458): normalization happens here, at ingest, so a committed snapshot's
+0.19.0 it also carries `engineVersion`, this package's own version:
+normalization happens here, at ingest, so a committed snapshot's
 values are only as current as the engine that wrote them. When a provider's
 normalization changes what a stored value looks like (0.18.1 began
 rendering a duration variable as `<n>s`), `audit` compares the two and
@@ -1111,10 +1169,10 @@ Every record keeps a comparable string `value`; a
 structured gather adds `kind` (`variable` | `textStyle`), `resolvedType`,
 typed `values` per mode name, `collection`, `aliasOf`, and for a text style
 `style` with its unit-bearing fields — additive, so a snapshot written before
-issue #380 still reads. Either way the assembled snapshot is schema-validated
+these fields existed still reads. Either way the assembled snapshot is schema-validated
 before a single byte is written.
 
-### A partial gather never drops another pass's fields (issue #418)
+### A partial gather never drops another pass's fields
 
 `gather` has three passes and they share one pair of snapshots, so running
 only some of them — the normal case when a session can reach some of the
@@ -1228,7 +1286,7 @@ binding-file counts need a design provider that knows binding files and a
 configured `conventions.codeConnectSuffix`, and the
 design counts also need `design-components.json` (`provenance.designComponents`
 says when it was absent or invalid). A binding file is only expected for a
-contract that declares a design source (#448), so every other row is
+contract that declares a design source, so every other row is
 `not-applicable`, not `missing`. An exempted finding is invisible here, as it
 is to `map` — `exempted` says how many there were, and `get_findings`
 returns them under `decided`. A config `audit` refuses

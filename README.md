@@ -4,8 +4,6 @@ A deterministic **design-delta engine**. A per-component **contract** is the
 source of truth; the engine reports where the code and the design tool disagree
 with it.
 
-> **Status: publishes to npm as [`design-delta`](https://www.npmjs.com/package/design-delta)
-> on its first release ([#2](https://github.com/chrisgriffin/design-delta/issues/2)).**
 > Architecture and phase order are tracked in
 > [`docs/adr/ADR-001-modular-rewrite.md`](./docs/adr/ADR-001-modular-rewrite.md).
 > The engine was developed privately through 0.26.0 and cut into this repo at
@@ -19,7 +17,7 @@ npm install --save-dev design-delta
 npx design-delta init
 ```
 
-The package is public: no registry auth, no scope.
+It publishes as a public, unscoped package: no registry auth.
 
 ## The model
 
@@ -78,16 +76,19 @@ design-delta movers       # entities changed since the last snapshot
 design-delta impact       # blast-radius query for a component or token
 design-delta map          # system-wide ownership overview
 design-delta query        # read-only inventory questions: raw-values lists literal CSS declarations
-design-delta dock         # scaffold a Claude Code hook + skill
+design-delta dock         # scaffold a Claude Code hook + skills
 
 # Phase 7 — Agent access
 design-delta mcp          # read-only MCP server: contracts and tokens for a coding agent
 ```
 
 `verify` is the one command a project's CI actually wires in: it needs no design
-tool (contract↔code parity only, D13) and fails on either an invalid contract or
-an error-severity finding from `audit` — `review`/`warn` findings are reported,
-never gating. It also runs the `lint` pass internally on every non-staged
+tool (contract↔code parity only, D13) and fails on either an invalid contract or,
+by default, an error-severity finding from `audit`. By default `review`/`warn`
+findings are reported only; `--fail-on <error|warn|review|none>` moves that
+threshold, so `--fail-on warn` gates on `warn` too and `--fail-on none` leaves
+only contract validity gating (see [`docs/cli.md`](./docs/cli.md#verify--the-composed-ci-gate-phase-2)).
+It also runs the `lint` pass internally on every non-staged
 invocation to compute the run's [health score](./docs/report-structure.md#health-score),
 which `--fail-below <0-100>` can gate on alongside severity; `lint` stays a
 separate command for reading those findings on their own.
@@ -112,7 +113,7 @@ every rule, what it reports, and its default severity. For what the engine
 deliberately doesn't check yet, and why, see [deferred
 rules](./docs/deferred-rules.md).
 
-## Agent skill
+## Agent skills
 
 The package ships its canonical Claude Code skill at
 [`skills/design-delta/SKILL.md`](./skills/design-delta/SKILL.md) — the
@@ -121,6 +122,40 @@ engine's own instruction set, versioned with it. Skills inside
 `.claude/skills/design-delta/SKILL.md` that links to it; the stub carries
 triggers only, so engine behavior is never restated where it can go stale.
 The skill's own last section documents the stub and the migration path.
+
+Two more skills go the other way, from a request to code.
+[`skills/design-delta-author/SKILL.md`](./skills/design-delta-author/SKILL.md)
+writes a component's contract from a description, a design-snapshot
+component or existing code: it asks rather than invents wherever the request
+leaves the component's API open, binds only tokens the project has, and hands
+the validated contract on.
+[`skills/design-delta-build/SKILL.md`](./skills/design-delta-build/SKILL.md)
+builds the component from that contract, matching the project's existing
+components, and runs the audit until that component reports no findings. It
+never writes or edits a contract. `design-delta init` and `design-delta dock`
+each lay a stub for each,
+at `.claude/skills/design-delta-author/SKILL.md` and
+`.claude/skills/design-delta-build/SKILL.md`.
+[`skills/design-delta-refresh/SKILL.md`](./skills/design-delta-refresh/SKILL.md)
+is the procedure for the design side: it runs `gather`, executes the plan
+with the session's design-tool tools, runs `ingest` and reports what changed,
+and says what to do when the session lacks those tools; both commands lay
+its stub too.
+[`skills/design-delta-resolve/SKILL.md`](./skills/design-delta-resolve/SKILL.md)
+is for a project with many findings: it sorts each by who can clear it, fixes
+the code-side ones a component at a time through the build skill, and reports
+what is left and who owns it, without ever editing a contract, an exemption
+or a rule severity to shrink the list; both commands lay its stub as well.
+[`skills/design-delta-docs/SKILL.md`](./skills/design-delta-docs/SKILL.md)
+writes a component's documentation page from its contract, in the
+documentation format the project already uses: props with types, defaults
+and enum values, slots, states, anatomy and token bindings, with a marked
+question wherever the contract is silent, and only its own generated
+sections rewritten when it is run again; both commands lay its stub too.
+To see one component's findings, `design-delta audit --contract <id>` scopes
+the report to it. A seventh,
+[`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
+is the maintainer's procedure for testing the engine against a real project.
 
 ## Contracts
 
@@ -212,13 +247,16 @@ for `src/providers/<name>/`, verified against the current Figma provider.
 ## Development
 
 ```bash
-npm test
+npm run verify   # `npm run checks`, then `npm test`: all of CI but the CLAUDE.md budget
 ```
 
-Native-ESM Jest. CI additionally runs `npx prettier --check .`,
-`node scripts/ci/check-schemas.mjs`, and `bash scripts/ci/check-package.sh` —
-the last catching what the suite structurally cannot, since a dropped `files`
-entry or a renamed `bin` leaves the tests green and breaks a consumer's install.
+`npm test` is native-ESM Jest. `npm run checks` is the rest of what CI runs —
+formatting, ESLint, and the integrity checks listed once in `package.json` —
+including `check-package.sh`, which catches what the suite structurally
+cannot, since a dropped `files` entry or a renamed `bin` leaves the tests
+green and breaks a consumer's install.
+The one CI step neither runs is `CLAUDE.md`'s byte budget, which only CI's
+`checks` job holds (`claude_md_budget` in `ci.yml`).
 
 Every dependency is public: CI needs no registry auth, which keeps fork PRs
 working.
