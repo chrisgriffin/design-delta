@@ -245,10 +245,9 @@ versions with it, so read it first and follow it:
 
     node_modules/design-delta/${relative}
 
-${GENERATED_MARKER} — safe to overwrite, and
-refreshed by re-running \`dock\` after an engine upgrade. Delete that line
-to claim this file as your own: \`dock\` skips a file here that does not
-carry it.
+${GENERATED_MARKER} — safe to overwrite, and refreshed by re-running either
+after an engine upgrade. Delete that line to claim this file as your own:
+\`init\`/\`dock\` skip a file here that does not carry it.
 `
 }
 
@@ -334,13 +333,11 @@ function renderJson(result) {
 }
 
 /**
- * Run the subcommand. Returns the exit code; never calls `process.exit`.
+ * Every linked skill stub, as `{relative, content, options}`: the audit stub
+ * and one per packaged procedure skill. `dock` and `init` both write from
+ * this one list, each entry guarded by `GENERATED_MARKER`.
  *
- * @param {string[]} cmdArgv
- * @param {{globalOpts: object, io: {stdout: object, stderr: object}, fs?: object, root?: string}} ctx
- *   `fs`/`root` are injectable for tests; production omits them and gets real
- *   `node:fs` and `process.cwd()`.
- * @returns {number}
+ * @returns {Array<{relative: string, content: string, options: object}>}
  */
 export function linkedStubTemplates() {
   return [
@@ -360,6 +357,15 @@ export function linkedStubTemplates() {
   ]
 }
 
+/**
+ * Run the subcommand. Returns the exit code; never calls `process.exit`.
+ *
+ * @param {string[]} cmdArgv
+ * @param {{globalOpts: object, io: {stdout: object, stderr: object}, fs?: object, root?: string}} ctx
+ *   `fs`/`root` are injectable for tests; production omits them and gets real
+ *   `node:fs` and `process.cwd()`.
+ * @returns {number}
+ */
 export function runDock(cmdArgv, ctx) {
   const { io } = ctx
   const fs = ctx.fs || { mkdirSync, readFileSync, writeFileSync }

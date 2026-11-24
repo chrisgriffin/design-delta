@@ -9,6 +9,8 @@
  * one finding that belongs to no component.
  */
 
+import { readFileSync, writeFileSync } from "node:fs"
+
 import { contractScope } from "../src/cli/commands/audit.mjs"
 import { run } from "../src/cli/main.mjs"
 import { createSyntheticProject } from "./helpers/synthetic-project.mjs"
@@ -117,6 +119,52 @@ describe("design-delta audit --contract <id>", () => {
     expect(scoped.scope.exempted).toBe(2)
   })
 
+  it("never scopes in a token finding whose path starts with the contract id", async () => {
+    project = createSyntheticProject({
+      tokens: {
+        badge: {
+          tone: { $type: "color", $value: "#123456" },
+          ring: { $type: "color", $value: "#654321" },
+        },
+      },
+    })
+    const full = JSON.parse((await audit(project, "--json")).stdout)
+    const named = full.findings.filter(
+      f => f.surface === "tokens" && f.entity.startsWith("badge."),
+    )
+    expect(named.length).toBeGreaterThan(0)
+
+    const scoped = JSON.parse(
+      (await audit(project, "--json", "--contract", "badge")).stdout,
+    )
+    expect(scoped.findings.filter(f => f.surface === "tokens")).toEqual([])
+    expect(scoped.findings).toEqual(
+      full.findings.filter(
+        f => f.surface !== "tokens" && belongsTo("badge")(f),
+      ),
+    )
+  })
+
+  it("a contract that failed to load is named as that, with its diagnostics", async () => {
+    project = createSyntheticProject()
+    const file = project.paths.components.badge.contract
+    const doc = JSON.parse(readFileSync(file, "utf8"))
+    writeFileSync(file, JSON.stringify({ ...doc, notAField: true }))
+
+    const { code, stdout, stderr } = await audit(
+      project,
+      "--json",
+      "--contract",
+      "badge",
+    )
+    expect(code).toBe(1)
+    expect(stdout).toBe("")
+    expect(stderr).toContain('contract "badge" failed to load')
+    expect(stderr).toContain("loaded: field")
+    expect(stderr).not.toContain('no contract with id "badge"')
+    expect(stderr).toMatch(/\[[a-z-]+\]/)
+  })
+
   it("matches the id, its elements and the files its sources name, and nothing else", () => {
     const inScope = contractScope({
       id: "card",
@@ -135,6 +183,9 @@ describe("design-delta audit --contract <id>", () => {
     expect(matched("card-header.title")).toBe(false)
     expect(matched("ui/card/other.tsx")).toBe(false)
     expect(inScope({})).toBe(false)
+    expect(inScope({ entity: "card.bg", surface: "tokens" })).toBe(false)
+    expect(inScope({ entity: "card", surface: "tokens" })).toBe(false)
+    expect(inScope({ entity: "card.root", surface: "styles" })).toBe(true)
   })
 
   it("human output shows only that contract's findings and both counts", async () => {
@@ -174,6 +225,7 @@ describe("design-delta audit --contract <id>", () => {
     expect(stdout).toBe("")
     expect(stderr).toContain("--contract")
     expect(stderr).toContain("--tokens")
+    expect(stderr).toContain("loaded: none")
   })
 
   it("--contract without a value is a flag error", async () => {

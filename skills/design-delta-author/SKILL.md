@@ -248,8 +248,10 @@ npx design-delta lint --json
 ```
 
 `--contract` scopes the audit's `findings` to the new `id` and its elements;
-an id the engine did not load exits `1`, which means the contract is not
-where the project looks for contracts. For a contract whose code does not
+an id the engine did not load exits `1`, for one of two causes the message
+tells apart: `failed to load` means the contract has a diagnostic (it is
+printed with the message; fix it), and `no contract with id` means the
+contract is not where the project looks for contracts. For a contract whose code does not
 exist yet, these are expected:
 
 - `coverage/contract-only`: the contract names a code path with nothing

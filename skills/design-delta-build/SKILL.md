@@ -170,7 +170,11 @@ a file the contract's `sources.code` names. The audit still runs over the
 whole project, so these are the same findings the full run reports, and
 `scope.findings` says how many the project has in all. A file you wrote that
 the contract does not name is not in the scoped list: if you added one,
-check the unscoped `audit --json` for its path too. Leave every finding
+check the unscoped `audit --json` for its path too. A `tokens`-surface
+finding is never in the scoped list, `tokens/var-unresolved` included: its
+`entity` is the custom-property name, not the component. If your code
+references a custom property, check the unscoped audit for a
+`tokens/var-unresolved` naming it. Leave every finding
 outside the scope alone: it predates you, and fixing it is
 a different task, the one
 [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)

@@ -83,9 +83,11 @@
  * and `decided` keep only the entries `contractScope` matches. It is applied
  * last, to the finished lists, so every surface still runs over the whole
  * project and the scoped answer is the full run's answer for that component,
- * never a recomputed one. The project-wide totals move to `scope`, and
+ * never a recomputed one. A `tokens`-surface finding is never in a
+ * component's scope. The project-wide totals move to `scope`, and
  * `--check` gates on the list the run shows. An id that is not a loaded
- * contract is fatal: a typo must not read as a clean component.
+ * contract is fatal: a typo must not read as a clean component, and a
+ * contract that failed to load is named as that, with its diagnostics.
  *
  * `--code-only` skips the design side entirely (ADR-003 Phase 5.1/5.3) — no
  * provider load, no snapshot read, `coverage/design-only`/`coverage/design-
@@ -233,8 +235,14 @@ export const FLAG_SPEC = {
  * contract's component when its `entity` is the contract's id, one of its
  * elements (`<id>.<element>`), or a file its `sources.code` names.
  *
+ * A `tokens`-surface finding never belongs to a component, whatever its
+ * entity: there the entity is a token path or a custom-property name, and a
+ * token named `<id>.something` is the token system's, not the component's,
+ * so matching it by prefix would put a finding no code change clears in the
+ * component's list.
+ *
  * @param {{id: string, contract: object}} entry a loaded contract
- * @returns {(finding: {entity?: string}) => boolean}
+ * @returns {(finding: {entity?: string, surface?: string}) => boolean}
  */
 export function contractScope({ id, contract }) {
   const files = new Set(
@@ -242,9 +250,37 @@ export function contractScope({ id, contract }) {
       value => typeof value === "string",
     ),
   )
-  return ({ entity }) =>
+  return ({ entity, surface }) =>
+    surface !== "tokens" &&
     typeof entity === "string" &&
     (entity === id || entity.startsWith(`${id}.`) || files.has(entity))
+}
+
+// The files among a contract load's diagnostics that failed to load and
+// declare `id` — read back for their `id`, since a contract that failed
+// validation is not in the loaded set. A file that is not even JSON is
+// matched by name instead (`<id>.` then the project's contract suffix).
+function failedContractFiles(contractsResult, id, root) {
+  const loaded = new Set(contractsResult.contracts.map(entry => entry.file))
+  const files = new Set()
+  for (const diagnostic of contractsResult.diagnostics) {
+    const file = diagnostic.file
+    if (typeof file !== "string" || loaded.has(file) || files.has(file))
+      continue
+    let declared
+    try {
+      declared = JSON.parse(readFileSync(join(root, file), "utf8"))?.id
+    } catch {
+      declared = undefined
+    }
+    const name = file.split("/").pop()
+    if (
+      declared === id ||
+      (declared === undefined && name.startsWith(`${id}.`))
+    )
+      files.add(file)
+  }
+  return files
 }
 
 // The rules a `--staged` run does not evaluate at all, and the reason it
@@ -471,17 +507,35 @@ export async function runAudit(cmdArgv, ctx) {
   if (opts.contract !== undefined) {
     if (!needsContracts) {
       io.stderr.write(
-        "design-delta audit: --contract needs a surface that loads contracts; --tokens alone loads none\n",
+        `design-delta audit: no contract with id "${opts.contract}"; loaded: none (--tokens alone loads no contracts; --contract needs a surface that does)\n`,
       )
       return 1
     }
     const entry = contractsResult.contracts.find(
       candidate => candidate.id === opts.contract,
     )
-    if (!entry) {
-      const ids = contractsResult.contracts.map(candidate => candidate.id)
+    const loadedIds =
+      contractsResult.contracts
+        .map(candidate => candidate.id)
+        .sort()
+        .join(", ") || "none"
+    const failed = entry
+      ? new Set()
+      : failedContractFiles(contractsResult, opts.contract, root)
+    if (failed.size > 0) {
+      // The contract exists and did not load: say so, with what is wrong
+      // with it, rather than let it read as a contract that is not there.
       io.stderr.write(
-        `design-delta audit: no contract with id "${opts.contract}"; loaded: ${ids.sort().join(", ") || "none"}\n`,
+        `design-delta audit: contract "${opts.contract}" failed to load (${[...failed].join(", ")}); loaded: ${loadedIds}\n`,
+      )
+      for (const diagnostic of contractsResult.diagnostics)
+        if (failed.has(diagnostic.file))
+          io.stderr.write(`${renderDiagnostic(diagnostic)}\n`)
+      return 1
+    }
+    if (!entry) {
+      io.stderr.write(
+        `design-delta audit: no contract with id "${opts.contract}"; loaded: ${loadedIds}\n`,
       )
       return 1
     }

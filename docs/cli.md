@@ -165,7 +165,10 @@ and reported, independently of each other.
 component, in the human output and `--json` alike. `findings` and `decided`
 keep an entry when its `entity` is the id, starts with the id followed by a
 `.` (one of its elements, `<id>.root`), or is a file the contract's
-`sources.code` names. Nothing the audit computes changes: every surface runs
+`sources.code` names. A `tokens`-surface finding is never in the scoped
+list: its entity is a token path or a custom-property name, so a token named
+`<id>.something` belongs to the token system, not the component. Nothing the
+audit computes changes: every surface runs
 over the whole project, and `diagnostics`, `skipped`, `provenance` and the
 census counts are what the unscoped run reports, so the scoped list is the
 full run's answer for that component.
@@ -183,8 +186,11 @@ code that failed on findings the run does not show could not be acted on.
 `verify` takes no such flag and stays the whole-project gate.
 
 An id that is not a loaded contract exits `1` and names the loaded ids, and
-so does a run whose surfaces load no contracts (`--tokens` alone). Neither
-writes a report: a typo must not read as a clean component. One id per run.
+so does a run whose surfaces load no contracts (`--tokens` alone, which
+names none loaded). When a contract file that declares the id failed to
+load, the message says so, names the file and prints its diagnostics, so an
+invalid contract does not read as a missing one. None of these writes a
+report: a typo must not read as a clean component. One id per run.
 
 ### `--staged` — audit the change, not the codebase
 

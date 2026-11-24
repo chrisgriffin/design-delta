@@ -151,7 +151,11 @@ in one of three ways, and you record which:
 While working one component, `npx design-delta audit --json --contract <id>`
 shows that component's findings alone, which is what the build skill's
 procedure reads. It scopes the report, not the project: its count is never
-the number you report.
+the number you report. Nor does it show every code-pile finding:
+`tokens/var-unresolved`, and any other code-pile finding whose `entity` is
+not the component's `id`, one of its elements or a file its contract names,
+is never in the scoped list. Track those in the unscoped audit, and clear
+them in the component whose code references the custom property.
 
 After each component, before starting the next:
 

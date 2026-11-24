@@ -14,7 +14,7 @@ Two gaps the build skill's own pull request named. First, `audit` reports on the
 
 ## Functional requirements
 
-- FR-001: `audit` accepts `--contract <id>`. With it, `findings` and `decided` hold only entries whose `entity` is the id, starts with the id followed by `.`, or is a path that contract's `sources.code` names.
+- FR-001: `audit` accepts `--contract <id>`. With it, `findings` and `decided` hold only entries whose `entity` is the id, starts with the id followed by `.`, or is a path that contract's `sources.code` names. A `tokens`-surface finding is never kept: there the entity is a token path or a custom-property name, so a token whose path begins with `<id>.` matched by prefix would put a finding no code change clears in the component's list (corrected in review: the prefix match alone measured "that contract's component" wrongly for tokens named after a component).
 - FR-002: The flag applies to the human output and to `--json` alike.
 - FR-003: The flag changes nothing the audit computes: every surface runs over the whole project, and `diagnostics`, `skipped`, `provenance` and the census counts are what an unscoped run reports.
 - FR-004: Under the flag, `counts.findings` and `counts.exempted` count the scoped lists, so they stay equal to the lengths of `findings` and `decided`; the payload carries `scope: { contract, findings, exempted }` with the project-wide totals, and the human output states both numbers.
