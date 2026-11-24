@@ -146,8 +146,14 @@ is for a project with many findings: it sorts each by who can clear it, fixes
 the code-side ones a component at a time through the build skill, and reports
 what is left and who owns it, without ever editing a contract, an exemption
 or a rule severity to shrink the list; both commands lay its stub as well.
+[`skills/design-delta-docs/SKILL.md`](./skills/design-delta-docs/SKILL.md)
+writes a component's documentation page from its contract, in the
+documentation format the project already uses: props with types, defaults
+and enum values, slots, states, anatomy and token bindings, with a marked
+question wherever the contract is silent, and only its own generated
+sections rewritten when it is run again; both commands lay its stub too.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. A sixth,
+the report to it. A seventh,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

@@ -139,12 +139,13 @@ function problems(skill) {
 }
 
 describe("the packaged skills", () => {
-  it("ships the audit, authoring, build, doctor, refresh and resolve skills", () => {
+  it("ships the audit, authoring, build, docs, doctor, refresh and resolve skills", () => {
     expect(SKILLS.map(skill => skill.name)).toEqual(
       expect.arrayContaining([
         "design-delta",
         "design-delta-author",
         "design-delta-build",
+        "design-delta-docs",
         "design-delta-doctor",
         "design-delta-refresh",
         "design-delta-resolve",
@@ -275,5 +276,63 @@ describe("the entity form the build skill filters on", () => {
       ).toBe(true)
     }
     expect(owned.some(finding => finding.entity === "badge")).toBe(true)
+  })
+})
+
+// The docs skill tells an agent where each thing a contract states goes on a
+// component's documentation page. A contract field the skill never names is a
+// field no page will ever carry, and nobody would notice: the page would just
+// be quietly incomplete. So every name is read from the contract schema, and
+// a field added there fails this until the skill says where it goes (or that
+// it stays off the page).
+describe("the docs skill covers what a contract can state", () => {
+  const schema = JSON.parse(
+    readFileSync(join(ROOT, "schema/contract.schema.json"), "utf8"),
+  )
+  const docs = SKILLS.find(skill => skill.name === "design-delta-docs")
+  /** Whether some piece of the skill's code carries `name` as a whole word. */
+  const names = (text, name) =>
+    codeOf(text).some(code => code.split(/[^A-Za-z$_]+/).includes(name))
+  const unnamed = fields => fields.filter(field => !names(docs.text, field))
+
+  it("reads a schema that has the fields to check", () => {
+    expect(Object.keys(schema.properties)).toEqual(
+      expect.arrayContaining(["props", "anatomy", "styles", "intent"]),
+    )
+    expect(schema.$defs.prop.properties.type.enum).toContain("slot")
+    expect(Object.keys(schema.$defs.anatomyNode.properties)).toContain(
+      "presentIf",
+    )
+  })
+
+  it("names every top-level contract field", () => {
+    expect(unnamed(Object.keys(schema.properties))).toEqual([])
+  })
+
+  it("names every prop field and every prop type", () => {
+    expect(unnamed(Object.keys(schema.$defs.prop.properties))).toEqual([])
+    expect(unnamed(schema.$defs.prop.properties.type.enum)).toEqual([])
+  })
+
+  it("names every anatomy node field, and the rendered-shape block", () => {
+    expect(unnamed(Object.keys(schema.$defs.anatomyNode.properties))).toEqual(
+      [],
+    )
+    expect(unnamed(["$variants"])).toEqual([])
+  })
+
+  it("names every intent and codegen field", () => {
+    expect(unnamed(Object.keys(schema.properties.intent.properties))).toEqual(
+      [],
+    )
+    expect(unnamed(Object.keys(schema.$defs.codegen.properties))).toEqual([])
+  })
+
+  it("is caught when a field is missing, and prose does not count", () => {
+    const text = "The page lists props. See `anatomy` and `intent.usedFor`.\n"
+    expect(names(text, "anatomy")).toBe(true)
+    expect(names(text, "usedFor")).toBe(true)
+    expect(names(text, "props")).toBe(false)
+    expect(names(text, "used")).toBe(false)
   })
 })

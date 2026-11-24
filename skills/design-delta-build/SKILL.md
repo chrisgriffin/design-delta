@@ -149,7 +149,10 @@ equivalent for the new component, in the same shape.
 
 Add nothing the sibling does not have. No test framework the project does
 not use, no documentation page where siblings have none, no extra exports.
-If a file the sibling carries cannot be written truthfully yet (a binding
+A documentation page is the one file here with a procedure of its own:
+[`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md) writes
+it from the contract, and keeps what the contract states apart from what a
+person has to write. If a file the sibling carries cannot be written truthfully yet (a binding
 file that needs a design-tool address the contract's `sources.design` does
 not give), do what the project's own instructions say for that case and name
 it in the report.

@@ -129,7 +129,11 @@ that contract to code and then uses the audit above as the proof.
 refreshes the design snapshot, and
 [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
 works a project's whole list of findings down, sorting each by who can clear
-it. `init` and `dock` each write a stub for each under
+it.
+[`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md) writes a
+component's documentation page from its contract, in the project's own
+documentation format, and rewrites only its generated sections when the
+contract changes. `init` and `dock` each write a stub for each under
 `.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about
