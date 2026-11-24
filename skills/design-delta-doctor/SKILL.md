@@ -98,15 +98,32 @@ flag it to the project's owner rather than forcing a verdict.
 ```
 cd <target-project>
 git status --short   # must be clean before touching anything
-git worktree add /tmp/design-delta-doctor <integration-branch> -b chore/design-delta-doctor
-cd /tmp/design-delta-doctor
+mktemp -d "${TMPDIR:-/tmp}/design-delta-doctor.XXXXXX"
+```
+
+`mktemp` prints the directory it made. That path is `<work>` in every command
+below, always inside double quotes as written, since a temporary directory
+can hold a space; the characters it put in place of `XXXXXX` are `<suffix>`.
+Write both down: each command an agent runs starts a new shell, so a variable set
+here is gone by step 2, and so is an exit trap. Then:
+
+```
+git worktree add "<work>/project" <integration-branch> -b chore/design-delta-doctor-<suffix>
+cd "<work>/project"
 npm ci
 ```
 
-Everything below happens in that worktree. If nothing worth committing comes
-out of it, remove the worktree and its branch at the end — leave zero trace.
-If a version bump or config fix IS warranted, that branch is what becomes a
-PR in the final step.
+**One directory per run, never a fixed path.** A run that is interrupted
+leaves its worktree and its branch behind. With a fixed path and a fixed
+branch name the next run's `git worktree add` fails on both, and two runs on
+one machine read each other's audit documents. A new directory and a branch
+named after it cannot collide with anything an earlier run left.
+
+Everything below happens in that worktree, and every file this procedure
+writes for itself goes in `<work>`, beside the worktree, never inside it:
+step 5 checks the worktree's `git status`. Step 8 removes `<work>` however
+the run ends. If a version bump or config fix IS warranted, the branch is
+what becomes a PR there.
 
 ### 2. Baseline — capture the CURRENT version's findings first
 
@@ -114,7 +131,7 @@ Before installing anything, run the audit on whatever version the target
 already has, and keep the output:
 
 ```
-npx design-delta audit --json > /tmp/drift-baseline.json
+npx design-delta audit --json > "<work>/baseline.json"
 node -p "require('./node_modules/design-delta/package.json').version"
 ```
 
@@ -134,25 +151,40 @@ step.
 
 ```
 cd <design-delta-repo> && npm pack
-cd /tmp/design-delta-doctor
+cd "<work>/project"
 npm install <design-delta-repo>/design-delta-<version>.tgz
 ```
 
 **Post-release** — the newest published version:
 
 ```
-LATEST=$(gh release view --repo chrisgriffin/design-delta --json tagName -q .tagName)
-CURRENT=$(node -p "require('./package.json').dependencies['design-delta']")
-npm install "design-delta@${LATEST#v}"
+npm view design-delta version
+node -p "require('./node_modules/design-delta/package.json').version"
 ```
 
-The package is on the public npm registry, so `npm view design-delta version`
-answers with no auth.
+The first prints the newest published version, `<latest>`; the second prints
+the version installed now, `<current>`, before anything changes it. Write both
+down, then:
 
-Either way, confirm what actually landed before trusting a single finding:
-`node -p "require('./node_modules/design-delta/package.json').version"`.
-In post-release mode, `CURRENT` already equalling `LATEST` is a legitimate
-reportable outcome, not a failure to find work.
+```
+npm install design-delta@<latest>
+```
+
+The package is on the public npm registry, so `npm view` answers with no
+auth and names no repository.
+
+Either way, confirm what actually landed before trusting a single finding,
+and record what the install changed in the worktree (it rewrites
+`package.json` and `package-lock.json`), which step 5's read-only check
+compares against:
+
+```
+node -p "require('./node_modules/design-delta/package.json').version"
+git status --short > "<work>/installed-status.txt"
+```
+
+In post-release mode, `<current>` already equalling `<latest>` is a
+legitimate reportable outcome, not a failure to find work.
 
 ### 4. Confirm the project still lines up with this build
 
@@ -183,7 +215,7 @@ Read the target's `package.json` for how it invokes the engine (projects
 commonly wrap it in scripts) and use those. With nothing wired:
 
 ```
-npx design-delta audit --json > /tmp/drift-audit.json
+npx design-delta audit --json > "<work>/audit.json"
 npx design-delta verify
 npx design-delta report
 ```
@@ -211,8 +243,17 @@ the suite writes its own inputs. Check each one:
   and `audit --check` return `1` on an error-severity finding and `0` when
   clean, and that `lint` reports without gating.
 - **The read-only claim.** The audit path is documented as never editing.
-  After a full run, `git status --short` in the worktree must show nothing
-  beyond the report/state files the commands were actually asked to write.
+  Step 3's install already changed `package.json` and `package-lock.json`,
+  so compare against what it left rather than against a clean tree. After a
+  full run, in the worktree:
+
+  ```
+  git status --short | diff "<work>/installed-status.txt" -
+  ```
+
+  must show nothing beyond the report/state files the commands were actually
+  asked to write.
+
 - **Cross-command agreement.** `audit`, `verify`, and `report` each
   re-derive the same census. Confirm they agree about the same tree — a
   disagreement between the JSON findings, the rendered report, and the
@@ -264,10 +305,40 @@ passed), the baseline delta with a reason per change, and the full
 adjudicated list with the evidence behind each verdict, not just a count.
 Name every engine issue filed or fixed.
 
-State what was NOT checked as plainly as what was. Remove the worktree and
-branch if nothing is worth keeping. If a version bump or config fix is
-warranted, open it as a real PR against the target's integration branch —
-propose, never auto-merge.
+State what was NOT checked as plainly as what was. If a version bump or
+config fix is warranted, commit it in the worktree, push its branch and open
+it as a real PR against the target's integration branch — propose, never
+auto-merge.
+
+**Then remove what step 1 made. Always**: after a clean run, after a failed
+one, and when the run is abandoned part-way. A branch lives in the
+repository, not in the worktree, so removing the worktree loses no commit:
+
+```
+cd <target-project>
+git worktree remove --force "<work>/project"
+git worktree prune
+rm -rf "<work>"
+git branch -D chore/design-delta-doctor-<suffix>
+```
+
+`--force` is needed because the installed dependencies are untracked files
+there; use it only on the worktree this run created. Skip the last line when
+the branch was pushed for a PR, and say in the report which branch is left.
+Finish with `git worktree list` and `git status --short` in the target: the
+first no longer lists this run's worktree, the second shows nothing.
+
+**What an interrupted run left.** In the target, the first command lists any
+worktree whose path contains `design-delta-doctor.`, and the second lists its
+branch:
+
+```
+git worktree list
+git branch --list "chore/design-delta-doctor-*"
+```
+
+Neither blocks a new run. Remove each with the commands above, once you have
+checked nobody is running in it and its branch has no commit worth keeping.
 
 ## Hard limits
 
@@ -275,6 +346,8 @@ propose, never auto-merge.
 - Never leave a finding as "probably fine" or "probably a bug" — verify, or
   explicitly flag it as a human policy call. Nothing in between.
 - Never dirty the target's real checkout — worktree only.
+- Never write to a fixed path in a temporary directory, and never end a run,
+  finished or not, with step 1's directory or worktree still there.
 - Never push a version bump or config change without a real PR.
 - Never let a pre-release pass silently become the reason to skip the
   post-release one: a local tarball and a published package are not the same
