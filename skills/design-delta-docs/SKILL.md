@@ -68,8 +68,13 @@ npx design-delta audit --json --contract <id>
 The page describes the contract. Whether the code does what the page says is
 a separate fact, and the reader of your report needs it:
 
-- **No findings, and no `skipped` entry for `components`, `styles` or
-  `anatomy`**: the code matches, and the page describes both.
+- **No findings, and no `skipped` entry for `components` or `anatomy`**:
+  the code matches the props and the anatomy, and the page describes both.
+  The token bindings are a separate check, next.
+- **The contract has `styles` but no `sources.code.styles`**: the bindings
+  were never compared. The audit has no stylesheet to read, so it reports
+  nothing for them, not even a `skipped` entry. Report the token bindings as
+  unverified against the code, never as matching.
 - **`coverage/contract-only`**: the component is not built yet. A page for it
   documents something nobody can use; say so and stop, unless the request
   asked for the page anyway.
@@ -79,11 +84,20 @@ a separate fact, and the reader of your report needs it:
 - **`components/intent-unverified` or `components/intent-stale`**: the
   contract's usage guidance has not been reviewed against the component's
   current props. Step 4 says what the page does with it.
-- **Any other finding**: the code disagrees with the contract somewhere. The
-  page still states the contract, which is the fixed point; never bend the
-  page toward what the code does. Carry on, and put the findings first in the
-  report. Bringing the code back in line is the update procedure in
-  [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md).
+- **Any other finding**: something disagrees with the contract. The page
+  still states the contract, which is the fixed point; never bend the page
+  toward what either side does. Carry on, and put the findings first in the
+  report, grouped by the finding's `side`:
+  - `side: "code"`: the code disagrees. Bringing it back in line is the
+    update procedure in
+    [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md).
+  - `side: "design"`: the design tool disagrees, and there is no code to
+    change. Report it as design-side, never as code drift; whether it rests
+    on a stale snapshot is
+    [`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md)'s
+    to find out.
+  - `side: "spec"`: the contract itself is in question, and that is
+    `design-delta-author`'s.
 - **A `skipped` entry**: that surface did not run, so agreement is unknown,
   not confirmed. Report it that way.
 
@@ -111,8 +125,12 @@ Assume nothing the project does not show you.
   hand-written text. A hand-written one is a pattern for format, not for
   what to say.
 - **This component already has a page.** Read it:
-  - it carries the header line and names this contract: this is a re-run.
-    Go to [Running again](#running-again-after-the-contract-changed);
+  - it carries the header line and names this contract's `id`: this is a
+    re-run, even when the path in it is no longer the contract's (the file
+    moved). Go to [Running again](#running-again-after-the-contract-changed);
+  - it carries the header line and names another `id`: it is another
+    contract's page. Stop and report both ids; which component the page
+    belongs to is the owner's call;
   - it has no header line: it is the project's own page, and not yours to
     rewrite. Stop and ask whether to add generated sections to it (the
     owner says where each goes), to replace it (they move theirs aside), or
@@ -138,37 +156,37 @@ Go down the contract. Every construct below has one place on the page, and
 nothing reaches a generated section from anywhere else: not from the code,
 not from a sibling's page, not from what components of this kind usually do.
 
-| The contract has                                               | The page states                                                                                                                                                                                             |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`, `id`                                                  | the page's heading, and the `id` where siblings' pages show it                                                                                                                                              |
-| `description`                                                  | the purpose line, word for word. Absent: a question (step 5)                                                                                                                                                |
-| `status`                                                       | `draft` or `deprecated`, the way a sibling's page shows it, or one line under the heading. `published`, or absent: nothing                                                                                  |
-| `intent.usedFor`, `intent.misusedAs`, `intent.useInstead`      | usage: when to use it, what it is mistaken for, what to use instead, each word for word. `useInstead` names components by contract `id`; link each to its page where it has one                             |
-| `intent.verifiedAgainst`                                       | nothing. When step 2 reported `components/intent-unverified` or `components/intent-stale`, one line under the usage section saying the guidance has not been reviewed against the component's current props |
-| a `props` entry, any `type` but `slot`, without `code: "none"` | a row in the props table: the name, its `type`, whether it is required (a prop that omits `required` is required), its `default`, whether it is `nullable`, and its `description`                           |
-| `type: "boolean"`, `"string"`, `"number"` or `"function"`      | that type, as the sibling's page writes a type                                                                                                                                                              |
-| `type: "enum"` with `values`                                   | every value, in the contract's order, in exactly its spelling and case                                                                                                                                      |
-| a `props` entry with `type: "slot"`                            | a row in the slots section, never the props table: the name, whether it is required, the components it `accepts`, its `minChildren` and `maxChildren`, and its `description`                                |
-| a `props` entry with `code: "none"`                            | a row in the states section, never the props table: the axis, its `values` and its `default`. It is not something a caller passes; it is a state the component is in (an interaction state, a breakpoint)   |
-| a `props` entry with `code: "unverified"`                      | its row, with a note that the code side of this prop is not confirmed                                                                                                                                       |
-| a `design` marker on a prop                                    | nothing. It describes the design tool's side. A project whose pages carry a design-name column gets `design.name` there, and nothing else                                                                   |
-| `codegen.className`, `codegen.domPassthrough`                  | one line under the props table each: that the component accepts a `className`, and which element's native props pass through                                                                                |
-| `codegen.exampleContent`, `codegen.example`                    | nothing. They shape a generated binding file, not the component                                                                                                                                             |
-| `anatomy`                                                      | the anatomy section: every node from `root` down, nested in `children` order, each with its name, its `type` and its `element`                                                                              |
-| a node's `content`                                             | what the node renders: the literal text, or the prop a `$prop` binding names                                                                                                                                |
-| a node's `presentIf`                                           | that the node renders only when that prop is set                                                                                                                                                            |
-| a node's `instanceOf`                                          | the component rendered there, linked to its page where it has one                                                                                                                                           |
-| a node's `attributes`                                          | each attribute and its literal value, on that node. This is the accessibility surface the contract pins, and all of it that the page may state                                                              |
-| a node's `codeClass`, `designLayer`                            | nothing, unless siblings' pages list class names                                                                                                                                                            |
-| `anatomy.$variants`                                            | the rendered shapes: each variant's name, its `when` quoted as the note it is, and the nodes that differ from the base                                                                                      |
-| `styles.<element>.base`                                        | the token bindings table: element, property, and the token path or the `raw(…)` value as written. A structured value is one row per leaf, named by its path (`padding.block`, `border.color`)               |
-| a `styles.<element>.variants` entry                            | under that element, its `when` and the rows it overrides. When the `when` names a `code: "none"` prop, the rows go in the states section instead: they are what changes in that state                       |
-| `invalidVariantCombinations`                                   | the combinations the component does not support, each as written                                                                                                                                            |
-| `subcomponents`                                                | one subsection each, with the same sections in the same order                                                                                                                                               |
-| `sources`                                                      | `sources.code.path` where siblings' pages show a source or import path. `sources.design` is an address in a design tool, never documentation                                                                |
-| `$schema`, `schemaVersion`                                     | nothing                                                                                                                                                                                                     |
-| a `_scaffold` note                                             | a question at the place it sits (step 5), carrying its `todo`. The undecided thing is not on the page                                                                                                       |
-| any other key that starts with `_`                             | nothing. It is a comment for the contract's maintainers                                                                                                                                                     |
+| The contract has                                               | The page states                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`, `id`                                                  | the `heading` section: the page's heading, and the `id` where siblings' pages show it                                                                                                                                                                                                                 |
+| `description`                                                  | the purpose line, word for word. Absent: a question (step 5)                                                                                                                                                                                                                                          |
+| `status`                                                       | in the `heading` section: `draft` or `deprecated`, the way a sibling's page shows it, or one line under the heading. `published`, or absent: nothing                                                                                                                                                  |
+| `intent.usedFor`, `intent.misusedAs`, `intent.useInstead`      | usage: when to use it, what it is mistaken for, what to use instead, each word for word. `useInstead` is prose, not a list of ids: copy it as written, and link a name in it only where it matches, exactly, a contract's `title` or `id` that has a page                                             |
+| `intent.verifiedAgainst`                                       | nothing. When step 2 reported `components/intent-unverified` or `components/intent-stale`, one line under the usage section saying the guidance has not been reviewed against the component's current props                                                                                           |
+| a `props` entry, any `type` but `slot`, without `code: "none"` | a row in the props table: the name, its `type`, whether it is required (a prop that omits `required` is required), its `default`, whether it is `nullable`, and its `description`                                                                                                                     |
+| `type: "boolean"`, `"string"`, `"number"` or `"function"`      | that type, as the sibling's page writes a type                                                                                                                                                                                                                                                        |
+| `type: "enum"` with `values`                                   | every value, in the contract's order, in exactly its spelling and case                                                                                                                                                                                                                                |
+| a `props` entry with `type: "slot"`                            | a row in the slots section, never the props table: the name, whether it is required, the components it `accepts`, its `minChildren` and `maxChildren`, and its `description`                                                                                                                          |
+| a `props` entry with `code: "none"`                            | a row in the states section, never the props table: the axis, its `values` and its `default`. It is not something a caller passes; it is a state the component is in (an interaction state, a breakpoint)                                                                                             |
+| a `props` entry with `code: "unverified"`                      | its row, with a note that the code side of this prop is not confirmed                                                                                                                                                                                                                                 |
+| a `design` marker on a prop                                    | nothing. It describes the design tool's side. A project whose pages carry a design-name column gets `design.name` there, and nothing else                                                                                                                                                             |
+| `codegen.className`, `codegen.domPassthrough`                  | one line under the props table each: that the component accepts a `className`, and which element's native props pass through                                                                                                                                                                          |
+| `codegen.exampleContent`, `codegen.example`                    | nothing. They shape a generated binding file, not the component                                                                                                                                                                                                                                       |
+| `anatomy`                                                      | the anatomy section: every node from `root` down, nested in `children` order, each with its name, its `type` and its `element`                                                                                                                                                                        |
+| a node's `content`                                             | what the node renders: the literal text, or the prop a `$prop` binding names                                                                                                                                                                                                                          |
+| a node's `presentIf`                                           | that the node renders only when that prop is set                                                                                                                                                                                                                                                      |
+| a node's `instanceOf`                                          | the component rendered there, linked to its page where it has one. `#/subcomponents/<Name>` is shown as `<Name>`, linked to that subcomponent's subsection on this page                                                                                                                               |
+| a node's `attributes`                                          | each attribute and its literal value, on that node. This is the accessibility surface the contract pins, and all of it that the page may state                                                                                                                                                        |
+| a node's `codeClass`, `designLayer`                            | nothing, unless siblings' pages list class names                                                                                                                                                                                                                                                      |
+| `anatomy.$variants`                                            | the rendered shapes: each variant's name, its `when` quoted as the note it is, and the nodes that differ from the base                                                                                                                                                                                |
+| `styles.<element>.base`                                        | the token bindings table: element, property, and the token path or the `raw(…)` value as written. A structured value is one row per leaf, named by its path (`padding.block`, `border.color`)                                                                                                         |
+| a `styles.<element>.variants` entry                            | under that element, its `when` and the rows it overrides. When any key of the `when` is a `code: "none"` prop, the whole entry goes in the states section instead, its full `when` quoted, every key included: it is what changes in that state. One key is enough; the other keys never move it back |
+| `invalidVariantCombinations`                                   | the combinations the component does not support, each as written                                                                                                                                                                                                                                      |
+| `subcomponents`                                                | one subsection each, with the same sections in the same order, all inside the one `subcomponents` section. A subsection carries no markers of its own: the whole `subcomponents` section is rewritten at once                                                                                         |
+| `sources`                                                      | the `source` section: `sources.code.path` where siblings' pages show a source or import path. `sources.code.styles` and `sources.code.propsType`: nothing. `sources.design` is an address in a design tool, never documentation                                                                       |
+| `$schema`, `schemaVersion`                                     | nothing                                                                                                                                                                                                                                                                                               |
+| a `_scaffold` note                                             | nothing between markers. The entry it sits on (a prop, a node, a binding) is listed like any other, with what the entry states, and step 5 leaves the question outside the markers                                                                                                                    |
+| any other key that starts with `_`                             | nothing. It is a comment for the contract's maintainers                                                                                                                                                                                                                                               |
 
 **Word for word.** A prop name, an enum value, a default, a token path: each
 is copied, never tidied, translated or re-cased. Enum matching in this engine
@@ -180,7 +198,7 @@ that path resolves to can change without the contract changing, and the page
 would then be wrong with nothing to say so. Write the value only where
 siblings' pages show one through something that reads it live.
 
-**One order, every run.** Sections in the order of the table above; props,
+**One order, every run.** Sections in the order step 6 lists; props,
 slots, states, nodes and bindings in the contract's own order. A section the
 contract has nothing for is left out, heading and all, unless siblings' pages
 keep an empty one; so is a table column no row has a value for. This is what makes a second run against an unchanged
@@ -191,21 +209,24 @@ contract change nothing.
 A contract has no place for most of what a reader wants beyond the API. Each
 of these is a question on the page, never prose you supply:
 
-| The contract is silent on                                         | The question to leave                                                |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------- |
-| purpose, with no `description`                                    | what the component is for, in one line                               |
-| usage, with no `intent`                                           | when to use it, what it is mistaken for, and what to use instead     |
-| behavior: what happens on a click, a key press, a change of focus | what each interaction does                                           |
-| keyboard and focus order                                          | which keys it answers to, and where focus goes                       |
-| accessibility beyond the declared `attributes`                    | its accessible name, and anything a screen-reader user needs to know |
-| content: what belongs in a slot, how a label is worded, length    | what good content looks like here                                    |
-| each `_scaffold` note                                             | its `todo`, as written                                               |
+| The contract is silent on                                         | The question to leave                                                                                          |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| purpose, with no `description`                                    | what the component is for, in one line                                                                         |
+| usage, with no `intent`                                           | when to use it, what it is mistaken for, and what to use instead                                               |
+| behavior: what happens on a click, a key press, a change of focus | what each interaction does                                                                                     |
+| keyboard and focus order                                          | which keys it answers to, and where focus goes                                                                 |
+| accessibility beyond the declared `attributes`                    | its accessible name, and anything a screen-reader user needs to know                                           |
+| content: what belongs in a slot, how a label is worded, length    | what good content looks like here                                                                              |
+| each `_scaffold` note                                             | its `todo`, as written, naming the entry it sits on (`props.size`, `anatomy.icon`, `styles.label.variants[1]`) |
 
 Write each as one line that starts `Needs a human:` and then the question,
 worded so its owner can answer without opening the contract. Put it under the
 heading the sibling's page uses for that subject, **outside** the markers;
 where the sibling's page has no such heading, collect them in one list at the
-end of the page. The phrase is fixed so the open ones can be searched for.
+end of the page. A `_scaffold` question, and any question about a
+subcomponent, always goes in that end-of-page list: the place it is about is
+inside a generated section, and a line there would be overwritten. The phrase
+is fixed so the open ones can be searched for.
 
 Leave out a question the page already answers in a person's own words. A
 line that still starts `Needs a human:` is this procedure's, the one text
@@ -229,19 +250,25 @@ format (`<!-- … -->` in Markdown and HTML, `{/* … */}` in MDX), alone on its
 line:
 
 ```
-design-delta-docs: generated from <contract path>. Text between start and end markers is rewritten on every run; text outside them is yours.
+design-delta-docs: generated from <contract path> (id <id>). Text between start and end markers is rewritten on every run; text outside them is yours.
 design-delta-docs:start <section>
 design-delta-docs:end <section>
 ```
 
 - The first is the **header line**, once, as near the top as the format
   allows (after a metadata block, where the format has one). The path is the
-  contract's, relative to the project root. It is what says this page may be
-  refreshed: a page without it is never edited (step 3).
+  contract's, relative to the project root, and the id is its `id`: the id
+  is what ties the page to its contract, the path is where it was found. It
+  is what says this page may be refreshed: a page without it is never edited
+  (step 3).
 - A start and an end line wrap each generated section, heading included.
-  `<section>` is one of `purpose`, `usage`, `props`, `slots`, `states`,
-  `anatomy`, `shapes`, `tokens`, `combinations`, `subcomponents`, in that
-  order.
+  `<section>` is one of `heading`, `source`, `purpose`, `usage`, `props`,
+  `slots`, `states`, `anatomy`, `shapes`, `tokens`, `combinations`,
+  `subcomponents`, in that order, and each name appears once on the page.
+- Where the sibling's format carries the title, `id`, status or source path
+  in a metadata block a comment cannot sit inside, those keys are generated
+  there instead, and a re-run rewrites those keys and no other key in the
+  block.
 - Nothing a person is meant to write goes between a start and an end line,
   and nothing generated goes outside one, the `Needs a human:` lines apart:
   they sit outside so that an answer written in their place is never
@@ -298,8 +325,10 @@ owner's call.
 The same procedure, writing less. Run steps 1 and 2, read the project as in
 step 3, then:
 
-1. Read the page. Its header line must name this contract. If it names
-   another, or there is none, stop: step 3 says what to ask.
+1. Read the page. Its header line must name this contract's `id`. If it
+   names another `id`, or there is none, stop: step 3 says what to do. If the
+   `id` matches and the path does not, the contract file moved: rewrite the
+   header line with the path it has now, and report the move.
 2. For each section, in order, generate it from the contract as it is now
    (steps 4 and 6) and replace what is between that section's markers. Text
    between markers is overwritten without a merge; that is the agreement the
@@ -360,7 +389,8 @@ reported and left alone. Removing a page is the owner's.
 - Never edit a contract, a component's code or, without the owner's
   approval, the project's documentation configuration.
 - Never report a page as matching its component when the scoped audit has
-  findings, or a surface was skipped.
+  findings, a surface was skipped, or its bindings had no stylesheet to be
+  compared against.
 
 ## How a consumer links this file
 

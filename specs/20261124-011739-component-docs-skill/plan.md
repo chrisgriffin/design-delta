@@ -13,7 +13,7 @@
 - Name: `design-delta-docs`, named for what it writes, in the pattern of the other packaged skills.
 - A procedure, not a renderer. The page's format is the project's, so the mapping from contract to page is a table of what to state, and the syntax comes from a sibling page.
 - One table maps every contract construct to its place on the page; a second lists what a contract cannot state, each with the question to leave for a person. The marker for those is one fixed phrase, `Needs a human:`, so they can be searched for.
-- Generated regions are delimited by `design-delta-docs:start <section>` and `design-delta-docs:end <section>` comments, and the page opens with a `design-delta-docs: generated from <contract path>` comment. The header is the same kind of ownership guard the generated stubs carry: no header, not ours.
+- Generated regions are delimited by `design-delta-docs:start <section>` and `design-delta-docs:end <section>` comments, and the page opens with a `design-delta-docs: generated from <contract path> (id <id>)` comment; the `id` ties the page to its contract, so a moved contract file still refreshes it. The header is the same kind of ownership guard the generated stubs carry: no header, not ours.
 - Hand-written text lives outside the regions, so a re-run has nothing to merge. A region whose markers a person removed is theirs: it is skipped and reported.
 - Determinism is by fixed order: sections in the table's order, props, nodes and bindings in the contract's own order. That is what makes an unchanged contract produce no diff.
 - No first page without a decision: with no sibling page, format and location are asked. Unattended, plain Markdown beside the contract needs no configuration and nothing has to load it.

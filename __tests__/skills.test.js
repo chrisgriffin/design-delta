@@ -284,7 +284,13 @@ describe("the entity form the build skill filters on", () => {
 // field no page will ever carry, and nobody would notice: the page would just
 // be quietly incomplete. So every name is read from the contract schema, and
 // a field added there fails this until the skill says where it goes (or that
-// it stays off the page).
+// it stays off the page). That covers every object the schema defines a
+// contract's fields in: the top level, a prop, an anatomy node and a rendered
+// shape, a subcomponent, the sources, an element's styles and a style
+// override's `when`. The one set it does not walk is the style property
+// names themselves (`padding`, `color`, …): the skill places every one of
+// them in a single row, as a binding's property, so a property added to the
+// schema already has its place on the page.
 describe("the docs skill covers what a contract can state", () => {
   const schema = JSON.parse(
     readFileSync(join(ROOT, "schema/contract.schema.json"), "utf8"),
@@ -326,6 +332,31 @@ describe("the docs skill covers what a contract can state", () => {
       [],
     )
     expect(unnamed(Object.keys(schema.$defs.codegen.properties))).toEqual([])
+  })
+
+  it("names every subcomponent, sources and element-styles field", () => {
+    expect(unnamed(Object.keys(schema.$defs.subcomponent.properties))).toEqual(
+      [],
+    )
+    expect(unnamed(Object.keys(schema.$defs.sources.properties))).toEqual([])
+    expect(
+      unnamed(Object.keys(schema.$defs.sources.properties.code.properties)),
+    ).toEqual([])
+    expect(unnamed(Object.keys(schema.$defs.elementStyles.properties))).toEqual(
+      [],
+    )
+  })
+
+  it("names a style override's and a rendered shape's own keys", () => {
+    const styleProps = Object.keys(schema.$defs.styleProps.properties)
+    const ownKeys = Object.keys(schema.$defs.styleVariant.properties).filter(
+      key => !styleProps.includes(key),
+    )
+    expect(ownKeys).toContain("when")
+    expect(unnamed(ownKeys)).toEqual([])
+    expect(
+      unnamed(Object.keys(schema.$defs.anatomyVariant.properties)),
+    ).toEqual([])
   })
 
   it("is caught when a field is missing, and prose does not count", () => {
