@@ -306,6 +306,7 @@ describe("design-delta audit — tokens surface, end to end (issue #102)", () =>
             token: "acme.color.danger",
             tokens: ["acme.color.danger"],
             expectedVar: "--acme-color-danger",
+            exemptionRules: ["tokens/token-unemitted"],
           },
         }),
       ])

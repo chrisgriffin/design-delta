@@ -14,6 +14,7 @@ import {
   candidateVarName,
   runTokensCheck,
 } from "../src/modules/tokens.mjs"
+import { applyExemptions } from "../src/core/exemptions.mjs"
 
 const PREFIX = "--acme-"
 
@@ -89,6 +90,7 @@ describe("runTokensCheck — each rule firing", () => {
           token: "acme.color.danger",
           tokens: ["acme.color.danger"],
           expectedVar: "--acme-color-danger",
+          exemptionRules: ["tokens/token-unemitted"],
         },
       }),
     ])
@@ -137,6 +139,7 @@ describe("runTokensCheck — each rule firing", () => {
           token: "acme.color.fg",
           tokens: ["acme.color.fg"],
           expectedVar: "--acme-color-fg",
+          exemptionRules: ["tokens/token-unemitted"],
         },
       }),
     ])
@@ -2452,6 +2455,7 @@ describe("token-unemitted — the split by declaration (#562)", () => {
           token: "acme.color.gone",
           tokens: ["acme.color.gone"],
           expectedVar: "--acme-color-gone",
+          exemptionRules: ["tokens/token-unreferenced"],
         },
       }),
     )
@@ -2545,6 +2549,134 @@ describe("token-unemitted — the split by declaration (#562)", () => {
       withRoots({ rules: { "tokens/token-unemitted": "off" } }),
     )
     expect(byRule(findings)).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// One exemption across both halves (#43). An entry written against
+// `tokens/token-unreferenced` is a claim about the token, and the token's
+// finding moves to `tokens/token-unemitted` the moment the style roots exist.
+// The entry must hold in both build states, and go stale only when neither
+// rule reports the token.
+// ---------------------------------------------------------------------------
+
+describe("#43 a token-unreferenced exemption covers token-unemitted", () => {
+  const exemptions = {
+    "tokens/token-unreferenced": [
+      { entity: "acme.color.gone", decision: "accepted", reason: "x" },
+    ],
+  }
+  const run = (vars, paths) =>
+    applyExemptions(
+      runTokensCheck(
+        tokenCensus([token("acme.color.gone")]),
+        varCensus(vars),
+        config({ paths }),
+      ),
+      exemptions,
+    )
+  const stale = result =>
+    result.findings.filter(f => f.ruleId === "coverage/stale-exemption")
+
+  it("#43 exempts the unused token with and without the style roots, and reports no stale exemption", () => {
+    const without = run([], {})
+    const withRoots = run([], { styleRoots: ["tokens/css"] })
+    for (const [result, ruleId] of [
+      [without, "tokens/token-unreferenced"],
+      [withRoots, "tokens/token-unemitted"],
+    ]) {
+      expect(result.exempted).toBe(1)
+      expect(result.decided.map(f => [f.ruleId, f.entity])).toEqual([
+        [ruleId, "acme.color.gone"],
+      ])
+      expect(result.decided[0].decision.exemption).toBe("acme.color.gone")
+      expect(result.findings).toEqual([])
+      expect(stale(result)).toEqual([])
+    }
+  })
+
+  it("#43 reports the exemption stale only when neither rule reports the token", () => {
+    const used = cssVar("--acme-color-gone", {
+      declarations: [{ file: "tokens/css/t.css", line: 1 }],
+      usages: [{ file: "a.css", line: 2 }],
+    })
+    for (const paths of [{}, { styleRoots: ["tokens/css"] }]) {
+      const result = run([used], paths)
+      expect(result.exempted).toBe(0)
+      expect(stale(result).map(f => [f.entity, f.data.ruleId])).toEqual([
+        ["acme.color.gone", "tokens/token-unreferenced"],
+      ])
+    }
+  })
+
+  // The other direction: a built checkout reports `tokens/token-unemitted`,
+  // so that is the id a consumer copies into the exemption. A checkout with
+  // no style roots must still honour it.
+  const runWith = (exemptionsUnderTest, vars, paths) =>
+    applyExemptions(
+      runTokensCheck(
+        tokenCensus([token("acme.color.gone")]),
+        varCensus(vars),
+        config({ paths }),
+      ),
+      exemptionsUnderTest,
+    )
+  const entry = { entity: "acme.color.gone", decision: "accepted", reason: "x" }
+  const forms = [
+    ["under tokens/token-unemitted", { "tokens/token-unemitted": [entry] }],
+    [
+      "under both rules",
+      {
+        "tokens/token-unreferenced": [entry],
+        "tokens/token-unemitted": [entry],
+      },
+    ],
+  ]
+
+  it.each(forms)(
+    "#43 exempts the unused token with and without the style roots, and reports no stale exemption, for an entry %s",
+    (_, exemptionsUnderTest) => {
+      for (const [paths, ruleId] of [
+        [{}, "tokens/token-unreferenced"],
+        [{ styleRoots: ["tokens/css"] }, "tokens/token-unemitted"],
+      ]) {
+        const result = runWith(exemptionsUnderTest, [], paths)
+        expect(result.exempted).toBe(1)
+        expect(result.decided.map(f => [f.ruleId, f.entity])).toEqual([
+          [ruleId, "acme.color.gone"],
+        ])
+        expect(result.findings).toEqual([])
+        expect(stale(result)).toEqual([])
+      }
+    },
+  )
+
+  it.each(forms)(
+    "#43 reports an entry %s stale only when neither rule reports the token",
+    (_, exemptionsUnderTest) => {
+      const used = cssVar("--acme-color-gone", {
+        declarations: [{ file: "tokens/css/t.css", line: 1 }],
+        usages: [{ file: "a.css", line: 2 }],
+      })
+      for (const paths of [{}, { styleRoots: ["tokens/css"] }]) {
+        const result = runWith(exemptionsUnderTest, [used], paths)
+        expect(result.exempted).toBe(0)
+        expect(
+          stale(result)
+            .map(f => f.data.ruleId)
+            .sort(),
+        ).toEqual(Object.keys(exemptionsUnderTest).sort())
+      }
+    },
+  )
+
+  it("#43 a token-unreferenced finding declares token-unemitted's exemptions", () => {
+    const [finding] = runTokensCheck(
+      tokenCensus([token("acme.color.gone")]),
+      varCensus([]),
+      config({ paths: {} }),
+    ).filter(f => f.ruleId === "tokens/token-unreferenced")
+    expect(finding.data.exemptionRules).toEqual(["tokens/token-unemitted"])
   })
 })
 
