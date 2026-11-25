@@ -134,8 +134,9 @@ function entityCandidates(finding) {
 // rules depending on what the run can see declares the other rule here, and
 // an exemption a consumer wrote under that rule keeps holding when the
 // finding moves (issue #43): `modules/tokens.mjs`'s `tokens/token-unemitted`
-// names `tokens/token-unreferenced`, the rule that reports the same unused
-// token whenever the style roots are not there to tell the halves apart.
+// and `tokens/token-unreferenced` each name the other — the two rules that
+// report the same unused token, depending on whether the style roots are
+// there to tell the halves apart.
 // Without it, the build state alone invalidates the exemption — the finding
 // reappears AND a false `coverage/stale-exemption` fires.
 function exemptionRuleIds(finding) {

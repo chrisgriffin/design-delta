@@ -236,7 +236,7 @@ export const RULES = [
     // tree", and this rule keeps both.
     defaultSeverity: "review",
     description:
-      "No component references this token and no other token aliases it. When `paths.styleRoots` is configured and the token's var is declared nowhere in the scanned code, `tokens/token-unemitted` reports it instead.",
+      "No component references this token and no other token aliases it. When `paths.styleRoots` is configured and the token's var is declared nowhere in the scanned code, `tokens/token-unemitted` reports it instead; each of the two rules' `exemptions` entries also covers the other's finding of the same token.",
     // `ignorePrefixes` scopes the check by TOKEN ID PREFIX (issue #182).
     //
     // A design system deliberately keeps a colour ramp or spacing scale
@@ -270,7 +270,7 @@ export const RULES = [
     // knob for both halves — so it declares no options of its own.
     defaultSeverity: "review",
     description:
-      "No component references this token, no other token aliases it, and its var is declared nowhere in the scanned code — the build never emitted it. Raised only when `paths.styleRoots` is configured and every root exists; scoped by `tokens/token-unreferenced`'s `ignorePrefixes` and `ignoreSources`, and covered by its `exemptions` entries too.",
+      "No component references this token, no other token aliases it, and its var is declared nowhere in the scanned code — the build never emitted it. Raised only when `paths.styleRoots` is configured and every root exists; scoped by `tokens/token-unreferenced`'s `ignorePrefixes` and `ignoreSources`; each of the two rules' `exemptions` entries also covers the other's finding of the same token.",
   },
   {
     id: "tokens/emitted-value-mismatch",
@@ -1477,6 +1477,7 @@ export function runTokensCheck(
         // One claim, two rules: an exemption written under the unreferenced
         // half keeps covering the token once the style roots exist and its
         // finding moves here (#43; `core/exemptions.mjs`'s `exemptionRuleIds`).
+        // The unreferenced finding below declares this rule in turn.
         data: { ...shared.data, exemptionRules: ["tokens/token-unreferenced"] },
         prefixRule: "tokens/token-unreferenced",
         message: composite
@@ -1487,6 +1488,10 @@ export function runTokensCheck(
     }
     emit("tokens/token-unreferenced", {
       ...shared,
+      // The other direction (#43): an exemption written under the unemitted
+      // half, the id a built checkout reports, keeps covering the token in a
+      // checkout whose style roots are not there yet.
+      data: { ...shared.data, exemptionRules: ["tokens/token-unemitted"] },
       message: composite
         ? `nothing references ${subject} — no component uses "${candidate}" or any of its sub-properties, and no other token aliases it`
         : `nothing references ${subject} — no component uses "${candidate}", and no other token aliases it`,
