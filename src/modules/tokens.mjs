@@ -270,7 +270,7 @@ export const RULES = [
     // knob for both halves — so it declares no options of its own.
     defaultSeverity: "review",
     description:
-      "No component references this token, no other token aliases it, and its var is declared nowhere in the scanned code — the build never emitted it. Raised only when `paths.styleRoots` is configured and every root exists; scoped by `tokens/token-unreferenced`'s `ignorePrefixes` and `ignoreSources`.",
+      "No component references this token, no other token aliases it, and its var is declared nowhere in the scanned code — the build never emitted it. Raised only when `paths.styleRoots` is configured and every root exists; scoped by `tokens/token-unreferenced`'s `ignorePrefixes` and `ignoreSources`, and covered by its `exemptions` entries too.",
   },
   {
     id: "tokens/emitted-value-mismatch",
@@ -1474,6 +1474,10 @@ export function runTokensCheck(
     if (canSeeEmission && !emitted) {
       emit("tokens/token-unemitted", {
         ...shared,
+        // One claim, two rules: an exemption written under the unreferenced
+        // half keeps covering the token once the style roots exist and its
+        // finding moves here (#43; `core/exemptions.mjs`'s `exemptionRuleIds`).
+        data: { ...shared.data, exemptionRules: ["tokens/token-unreferenced"] },
         prefixRule: "tokens/token-unreferenced",
         message: composite
           ? `nothing emits ${subject} — neither "${candidate}" nor any of its sub-properties is declared in the scanned code, no component uses them, and no other token aliases it`

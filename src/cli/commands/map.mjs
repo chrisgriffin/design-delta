@@ -34,8 +34,8 @@
  * unparseable `tokens.json`) — the same "a skipped surface is not
  * everything" rule `core/report.mjs` already applies. And `exempted`
  * (`audit`'s own `counts.exempted`) is surfaced at the top level because
- * an exempted `coverage/contract-only`/`tokens/token-unreferenced` finding
- * is invisible to this command entirely (`applyExemptions` drops it before
+ * an exempted `coverage/contract-only`, `tokens/token-unreferenced` or
+ * `tokens/token-unemitted` finding is invisible to this command entirely (`applyExemptions` drops it before
  * `audit`'s `--json` output exists) — `contracted`/`referenced` can
  * silently include an exempted entity, and there is no per-rule exempted
  * breakdown to attribute it more precisely without re-deriving
@@ -173,8 +173,8 @@ export async function computeMap({ globalOpts = {}, bus, stderr }) {
       .map(({ id }) => id)
       .sort(compareEntities)
 
-    // `exempted` (below) can hide a `coverage/contract-only`/
-    // `tokens/token-unreferenced` finding entirely — `applyExemptions`
+    // `exempted` (below) can hide a `coverage/contract-only`,
+    // `tokens/token-unreferenced` or `tokens/token-unemitted` finding entirely — `applyExemptions`
     // drops it before this command ever sees it, so `contracted`/
     // `referenced` can silently include an exempted entity. There is no
     // per-rule exempted breakdown in `audit`'s own `--json` output today

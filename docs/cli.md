@@ -889,8 +889,8 @@ number:**
   [`report-structure.md`](./report-structure.md) already applies. Check
   `skipped` (below) before reading either as zero unmanaged surface.
 - **`exempted`** is `audit`'s own `counts.exempted`, surfaced because an
-  exempted `coverage/contract-only`/`tokens/token-unreferenced` finding is
-  invisible to `map` entirely — `contracted`/`referenced` can silently
+  exempted `coverage/contract-only`, `tokens/token-unreferenced` or
+  `tokens/token-unemitted` finding is invisible to `map` entirely — `contracted`/`referenced` can silently
   include an exempted entity; `audit --json`'s `decided` names which
   ones. The same hazard applies if a project turns
   `coverage/contract-only`, `tokens/token-unreferenced` or
