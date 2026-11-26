@@ -557,3 +557,78 @@ describe("the design-build skill covers what the design side is compared on", ()
     expect(unnamed(["$variants"])).toEqual([])
   })
 })
+
+// PR #52's evaluator round: each defect it found in the design-build skill's
+// procedure, held to the section that has to state the fix. Read against the
+// engine: `coverage/design-missing` is `side: "spec"`, the binding check needs
+// the token census and `usedVars`, `variantCombinations` is bindings-owned,
+// a `presentIf` node is never reported missing, and a design-only component
+// already built is reported as `coverage/design-only`.
+describe("the design-build skill's audit loop cannot pass on nothing compared", () => {
+  const skill = SKILLS.find(entry => entry.name === "design-delta-build-design")
+  /** The text from heading `from` up to the next heading of the same depth. */
+  const section = from => {
+    const start = skill.text.indexOf(from)
+    expect(start).toBeGreaterThan(-1)
+    const depth = from.match(/^#+/)[0]
+    const rest = skill.text.slice(start + from.length)
+    const end = rest.search(new RegExp(`\\n${depth} `))
+    return end === -1 ? rest : rest.slice(0, end)
+  }
+  const step3 = section("### 3.")
+  const step4 = section("### 4.")
+  const step7 = section("### 7.")
+  const updating = section("## Updating")
+  const rowFor = marker =>
+    step4.split("\n").find(line => line.startsWith(`| ${marker}`))
+
+  it("treats an unresolved address, a skipped token census and a missing bindings field as not verified", () => {
+    const notVerified = step7.slice(
+      step7.indexOf("nothing compared, not verified"),
+    )
+    for (const name of [
+      "coverage/design-missing",
+      "skipped.design",
+      "skipped.designAnatomy",
+      "skipped.tokens",
+      "usedVars",
+      "variantCombinations",
+    ])
+      expect(notVerified).toContain(`\`${name}`)
+  })
+
+  it("refreshes both passes after every fix, never one alone", () => {
+    expect(step7).not.toMatch(/components for a property or variant/)
+    expect(step7).toMatch(/components pass and then the bindings pass/)
+    expect(step7).toMatch(/Never run\s+one pass alone/)
+  })
+
+  it("requires every implied combination, whatever the sibling leaves out", () => {
+    const row = rowFor("`invalidVariantCombinations`")
+    expect(row).not.toMatch(/unless the sibling/)
+    expect(row).toMatch(/contract question/)
+  })
+
+  it("looks for a component built before its contract before creating one", () => {
+    expect(step3).toContain("`coverage/design-only`")
+    expect(step3).toMatch(/\[Updating\]/)
+  })
+
+  it("names the anatomy gaps the audit cannot see", () => {
+    const notCompared = step7.slice(step7.indexOf("is not compared on"))
+    expect(notCompared).toContain("`presentIf`")
+    expect(notCompared).toMatch(/fold to the same name/)
+  })
+
+  it("applies step 4's variable rules to a binding fixed in the loop or on an update", () => {
+    expect(step7).toMatch(/step 4's rules/)
+    expect(step7).toContain("`impact`")
+    expect(updating).toMatch(/step 4's variable rules/)
+  })
+
+  it("builds a code-only-absent prop by its type, not as a variant", () => {
+    const row = rowFor('`code: "none"`')
+    expect(row).not.toMatch(/like any enum/)
+    expect(row).toMatch(/its `type`/)
+  })
+})

@@ -89,7 +89,20 @@ Reading alone is not enough.
 
 Read the whole contract, then decide which case this is:
 
-- **`sources.design` is absent**: a new design component. Step 5 creates it.
+- **`sources.design` is absent**: look for the component in the design tool
+  before creating one. A component designed before its contract was written
+  is already there with no contract addressing it: run
+  `npx design-delta audit --json` (no `--contract`, so the design side's
+  uncontracted components are reported) and read every
+  `coverage/design-only` finding, then search `design-components.json` under
+  `paths.snapshotDir` for an entry named for the contract's `title` the way
+  the sibling's name relates to its own (below). If one matches, it is this
+  component: record its address in `sources.design` as step 5 says, refresh
+  (step 6), and take the
+  [Updating](#updating-a-design-component-whose-contract-changed) path.
+  Creating a second one leaves the first as drift and points the contract at
+  the duplicate. More than one could be it: ask which; unattended, stop and
+  report them. None matches: a new design component, and step 5 creates it.
 - **`sources.design` is present**: run
   `npx design-delta audit --json --contract <id>`. A
   `coverage/design-missing` finding means the address resolves to nothing in
@@ -161,9 +174,9 @@ wins: these say what has to exist, the sibling says how.
 | `design: { "name": … }` with a `reason`                                        | the property under that `name`, of the prop's own kind                                                                                                                                                    |
 | `design: { "mechanism": … }`                                                   | the property under its `name`, of the kind the mechanism names: `toggle` a flag, `text` a text property, `instance` a slot                                                                                |
 | `gates` on a `toggle`                                                          | also a slot property of that name, the region the flag shows or hides                                                                                                                                     |
-| `code: "none"` on a prop                                                       | a variant property like any enum: it is a design-only axis (an interaction state, a breakpoint), and it exists in design                                                                                  |
+| `code: "none"` on a prop                                                       | the property its `type` makes, by the rows above (a variant property for an `enum`, a flag for a `boolean`, …): the marker says only that it exists in design and not in code, never what kind it is      |
 | `code: "unverified"` on a prop                                                 | an ordinary property; the marker is about the code side                                                                                                                                                   |
-| `invalidVariantCombinations`                                                   | none of those combinations as a variant. Every other combination of the variant properties exists, unless the sibling's own convention leaves some out                                                    |
+| `invalidVariantCombinations`                                                   | none of those combinations as a variant, and every other combination of the variant properties as one. Leaving out one the contract does not list is a contract question (step 7)                         |
 | an `anatomy` node                                                              | a layer named the node's name, or its `designLayer` when it has one, under its parent's layer, in `children` order                                                                                        |
 | a node's `type`                                                                | a layer of that kind (`container`, `text`, a shape, `instance`, …), made the way the sibling makes that kind                                                                                              |
 | a node's `instanceOf`                                                          | an instance of that component's design counterpart, the one its contract's `sources.design` addresses. With none, leave the node unbuilt and report it: that component comes first, from its own contract |
@@ -272,18 +285,44 @@ change in the design tool removes it, and the code and the contract are not
 yours to change here. `coverage/unfinished-contract` belongs there too.
 
 For each finding on the loop list: change **the design component** so it
-matches the contract, run the refresh pass that reads what you changed
-(components for a property or variant, bindings for a layer or a binding),
-and audit again. Repeat until the loop list is empty, or until what is left
-is one of the two kinds below.
+matches the contract, then run step 6's refresh again the way step 6 says,
+the components pass and then the bindings pass, and audit again. Never run
+one pass alone here: properties are the components pass's, but variant
+combinations, layers and bound variables (`variantCombinations`, `layers`,
+`usedVars`) are the bindings pass's, so a components-only refresh leaves
+`components/variant-combinations-mismatch` and every anatomy and binding
+finding reading the old design. When the fix is a binding
+(`styles/design-binding-missing`), choose the variable by step 4's rules, all
+of them: `impact` first, the variable the sibling binds or names the same
+way, ask when more than one could be it, never by value. Repeat until the
+loop list is empty, or until what is left is one of the two kinds below.
 
-Four things make an empty list mean something:
+An empty loop list means something only when the design side was compared.
+None of these is a clean build; each is "nothing compared, not verified",
+and the report says which:
 
-- **`skipped`**: `skipped.design` means the components snapshot did not
-  load, and nothing design-side was compared. `skipped.designAnatomy` means
-  no component carries a layer tree: the bindings pass has not run, and the
-  layers are unchecked. Fix the refresh, or report it; do not call the build
-  verified.
+- **`coverage/design-missing` for this contract** (it is `side: "spec"`, so
+  it is not on the loop list): the address resolves to nothing in the
+  snapshot, and the property, variant, anatomy and binding checks all skip
+  the component. The refresh missed the component, or the address is wrong.
+  Refresh again. If it stays and step 5 wrote the address, its shape is
+  wrong: fix it to the sibling's. If the contract already had it, stop on it
+  as a contract question, as step 3 says.
+- **`skipped.design`**: the components snapshot did not load, and nothing
+  design-side was compared.
+- **`skipped.designAnatomy`**: no component carries a layer tree; the
+  bindings pass has not run, and the layers are unchecked.
+- **`skipped.tokens`**: the token census did not load, and the binding check
+  needs it, so no binding was compared.
+- **The component's entry in `design-components.json` lacks a field the
+  bindings pass writes**: with no `usedVars` its bindings are skipped
+  silently, and with no `variantCombinations` its combinations are, with no
+  `skipped` entry either way. Read the entry; a missing field is a bindings
+  pass that did not reach this component.
+
+Fix the refresh, or report it; do not call the build verified. Three more
+things bound what a non-empty comparison says:
+
 - **`skipped.designBindings`** counts declared bindings the comparison could
   not reach, with an example reason: a property the design tool cannot
   express as a variable, a token that resolves to zero, a redirect in
@@ -296,8 +335,13 @@ Four things make an empty list mean something:
   report.
 - **What the design side is not compared on.** A default, a layer's text, a
   layer's visibility following its flag, and every variant but the first are
-  not compared. The audit vouches for none of them: check them by eye
-  against step 4's plan and say which you checked.
+  not compared. Nor are two kinds of layer: a node with `presentIf` is never
+  reported missing, so an optional layer you forgot audits clean; and when
+  two layers under one parent have names that fold to the same name, the
+  audit cannot tell which is which and reports nothing missing or unexpected
+  under that parent. The audit vouches for none of them: check them by eye
+  against step 4's plan, every `presentIf` node's layer and every parent with
+  two such layers included, and say which you checked.
 
 When the design tool cannot match, stop on that finding and say which kind
 it is:
@@ -327,10 +371,12 @@ address in step 5 is the one write), and never add an `exemptions` or
 - **Refresh**: the passes run, and any that could not be.
 - **Audit**: the command, the design-side findings left for this component
   (zero, or each with its `ruleId` and which of step 7's two kinds it is),
-  every finding on the reported list with its `ruleId` and `side`, and every
-  `skipped` entry.
-- **Checked by eye**: what step 7 says the audit does not compare, and what
-  you found.
+  every finding on the reported list with its `ruleId` and `side`, every
+  `skipped` entry, and each "nothing compared, not verified" case step 7
+  lists that held.
+- **Checked by eye**: what step 7 says the audit does not compare, every
+  `presentIf` layer and every parent whose layer names fold together
+  included, and what you found.
 - **Drift**: anything in the design tool that still disagrees with the
   contract, and why it was left.
 - **Ambiguous**: every `_scaffold` note, every `design: "unverified"` prop,
@@ -343,8 +389,9 @@ address in step 5 is the one write), and never add an `exemptions` or
 The same loop, without creating anything. Run step 1 and step 2, read as in
 step 3, refresh (step 6), then go straight to step 7: the audit's design-side
 findings for the component are the list of what the design component no
-longer matches. Fix each in the design tool, refresh what you changed, and
-audit again, then report as in step 8.
+longer matches. Fix each in the design tool as step 7 says, a binding by
+step 4's variable rules, refresh as step 7 says, and audit again, then
+report as in step 8.
 
 Change only what a finding or the contract's diff calls for. A property the
 contract dropped is removed from the design component. A design component
@@ -374,7 +421,8 @@ and list what the change affects in the report.
 - Never build without a contract, and never build a design component the
   contract does not describe.
 - Never change a contract, except to record the address of a component this
-  procedure created, in the sibling's shape.
+  procedure created, or of the existing one step 3 found for it, in the
+  sibling's shape.
 - Never create, rename or delete a variable, a style or another component.
 - Never bind a variable chosen by its value, and never type in a value where
   the contract names a token.
