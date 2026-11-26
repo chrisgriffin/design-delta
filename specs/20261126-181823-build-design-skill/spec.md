@@ -32,7 +32,7 @@ design-delta compares a contract with the code and, separately, with the design 
 - [ ] `skills/design-delta-build-design/SKILL.md` ships in the package and takes one contract to a design-tool component through the session's own design-tool tools, then refreshes and audits until the component has no design-side findings.
 - [ ] The skill stops and reports, writing nothing, when the session lacks design-tool write tools or no design provider is configured.
 - [ ] The skill never invents a decision the contract leaves open, binds only variables that map to tokens the project has, and reports what was created and what still disagrees.
-- [ ] The engine gains no code that calls or writes to a design tool: the change adds no file under `src/` beyond the one `LINKED_SKILLS` entry.
+- [ ] The engine gains no code that calls or writes to a design tool: the change touches nothing under `src/` but the one `LINKED_SKILLS` entry.
 - [ ] `design-delta dock` and `design-delta init` each write a guarded stub at `.claude/skills/design-delta-build-design/SKILL.md`.
 - [ ] The build, authoring and refresh skills, the audit skill's sibling list, the README § Agent skills and `docs/cli.md` § `init`/§ `dock` name the new skill.
 - [ ] **Runnable:** `test -f skills/design-delta-build-design/SKILL.md && npm run verify` exits 0 (exits 1 on `develop`, where the skill does not exist).

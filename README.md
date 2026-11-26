@@ -152,8 +152,15 @@ documentation format the project already uses: props with types, defaults
 and enum values, slots, states, anatomy and token bindings, with a marked
 question wherever the contract is silent, and only its own generated
 sections rewritten when it is run again; both commands lay its stub too.
+[`skills/design-delta-build-design/SKILL.md`](./skills/design-delta-build-design/SKILL.md)
+is the build skill's design-side twin: with a session connected to the
+design tool, it creates or updates the component there from its contract,
+properties, variants, layers and variable bindings, using the session's own
+design-tool tools, then refreshes the snapshot and audits until the
+component has no design-side findings; the engine itself still never
+touches the design tool, and both commands lay this stub as well.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. A seventh,
+the report to it. An eighth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

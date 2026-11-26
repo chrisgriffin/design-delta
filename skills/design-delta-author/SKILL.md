@@ -343,6 +343,8 @@ in the code.
 - **Deciding for the owner.** Every open decision is asked or marked.
 - **The design tool.** Nothing here creates, edits or reads a design-tool
   component directly; the design side is whatever the snapshot on disk says.
+  Building the contract's component in the design tool is
+  [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md).
 - **Refreshing the design snapshot.** A stale or missing snapshot is
   reported, and the contract is written from what is there; the refresh is
   `design-delta-refresh`.
