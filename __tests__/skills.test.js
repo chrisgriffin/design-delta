@@ -173,7 +173,7 @@ function unquotedWorkPaths(skill) {
 }
 
 describe("the packaged skills", () => {
-  it("ships the audit, authoring, build, docs, doctor, refresh and resolve skills", () => {
+  it("ships the audit, authoring, build, docs, doctor, refresh, resolve and token skills", () => {
     expect(SKILLS.map(skill => skill.name)).toEqual(
       expect.arrayContaining([
         "design-delta",
@@ -183,6 +183,7 @@ describe("the packaged skills", () => {
         "design-delta-doctor",
         "design-delta-refresh",
         "design-delta-resolve",
+        "design-delta-token",
       ]),
     )
   })
