@@ -263,6 +263,10 @@ describe("sources/code — censusTokens never censuses a value nobody wrote", ()
         $extensions: { mode: { dense: "2px" } },
       },
       alias: { $value: "{space.sm}" },
+      aliasModed: {
+        $value: "{space.md}",
+        $extensions: { mode: { dense: "2px" } },
+      },
     },
     motion: { $type: "duration", fast: { $value: "150ms" } },
     edge: {
@@ -289,6 +293,7 @@ describe("sources/code — censusTokens never censuses a value nobody wrote", ()
     expect(byId["space.md"].cssValue).toBe("8px")
     expect(byId["space.moded"].cssValue).toBe("8px")
     expect(byId["space.moded"].modeCssValues).toBeUndefined()
+    expect(byId["space.aliasModed"].cssValue).toBe("8px")
 
     const unreadable = result.diagnostics.filter(
       d => d.code === "token-value-unreadable",
@@ -297,6 +302,7 @@ describe("sources/code — censusTokens never censuses a value nobody wrote", ()
       "edge.thin",
       "motion.fast",
       "space.alias",
+      "space.aliasModed",
       "space.moded",
       "space.sm",
     ])
@@ -304,8 +310,24 @@ describe("sources/code — censusTokens never censuses a value nobody wrote", ()
     expect(sm.message).toContain('"4px"')
     expect(sm.message).toContain('{"value": 4, "unit": "px"}')
     expect(sm.file).toBe("tokens.json")
-    expect(unreadable.find(d => d.tokenId === "space.moded").message).toContain(
-      'mode "dense"',
+    expect(sm.message).toMatch(/it has no CSS value and is not compared$/)
+    // A mode-only failure says only that mode is lost; the default is still
+    // compared.
+    const moded = unreadable.find(d => d.tokenId === "space.moded").message
+    expect(moded).toContain('"2px" (mode "dense")')
+    expect(moded).toMatch(
+      /; that mode has no CSS value; the default value is still compared$/,
+    )
+    expect(moded).not.toContain("it has no CSS value")
+    // The alias note belongs to the value it describes: the default aliases
+    // space.md, the mode's literal aliases nothing.
+    const aliasModed = unreadable.find(
+      d => d.tokenId === "space.aliasModed",
+    ).message
+    expect(aliasModed).toContain('"2px" (mode "dense") could not')
+    expect(aliasModed).not.toContain("an alias of")
+    expect(unreadable.find(d => d.tokenId === "space.alias").message).toContain(
+      '"4px" (an alias of "space.sm")',
     )
     expect(result.tokens.some(t => "valueDiagnostic" in t)).toBe(false)
   })

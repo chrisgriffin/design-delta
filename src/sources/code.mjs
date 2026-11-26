@@ -498,19 +498,26 @@ const OBJECT_FORM = {
 // `{value, unit}` before the transform if a real project needs those tokens
 // compared rather than reported.
 function unreadableValueDiagnostic(token, labels) {
-  const valueOf = label =>
-    label === "." ? token.$value : token.mode[label].$value
-  const values = labels.map(
-    label =>
-      `${JSON.stringify(valueOf(label))}${label === "." ? "" : ` (mode "${label}")`}`,
-  )
+  const sourceOf = label => (label === "." ? token : token.mode[label])
+  // Each value carries its own alias note: a mode's literal is never labelled
+  // with the default value's alias target.
+  const values = labels.map(label => {
+    const { $value, aliasOf } = sourceOf(label)
+    return `${JSON.stringify($value)}${label === "." ? "" : ` (mode "${label}")`}${aliasOf ? ` (an alias of "${aliasOf}")` : ""}`
+  })
   const legacy =
     OBJECT_FORM[token.$type] &&
-    labels.some(label => typeof valueOf(label) === "string")
+    labels.some(label => typeof sourceOf(label).$value === "string")
+  // When the default value was read, only the listed modes lose their CSS
+  // value; the token keeps its `cssValue` and is still compared.
+  const modesOnly = !labels.includes(".")
+  const lost = modesOnly
+    ? `${labels.length === 1 ? "that mode has" : "those modes have"} no CSS value; the default value is still compared`
+    : "it has no CSS value and is not compared"
   return {
     code: "token-value-unreadable",
     tokenId: token.id,
-    message: `token "${token.id}"'s value ${formatList(values)}${token.aliasOf ? ` (an alias of "${token.aliasOf}")` : ""} could not be read as CSS${legacy ? ` — DTCG writes a ${token.$type} as an object like ${OBJECT_FORM[token.$type]}, not a string` : ""}; it has no CSS value and is not compared`,
+    message: `token "${token.id}"'s value ${formatList(values)} could not be read as CSS${legacy ? ` — DTCG writes a ${token.$type} as an object like ${OBJECT_FORM[token.$type]}, not a string` : ""}; ${lost}`,
   }
 }
 
