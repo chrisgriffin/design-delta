@@ -21,6 +21,7 @@ import { join } from "node:path"
 import { GLOBAL_FLAGS_HELP, SUBCOMMANDS, run } from "../src/cli/main.mjs"
 import { SEVERITIES } from "../src/core/findings.mjs"
 import { buildFullRuleRegistry } from "../src/cli/rule-registry.mjs"
+import { matchComponentFiles } from "../src/cli/commands/scaffold.mjs"
 import { createSyntheticProject } from "./helpers/synthetic-project.mjs"
 
 const ROOT = join(import.meta.dirname, "..")
@@ -545,5 +546,43 @@ describe("the adopt skill's CI threshold", () => {
       "```yaml\n- uses: chrisgriffin/design-delta@vX.Y.Z\n  with:\n    fail-on: warn\n    fail-below: 80\n```\n"
     expect(actionInputs(workflow)).toEqual(["fail-on", "fail-below"])
     expect(DECLARED).not.toContain("fail-below")
+  })
+})
+
+// The adopt skill names each worklist component for `impact` and `scaffold`.
+// Both find a file by its basename, never by its export, so the name the
+// skill tells an agent to build has to be one `matchComponentFiles` resolves,
+// and the basenames it sends to the end of the list have to be ones it
+// cannot. Each `file.tsx` is `Name` pair in the skill is checked against it.
+describe("the adopt skill's component names", () => {
+  const adopt = SKILLS.find(skill => skill.name === "design-delta-adopt")
+  /** The skill's rule: capitalize each hyphen-separated word of the basename. */
+  const nameOf = base =>
+    base
+      .split("-")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("")
+  const examples = [
+    ...adopt.text.matchAll(/`([a-z0-9-]+)\.tsx` is `([A-Za-z0-9]+)`/g),
+  ].map(([, base, name]) => ({ base, name }))
+
+  it("says the name comes from the basename, not the export", () => {
+    expect(adopt.text).toMatch(/never by what the file\s+exports/)
+    expect(adopt.text).not.toMatch(/exported name/)
+    expect(examples.length).toBeGreaterThan(0)
+  })
+
+  it("builds names the engine resolves to that file", () => {
+    for (const { base, name } of examples) {
+      expect(nameOf(base)).toBe(name)
+      const file = `/project/components/${base}.tsx`
+      expect(matchComponentFiles([file], name)).toEqual([file])
+    }
+  })
+
+  it("is right that a PascalCase basename resolves under no PascalCase name", () => {
+    expect(adopt.text).toContain("`ButtonGroup.tsx`")
+    const file = "/project/components/ButtonGroup.tsx"
+    expect(matchComponentFiles([file], "ButtonGroup")).toEqual([])
   })
 })

@@ -18,8 +18,8 @@ The config describes the project's layout, and its owner confirms it. Each
 contract is a decision about a component's API, and the authoring skill asks
 whoever owns it. Which findings a project accepts is its owners' call too.
 What this procedure owns is the order, the evidence at each step, and a CI
-gate that is green on the day it lands and still fails the next change that
-breaks a contract.
+gate that is green on the day it lands and, at any level but `none`, still
+fails the next change that adds a finding at that level.
 
 **Two things this file never does.** It names no framework, styling system
 or design tool: those are this project's, and every step reads them from the
@@ -84,19 +84,25 @@ Ask them once, together, each with the value you would keep and why. The
 owner's answer is what goes in the config. **When nobody can answer**, keep
 what was detected and list every value as unconfirmed in the report.
 
-These are the only config edits this procedure makes, and only here, before
-the first audit: each one describes where the project keeps things. Once
-step 3's audit exists, nothing under this procedure changes the config.
+These are the config edits this procedure makes before the first audit:
+each one describes where the project keeps things. Once step 3's audit
+exists, the only config change is the owner's own `paths.stateFile` edit in
+step 6, when they choose it; nothing else under this procedure changes the
+config.
 
 `init` also writes a stub for each packaged skill under `.claude/skills/`.
 Every sibling named below can be read at
 `node_modules/design-delta/skills/<name>/SKILL.md` whether or not a stub
 exists.
 
-**A config already exists.** Do not run `init` again: it rewrites the fields
-it detects, and this step only reads them. Read the config, put the same values to the owner,
-and carry on from step 3 with whatever they confirm. A config value they
-want changed is their edit, made before step 3.
+**A config already exists.** Read the config, put the same values to the
+owner, and carry on from step 3 with whatever they confirm. A config value
+they want changed is their edit, made before step 3. Then lay the stubs an
+older setup lacks with `npx design-delta init --yes`: `init` updates and
+never overwrites, so every value already in the config stays as it is and
+each missing stub under `.claude/skills/` is written. A field the config
+did not have is filled from what `init` detected: put each one to the owner
+like the rest, and list it in the report.
 
 ### 3. Take the first audit, and keep it
 
@@ -117,9 +123,12 @@ Keep all three documents outside the project's tracked files. They are
   config looks. That is step 2's `paths.componentsDir`, not an empty
   project. Go back and confirm it.
 - **`diagnostics`**: what the run could not read.
-- **`contracts`**: `ok` must be `true` before any contract is written here. An
-  invalid one that was already there is its owner's, through
-  [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md).
+- **`contracts`**: `ok` is `false` while any contract in the project has a
+  diagnostic. One that was already there does not stop adoption: it is its
+  owner's, through
+  [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md),
+  and goes in the report with its file and message. Authoring here checks
+  only the file it writes, as that skill's step 7 does.
 
 Count the findings by `ruleId`. That table is the report's "before".
 
@@ -133,14 +142,26 @@ contract, and its `entity` is the component's file. The same list, sorted, is
 npx design-delta map --json
 ```
 
-Order it by how much of the codebase each component reaches. For each file,
-take the component's exported name from the file and run:
+Order it by how much of the codebase each component reaches. `impact` and
+`scaffold` find a component by its file's basename, never by what the file
+exports: the name, kebab-cased, must equal the basename lowercased. So build
+`<Component>` from the basename, capitalizing each hyphen-separated word
+(`button-group.tsx` is `ButtonGroup`), and run:
 
 ```
 npx design-delta impact <Component> --json
 ```
 
-`usedBy` lists every file that references the component. Then:
+A basename that is not lowercase kebab-case (`ButtonGroup.tsx`), or that
+names no component (`index.tsx`), has no name either command resolves: it
+goes to the end of the list with that as its reason.
+
+`usedBy` counts only imports from inside `paths.componentsDir`, and only
+relative ones (`./`, `../`, a relative dynamic `import()`), each against the
+exact file it resolves to. A page outside that directory, an alias import
+and a re-export through an index file never count. When every `usedBy` on
+the list is empty, there is no usage to order by: keep `map`'s order and say
+in the report that the order is `map`'s, not usage. Otherwise:
 
 1. **A component other listed components use comes before them.** When a
    file in the list appears in another component's `usedBy`, that other
@@ -150,7 +171,7 @@ npx design-delta impact <Component> --json
 3. **Ties keep `map`'s order.**
 
 An `impact` that exits `1` (no file matches the name, or more than one does)
-puts that component at the end, with the message as its reason. Never guess
+also puts that component at the end, with the message as its reason. Never guess
 which file a name means.
 
 Write the order down with each component's `usedBy` count; it goes in the
@@ -172,6 +193,9 @@ its step 1, starting from existing code:
 ```
 npx design-delta scaffold <Component>
 ```
+
+`<Component>` is the name step 4 built from the basename; `scaffold`
+resolves it the same way `impact` does.
 
 The authoring skill is what reads the project, treats every drafted field as
 a proposal, asks every open decision in one message, marks what nobody
@@ -249,9 +273,13 @@ npx design-delta verify --json --fail-on none
 ```
 
 When the config is not `design-delta.json` at the root, add `--config <path>`
-to each. The first whose `ok` is `true` is the level. At that level, everything the
-project has now passes, and any new finding at or above it fails the next
-change that adds it. `none` still fails an invalid contract. If even `none`
+to each. The first whose `ok` is `true` is the level. At `review`, `warn` or
+`error`, everything the project has now passes, and any new finding at or
+above it fails the next change that adds it. **At `none` no finding can fail
+the gate**: it fails only an invalid contract, so a new `error` merges green.
+Wire it anyway, since it holds every contract valid, but say outright that it
+guards no drift, and make that the first line of the report's Gate section.
+If even `none`
 fails, `contracts.ok` is `false`: fix that contract through the authoring
 skill before wiring anything, since a gate that is red on the day it lands
 is a gate someone turns off.
@@ -322,21 +350,23 @@ components the worklist did not reach. None of it is cleared here.
 - **Setup**: the version installed, each config value with whether its owner
   confirmed it, and which steps were already done before this session.
 - **Before**: the step 3 counts by `ruleId`, and every skipped surface.
-- **Worklist**: the order, each component's `usedBy` count, which were
-  contracted this session and which remain.
+- **Worklist**: the order, each component's `usedBy` count (or that every
+  count was 0 and the order is `map`'s), which were contracted this session
+  and which remain, and each one no name resolved, with why.
 - **Contracts**: each contract written, from the authoring skill's report:
   its pending `_scaffold` notes, and the findings left for its `id`.
 - **Baseline**: the state file, `counts.entities`, every skipped entity, and
   whether the file is tracked.
 - **Gate**: the CI file and step, the level, every rung of step 7 with its
-  `ok`, and what tightening it would take. If it is unwired, this is the
-  first line.
+  `ok`, and what tightening it would take. If it is unwired, or set at
+  `none` (no finding can fail it), that is the first line.
 - **Left, by owner**: one line per group (pile, rule, count, the decision it
   waits on, who owns it), from the resolve skill's piles. "None" is a valid
   entry; leaving the section out is not.
 - **Untouched**: that the config shows no change since step 2's confirmed
-  values, and no exemption or rule entry was added. Check with the project's
-  version control.
+  values other than the owner's step 6 `paths.stateFile` edit, listed here
+  when they made it, and no exemption or rule entry was added. Check with
+  the project's version control.
 
 ## What this does not cover
 
@@ -359,7 +389,8 @@ components the worklist did not reach. None of it is cleared here.
 - Never answer a question that decides a component's API.
 - Never edit a contract, an exemption, a rule's severity or the config to
   make a list shorter or a gate pass.
-- Never change the config yourself after the first audit.
+- Never change the config yourself after the first audit; the owner's step 6
+  `paths.stateFile` edit is theirs.
 - Never set a CI threshold stricter than the one `verify` passed at.
 - Never move the baseline after this session.
 - Never leave a remaining finding, or an unwired gate, out of the report.
