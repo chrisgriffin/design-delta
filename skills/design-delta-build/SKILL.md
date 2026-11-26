@@ -195,13 +195,15 @@ Four things make an empty list mean something:
 - **Every severity counts.** `warn` and `review` findings do not fail the
   project's gate by default, and they are still findings. The target is none
   of any severity.
-- **Shorthands are not compared.** A token written inside a shorthand
-  declaration (`background: var(…)`, `border: 1px solid var(…)`) does not say
-  which property it satisfies, so the audit stays silent about that binding
-  rather than guess, even when the token is the wrong one. Write the longhand
-  the contract's property names (`background-color` for `background`) where
-  the project's stylesheets allow it; where they do not, check each such
-  binding against the contract by eye and say so in the report.
+- **Multi-part shorthands are not compared.** A token written inside a
+  shorthand with more than one part (`border: 1px solid var(…)`), or inside a
+  `border` shorthand at all, does not say which property it satisfies, so the
+  audit stays silent about that binding rather than guess, even when the token
+  is the wrong one. A `background` whose whole value is one `var(…)` is
+  compared like `background-color`. Write the longhand the contract's
+  property names (`border-color` for `border.color`) where the project's
+  stylesheets allow it; where they do not, check each such binding against
+  the contract by eye and say so in the report.
 
 **Some of those findings are not the code's to clear.** Every finding carries
 a `side`. A `side: "design"` finding is about the design tool's component,
