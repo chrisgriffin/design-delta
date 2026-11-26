@@ -152,8 +152,15 @@ documentation format the project already uses: props with types, defaults
 and enum values, slots, states, anatomy and token bindings, with a marked
 question wherever the contract is silent, and only its own generated
 sections rewritten when it is run again; both commands lay its stub too.
+[`skills/design-delta-adopt/SKILL.md`](./skills/design-delta-adopt/SKILL.md)
+takes a codebase that has never used design-delta to a working setup: a
+config its owner confirmed, contracts for its most-used components written
+through the authoring skill, a `snapshot` baseline, and `verify` in CI
+through the package's Action at the strictest `--fail-on` level the project
+already passes, so the first pull request is not failed by older drift; the
+rest goes to the resolve skill, and both commands lay its stub too.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. A seventh,
+the report to it. An eighth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

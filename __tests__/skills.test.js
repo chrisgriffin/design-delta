@@ -19,6 +19,7 @@ import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { GLOBAL_FLAGS_HELP, SUBCOMMANDS, run } from "../src/cli/main.mjs"
+import { SEVERITIES } from "../src/core/findings.mjs"
 import { buildFullRuleRegistry } from "../src/cli/rule-registry.mjs"
 import { createSyntheticProject } from "./helpers/synthetic-project.mjs"
 
@@ -173,10 +174,11 @@ function unquotedWorkPaths(skill) {
 }
 
 describe("the packaged skills", () => {
-  it("ships the audit, authoring, build, docs, doctor, refresh and resolve skills", () => {
+  it("ships the audit, adopt, authoring, build, docs, doctor, refresh and resolve skills", () => {
     expect(SKILLS.map(skill => skill.name)).toEqual(
       expect.arrayContaining([
         "design-delta",
+        "design-delta-adopt",
         "design-delta-author",
         "design-delta-build",
         "design-delta-docs",
@@ -478,5 +480,70 @@ describe("the docs skill covers what a contract can state", () => {
     expect(names(text, "usedFor")).toBe(true)
     expect(names(text, "props")).toBe(false)
     expect(names(text, "used")).toBe(false)
+  })
+})
+
+// The adopt skill wires the gate into CI at the strictest threshold the
+// project already passes, so the first pull request carrying it is not failed
+// by drift that predates it. That only holds if it tries every level
+// `verify --fail-on` accepts, strictest first, and stops at the first that
+// passes; a level it skipped is a stricter gate it never offered. Both lists
+// are read from the engine and from `action.yml`, never written out here.
+describe("the adopt skill's CI threshold", () => {
+  const adopt = SKILLS.find(skill => skill.name === "design-delta-adopt")
+  /** Each `--fail-on <level>` a `verify --json` line in the skill's code tries, in order. */
+  const ladder = text =>
+    codeOf(text).flatMap(code =>
+      [...code.matchAll(/design-delta verify --json --fail-on ([a-z]+)/g)].map(
+        ([, level]) => level,
+      ),
+    )
+  /** The keys under `with:` in each fenced block that uses this package's Action. */
+  const actionInputs = text =>
+    [...text.matchAll(/^```[^\n]*\n([\s\S]*?)^```/gm)]
+      .map(([, block]) => block)
+      .filter(block => /uses: chrisgriffin\/design-delta@/.test(block))
+      .flatMap(block => {
+        const lines = block.split("\n")
+        const at = lines.findIndex(line => /^\s*with:\s*$/.test(line))
+        if (at === -1) return []
+        const indent = lines[at].search(/\S/)
+        const keys = []
+        for (const line of lines.slice(at + 1)) {
+          if (line.trim() === "" || line.search(/\S/) <= indent) break
+          keys.push(line.trim().split(":")[0])
+        }
+        return keys
+      })
+  const DECLARED = [
+    ...readFileSync(join(ROOT, "action.yml"), "utf8")
+      .split(/^inputs:\n/m)[1]
+      .split(/^\S/m)[0]
+      .matchAll(/^ {2}([a-z][a-z-]*):/gm),
+  ].map(([, name]) => name)
+
+  it("reads the levels and inputs it checks against", () => {
+    expect(SEVERITIES.length).toBeGreaterThan(0)
+    expect(DECLARED).toEqual(expect.arrayContaining(["fail-on"]))
+  })
+
+  it("tries every verify --fail-on level, strictest first", () => {
+    expect(ladder(adopt.text)).toEqual([...[...SEVERITIES].reverse(), "none"])
+  })
+
+  it("sets the Action's fail-on, and names no input action.yml lacks", () => {
+    const inputs = actionInputs(adopt.text)
+    expect(inputs).toContain("fail-on")
+    expect(inputs.filter(name => !DECLARED.includes(name))).toEqual([])
+  })
+
+  it("is caught skipping a level, or naming an input the Action lacks", () => {
+    const skipped =
+      "```\nnpx design-delta verify --json --fail-on warn\nnpx design-delta verify --json --fail-on none\n```\n"
+    expect(ladder(skipped)).not.toEqual([...[...SEVERITIES].reverse(), "none"])
+    const workflow =
+      "```yaml\n- uses: chrisgriffin/design-delta@vX.Y.Z\n  with:\n    fail-on: warn\n    fail-below: 80\n```\n"
+    expect(actionInputs(workflow)).toEqual(["fail-on", "fail-below"])
+    expect(DECLARED).not.toContain("fail-below")
   })
 })
