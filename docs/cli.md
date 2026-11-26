@@ -964,7 +964,11 @@ an EXACT match against the token's CSS-OUTPUT value (`cssValue`), never a
 fuzzy or nearest-token distance: a token whose authored `$value` is
 `#111111` may census as `#111`, and a composite type that expands to multiple
 CSS properties (`typography`, occasionally `shadow`/`border`) has no single
-`cssValue` at all and so can never match one declaration.
+`cssValue` at all and so can never match one declaration. Nor does a token
+whose value the CSS transform cannot read — a dimension or duration in the
+legacy string form (`"4px"` rather than `{"value": 4, "unit": "px"}`), or a
+composite or alias built on one — which the token census reports as a
+`token-value-unreadable` diagnostic instead.
 
 **This is an inventory, not a check.** "Use tokens, not literals" belongs in
 the project's own stylelint config, where it fires at edit time — an
