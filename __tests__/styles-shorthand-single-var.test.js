@@ -12,13 +12,16 @@ import {
   resolveCssFinest,
   runStylesCheck,
 } from "../src/modules/styles.mjs"
-import { classifyDeclarationValue } from "../src/sources/styles.mjs"
+import {
+  censusStylesheetText,
+  classifyDeclarationValue,
+} from "../src/sources/styles.mjs"
 
 const PREFIX = "--acme-"
 const config = { conventions: { cssVarPrefix: PREFIX } }
 
-function audit(base, declarations) {
-  const contracts = [
+function contractsFor(base) {
+  return [
     {
       id: "widget",
       file: "widget.contract.json",
@@ -31,6 +34,25 @@ function audit(base, declarations) {
       },
     },
   ]
+}
+
+function findingsOf(contracts, census) {
+  return runStylesCheck(contracts, census, config).map(f => ({
+    ruleId: f.ruleId,
+    entity: f.entity,
+    property: f.data?.property,
+  }))
+}
+
+// The stylesheet text through the real census, so source order and the
+// cascade are the census's own.
+function auditText(base, text) {
+  return findingsOf(contractsFor(base), {
+    files: [{ file: "widget.scss", selectors: censusStylesheetText(text) }],
+  })
+}
+
+function audit(base, declarations) {
   const census = {
     files: [
       {
@@ -50,11 +72,7 @@ function audit(base, declarations) {
       },
     ],
   }
-  return runStylesCheck(contracts, census, config).map(f => ({
-    ruleId: f.ruleId,
-    entity: f.entity,
-    property: f.data?.property,
-  }))
+  return findingsOf(contractsFor(base), census)
 }
 
 describe("#38 a single-var shorthand is compared like its longhand", () => {
@@ -161,5 +179,65 @@ describe("#38 a multi-part or shared shorthand stays uncompared", () => {
         { background: "var(--acme-image) var(--acme-color-wrong)" },
       ),
     ).toEqual([])
+  })
+})
+
+describe("#38 the declaration that wins the cascade is the one compared", () => {
+  const bg = { background: { token: "acme.color.bg" } }
+  const mismatch = [
+    {
+      ruleId: "styles/token-mismatch",
+      entity: "widget.root",
+      property: "background",
+    },
+  ]
+
+  it("#38 a later `background: var(--wrong)` in the same rule overrides the longhand", () => {
+    expect(
+      auditText(
+        bg,
+        ".widget { background-color: var(--acme-color-bg); background: var(--acme-color-wrong); }",
+      ),
+    ).toEqual(mismatch)
+  })
+
+  it("#38 a later longhand in the same rule overrides the shorthand", () => {
+    expect(
+      auditText(
+        bg,
+        ".widget { background: var(--acme-color-wrong); background-color: var(--acme-color-bg); }",
+      ),
+    ).toEqual([])
+    expect(
+      auditText(
+        bg,
+        ".widget { background: var(--acme-color-bg); background-color: var(--acme-color-wrong); }",
+      ),
+    ).toEqual(mismatch)
+  })
+
+  it("#38 a shorthand in a later rule for the same selector overrides the earlier longhand", () => {
+    expect(
+      auditText(
+        bg,
+        ".widget { background-color: var(--acme-color-bg); }\n.widget { background: var(--acme-color-wrong); }",
+      ),
+    ).toEqual(mismatch)
+  })
+
+  it("#38 a shorthand inside an at-rule never displaces the unconditional longhand", () => {
+    expect(
+      auditText(
+        bg,
+        ".widget { background-color: var(--acme-color-bg); @media (min-width: 1px) { background: var(--acme-color-wrong); } }",
+      ),
+    ).toEqual([])
+  })
+
+  it("#38 the census keeps only the declaration that wins", () => {
+    const [entry] = censusStylesheetText(
+      ".widget { background-color: var(--acme-color-bg); background: var(--acme-color-wrong); }",
+    )
+    expect(entry.declarations.map(d => d.property)).toEqual(["background"])
   })
 })
