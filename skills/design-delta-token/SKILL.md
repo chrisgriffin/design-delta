@@ -69,6 +69,12 @@ token in it; take step 3 for every one.
 
 ### 2. Take the list before you change anything
 
+If step 1 found the stylesheets under `paths.styleRoots` are the token
+build's output, run the project's token build first, exactly as step 6 will:
+a fresh checkout with that output gitignored or stale otherwise reports
+findings here that step 6's rebuilt run clears, and the change gets the
+credit for clearing them.
+
 ```
 npx design-delta contracts --json
 npx design-delta audit --json
@@ -82,6 +88,18 @@ there before you started.
 
 ### 3. Measure what the change touches
 
+**Which spelling of the id each search uses.** A project that keeps each
+mode as its own top-level set (`system/light` beside `system/dark`) spells
+one token two ways. The census id carries the set: `impact` takes
+`system/light.color.bg.primary`, and asks about one mode's copy. A contract
+binds, and a `design.options.tokenMap` entry names, the collapsed id with the
+mode dropped: `system.color.bg.primary`. An alias inside the tokens file is
+written the way the file writes it, usually the collapsed id between sibling
+mode sets; search both. Below, `<token.path>` is the census id for `impact`
+and the collapsed id for the contract and config searches. Run `impact` once
+per mode set, and a rename, deprecation or removal applies to the token in
+every mode set, never one.
+
 **For an add**, check the name is free:
 
 ```
@@ -91,16 +109,32 @@ npx design-delta impact <new.token.path> --json
 Exit `1` saying there is no token with that id is what you want. Exit `0`
 means the project already has it: stop, and report that the token exists.
 
+`impact` matches the exact id only, so two clashes it cannot see are yours
+to check in the tokens file, every file in it when it is a directory:
+
+- **The path is a group already.** Adding `color.bg` beside
+  `color.bg.primary` turns a group into a node that is both a token and a
+  group. Search for any token whose path starts with `<new.token.path>.`;
+  finding one is a clash.
+- **An ancestor is a token.** Adding `color.bg.primary.hover` under the
+  token `color.bg.primary` does the same from below. Run `impact` for each
+  ancestor path (`color.bg.primary`, then `color.bg`, then `color`); an exit
+  `0` on any is a clash.
+
+Either clash: stop, and report the existing token or group that the new path
+collides with. Its name is step 4's to settle again, never yours to pick.
+
 **For a rename, a deprecation or a removal**, run each of these for the
 token as it is now, before the tokens file changes:
 
-| What references it | How to find it                                                                                                                                                                                                                                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| code               | `npx design-delta impact <token.path> --json`. `usedBy` is every file and line that references the token; `vars` is the custom-property names they reference it by. Exit `1` means the project has no token at that path: stop and say so                                                                                                                               |
-| contracts          | `impact` does not report these. Search every file under `paths.contractsDir` for the path as a quoted string, `"<token.path>"`, and record each contract file, the element under `styles`, and the property (and the variant's `when`, for a binding inside a variant)                                                                                                  |
-| other tokens       | `impact` does not report these either. Search the tokens file, every file in it when it is a directory, for the alias `{<token.path>}`; and `paths.resolvedTokensFile` too when the project sets it                                                                                                                                                                     |
-| config             | search `design-delta.json` for the token's id: an `exemptions` entry, a `rules` option (an `ignorePrefixes` prefix), a `lint` vocabulary, a `design.options.tokenMap` entry                                                                                                                                                                                             |
-| the design side    | only when `design.provider` is set: the audit's findings for this token on the `tokens` surface say whether a design variable is paired with it. A rename breaks that pairing by name, and a `design.options.tokenMap` entry naming the old id then reports `tokens/design-token-map-unknown`. Both are the design side's to follow; nothing here edits the design tool |
+| What references it | How to find it                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| code               | `npx design-delta impact <token.path> --json`. `usedBy` is every file and line that references the token; `vars` is the custom-property names they reference it by. Exit `1` means the project has no token at that path: stop and say so. Mark each `usedBy` line that sits in the token build's own output: the build rewrites it, so step 7 hands it to no one                                 |
+| its declaration    | `usedBy` holds `var()` usages only, never the line that declares the custom property. Search `paths.styleRoots` for the declaration `<name>:` of the token's custom property (the name `vars` gives, or `conventions.cssVarPrefix` and the id joined by hyphens when `vars` is empty), and record whether the file is the token build's output or hand-written                                    |
+| contracts          | `impact` does not report these. Search every file under `paths.contractsDir` for the path as a quoted string, `"<token.path>"`, and record each contract file, the element under `styles`, and the property (and the variant's `when`, for a binding inside a variant)                                                                                                                            |
+| other tokens       | `impact` does not report these either. Search the tokens file, every file in it when it is a directory, for the alias `{<token.path>}`; and `paths.resolvedTokensFile` too when the project sets it                                                                                                                                                                                               |
+| config             | search `design-delta.json` for the token's id, for each custom-property name in `vars` and the declared one (a var-centric finding's entity, so its exemption names the var), and for each ancestor prefix of the id (`color.bg.primary`, `color.bg`, `color`): an `exemptions` entry, a `rules` option (an `ignorePrefixes` prefix), a `lint` vocabulary path, a `design.options.tokenMap` entry |
+| the design side    | only when `design.provider` is set: the audit's findings for this token on the `tokens` surface say whether a design variable is paired with it. A rename breaks that pairing by name, and a `design.options.tokenMap` entry naming the old id then reports `tokens/design-token-map-unknown`. Both are the design side's to follow; nothing here edits the design tool                           |
 
 `usedBy` covers what the scan reads, `paths.componentsDir` and
 `paths.styleRoots`. If the project references tokens anywhere else (a
@@ -113,17 +147,18 @@ and never gave you the rest.
 
 ### 4. Settle every decision, and ask the ones still open
 
-| Decision            | Never open: the project settles it                          | Open unless the request states it                                                       |
-| ------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| the file and group  | where siblings of this kind live                            | which group, when two would fit                                                         |
-| the name            | its case, and any `lint` vocabulary for the leaf            | the words                                                                               |
-| the tier            | which tiers exist, from `lint` and the project instructions | which tier this token is in                                                             |
-| `$type`             | what the value's kind requires                              |                                                                                         |
-| the value           | whether this tier holds a literal or an alias, per siblings | the literal, or which lower-tier token it aliases; per mode, where siblings carry modes |
-| `$description`      | whether siblings carry one                                  | its words, where they do                                                                |
-| a rename's new name | its case and vocabulary                                     | the words, always                                                                       |
-| a deprecation       |                                                             | that it is deprecated, and what replaces it                                             |
-| a removal           |                                                             | that it goes, when step 3 found anything still referencing it                           |
+| Decision            | Never open: the project settles it                          | Open unless the request states it                                                          |
+| ------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| the file and group  | where siblings of this kind live                            | which group, when two would fit                                                            |
+| the name            | its case, and any `lint` vocabulary for the leaf            | the words                                                                                  |
+| the tier            | which tiers exist, from `lint` and the project instructions | which tier this token is in                                                                |
+| `$type`             | what the value's kind requires                              |                                                                                            |
+| the value           | whether this tier holds a literal or an alias, per siblings | the literal, or which lower-tier token it aliases; per mode, where siblings carry modes    |
+| `$description`      | whether siblings carry one                                  | its words, where they do                                                                   |
+| a rename's new name | its case and vocabulary                                     | the words, always                                                                          |
+| a deprecation       |                                                             | that it is deprecated, and what replaces it                                                |
+| a removal           |                                                             | that it goes, when step 3 found anything still referencing it                              |
+| a removal's aliases |                                                             | for each token step 3 found aliasing it, the token it aliases instead, or that it goes too |
 
 What counts as stated: the request said it, or a source the request points
 at shows it (a design token snapshot, a value a contract question named).
@@ -143,7 +178,8 @@ recommendation is not an answer: it goes in the question, never in the file.
 unanswered): the tokens file has no place for a marked placeholder that still
 parses, so write nothing a decision is still open on. A token with an open
 name, tier or value is not added; a rename with no new name is not made; a
-removal of a token something still references is not made. A deprecation
+removal of a token something still references is not made, nor one whose
+aliasing tokens have no new target decided. A deprecation
 whose replacement is open is written with `"$deprecated": true` and no
 replacement named. Report each open decision as the question its owner
 answers (step 8).
@@ -156,7 +192,11 @@ the token is `design-delta-author`'s step 5, and a build waiting on one is
 `design-delta-build`'s step 6. Neither needs anything else from here.
 
 **Renaming.** Move the token to its new path, keeping its `$type`, `$value`,
-`$description` and `$extensions` as they were; a rename changes no value.
+`$description` and `$extensions` as they were; a rename changes no value. A
+`$type`, `$deprecated` or `$extensions` the token inherits from its group
+(step 1 found where this file puts them) does not move with it: when the new
+group does not declare the same ones, write them onto the token itself, so
+it reads the same at its new path as at its old.
 Then update every alias step 3 found inside the tokens file to the new path:
 an alias is part of the token system, and leaving one behind drops the
 aliasing token from the census. Nothing outside the tokens file changes here.
@@ -172,7 +212,10 @@ step 3's list is the migration list, and step 7 hands it on.
 **Removing.** Only when step 3 found nothing referencing the token, or the
 owner, shown that list, decided to remove it anyway. Otherwise recommend
 deprecating it first, with its replacement, and stop. When it does go,
-remove it, and any group it leaves empty, and nothing else.
+first point each token that aliased it at the target step 4 settled, or
+remove that token too where step 4 settled it goes (and take step 3 for it
+first: it may be referenced in turn). Then remove the token, and any group it
+leaves empty, and nothing else. No alias is left pointing at the path.
 
 ### 6. Validate, and compare with the list before
 
@@ -207,12 +250,12 @@ Compare each with step 2's, matching findings on `ruleId`, `entity` and
 
 What is expected to appear, and why:
 
-| Change      | Expected                                                                                                                                                                                                                                                                                                                                                   |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| add         | `tokens/token-unreferenced` for the new token (or `tokens/token-unemitted`, when the token build does not emit it yet): nothing binds it until a contract and a component do                                                                                                                                                                               |
-| rename      | `tokens/var-unresolved` for each name in step 3's `vars`, where code still references it; `tokens/token-unreferenced` for the new path until that code moves, unless another token aliases it; `coverage/stale-exemption` for an exemption naming the old id. Nothing for a contract still binding the old path: step 3's list is the only record of those |
-| deprecation | nothing: the token and everything referencing it are unchanged                                                                                                                                                                                                                                                                                             |
-| removal     | `tokens/var-unresolved` for any name in step 3's `vars` still referenced; `coverage/stale-exemption` for an exemption naming it                                                                                                                                                                                                                            |
+| Change      | Expected                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| add         | `tokens/token-unreferenced` for the new token (or `tokens/token-unemitted`, when the token build does not emit it yet): nothing binds it until a contract and a component do. When the new token aliases a token nothing referenced before, that token's `tokens/token-unreferenced` or `tokens/token-unemitted` disappears: an alias is a reference                                                                                                                                                                                                                                  |
+| rename      | `tokens/var-unresolved` for each name in step 3's `vars`, where code still references it and nothing declares it; where a hand-written stylesheet still declares the old custom property, `tokens/token-untracked` for that name instead, and `tokens/token-unemitted` for the new path until something declares it; `tokens/token-unreferenced` for the new path until that code moves, unless another token aliases it; `coverage/stale-exemption` for an exemption naming the old id. Nothing for a contract still binding the old path: step 3's list is the only record of those |
+| deprecation | nothing: the token and everything referencing it are unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| removal     | `tokens/var-unresolved` for any name in step 3's `vars` still referenced and declared nowhere; `tokens/token-untracked` instead where a hand-written stylesheet still declares it; `coverage/stale-exemption` for an exemption naming it                                                                                                                                                                                                                                                                                                                                              |
 
 Every other finding that appeared, and every one that disappeared, is
 explained in the report or is a regression. Never clear one by editing a
@@ -235,7 +278,11 @@ owners. This procedure does none of it.
   skill's
   [Updating a component whose contract changed](../design-delta-build/SKILL.md#updating-a-component-whose-contract-changed),
   run for the component whose code it is. A reference in a file that belongs
-  to no component is listed for the project's own owner of that file.
+  to no component is listed for the project's own owner of that file. A
+  reference in the token build's own output is left out: the build that
+  step 6 ran rewrites it, and that output is never edited by hand. A
+  declaration step 3 found in a hand-written stylesheet is listed here, for
+  that stylesheet's owner.
 - **Config**: each entry step 3 found that names the old id. It is the config
   owner's to update or remove; never edited here.
 - **Design side**: when a design variable was paired with the token, that the
