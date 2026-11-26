@@ -202,7 +202,9 @@ place it is caught by name.
 When the component needs a value and the project has no token for it, that is
 an open decision like any other, with three possible answers and none of them
 yours to pick alone: bind a different token that exists, write a deliberate
-`raw(…)` value, or add a token first (a token task, outside this procedure).
+`raw(…)` value, or add a token first (a token task, outside this procedure:
+the sibling skill
+[`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md)).
 Ask, or mark it. Never bind a path that is not there, and never pick the
 nearest-looking token because its value happens to match.
 
@@ -347,7 +349,8 @@ in the code.
   reported, and the contract is written from what is there; the refresh is
   `design-delta-refresh`.
 - **New tokens.** A value with no token is a question, never a new token
-  written by this procedure.
+  written by this procedure. Adding, renaming or removing one is
+  `design-delta-token`.
 - **Behavior a contract cannot state.** Interaction logic, focus management
   and data are not in a contract. Note in the report what the request asks
   for that the contract has no place to record, so the build does not lose

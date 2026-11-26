@@ -133,7 +133,11 @@ it.
 [`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md) writes a
 component's documentation page from its contract, in the project's own
 documentation format, and rewrites only its generated sections when the
-contract changes. `init` and `dock` each write a stub for each under
+contract changes.
+[`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md) adds,
+renames, deprecates or removes a token in the project's tokens file, listing
+first every contract, stylesheet and token that references it and handing
+their edits to the authoring and build skills. `init` and `dock` each write a stub for each under
 `.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about

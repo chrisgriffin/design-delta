@@ -303,7 +303,8 @@ project's gate then reports.
   prove them. Build what the request asks, cover it with the project's own
   tests, and say in the report that the audit does not vouch for it.
 - **New tokens.** A value with no token is a contract question or a token
-  task, never a literal in the stylesheet.
+  task, never a literal in the stylesheet. The token task is
+  [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md).
 - **Visual correctness.** A clean audit says the code binds what the contract
   declares. It does not say the result looks right. The complement is a
   visual before/after check: render the component in each of its variants
