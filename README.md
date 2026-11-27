@@ -165,8 +165,15 @@ through the authoring skill, a `snapshot` baseline, and `verify` in CI
 through the package's Action at the strictest `--fail-on` level the project
 already passes, so the first pull request is not failed by older drift; the
 rest goes to the resolve skill, and both commands lay its stub too.
+[`skills/design-delta-build-design/SKILL.md`](./skills/design-delta-build-design/SKILL.md)
+is the build skill's design-side twin: with a session connected to the
+design tool, it creates or updates the component there from its contract,
+properties, variants, layers and variable bindings, using the session's own
+design-tool tools, then refreshes the snapshot and audits until the
+component has no design-side findings; the engine itself still never
+touches the design tool, and both commands lay this stub as well.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. A ninth,
+the report to it. A tenth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

@@ -299,7 +299,9 @@ project's gate then reports.
   [contract-authoring-guide.md](../../docs/contract-authoring-guide.md).
 - **The design tool.** Nothing here creates or edits a design-tool component,
   and a design-side finding (`side: "design"`) for the component is reported,
-  not fixed.
+  not fixed. Building the component in the design tool from the same
+  contract is
+  [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md).
 - **Behavior a contract cannot state.** Interaction logic, data fetching,
   focus management and animation are not in a contract, so the audit cannot
   prove them. Build what the request asks, cover it with the project's own

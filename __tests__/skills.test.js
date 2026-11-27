@@ -22,6 +22,7 @@ import { GLOBAL_FLAGS_HELP, SUBCOMMANDS, run } from "../src/cli/main.mjs"
 import { SEVERITIES } from "../src/core/findings.mjs"
 import { buildFullRuleRegistry } from "../src/cli/rule-registry.mjs"
 import { matchComponentFiles } from "../src/cli/commands/scaffold.mjs"
+import { listProviders } from "../src/providers/index.mjs"
 import { createSyntheticProject } from "./helpers/synthetic-project.mjs"
 
 const ROOT = join(import.meta.dirname, "..")
@@ -140,6 +141,14 @@ function problems(skill) {
   return found
 }
 
+const PROVIDERS = listProviders()
+
+/** The registered providers' names a text carries, matched case-insensitively. */
+function vendorsNamed(text) {
+  const lower = text.toLowerCase()
+  return PROVIDERS.filter(name => lower.includes(name.toLowerCase()))
+}
+
 /**
  * Each piece of a skill's code that names a fixed path under a system
  * temporary directory. A fixed path outlives an interrupted run and is shared
@@ -175,13 +184,14 @@ function unquotedWorkPaths(skill) {
 }
 
 describe("the packaged skills", () => {
-  it("ships the audit, adopt, authoring, build, docs, doctor, refresh, resolve and token skills", () => {
+  it("ships the audit, adopt, authoring, build, build-design, docs, doctor, refresh, resolve and token skills", () => {
     expect(SKILLS.map(skill => skill.name)).toEqual(
       expect.arrayContaining([
         "design-delta",
         "design-delta-adopt",
         "design-delta-author",
         "design-delta-build",
+        "design-delta-build-design",
         "design-delta-docs",
         "design-delta-doctor",
         "design-delta-refresh",
@@ -221,6 +231,21 @@ describe("the packaged skills", () => {
     it("#39 names no fixed path under a system temporary directory", () => {
       expect(fixedTempPaths(skill)).toEqual([])
     })
+
+    // A skill describes the engine, and the engine names a design tool only
+    // inside its provider (ADR-001 D12). A skill that names one reads as
+    // written for that tool, and sends an agent connected to another one
+    // after tools it does not have.
+    it("names no design tool a provider is registered for", () => {
+      expect(vendorsNamed(skill.text)).toEqual([])
+    })
+  })
+
+  it("has providers to look for, and finds a vendor where one is named", () => {
+    expect(PROVIDERS.length).toBeGreaterThan(0)
+    expect(
+      vendorsNamed(`Open the file in ${PROVIDERS[0].toUpperCase()}.`),
+    ).toEqual([PROVIDERS[0]])
   })
 
   it("#39 the doctor skill makes one temporary directory per run and removes it", () => {
@@ -482,6 +507,133 @@ describe("the docs skill covers what a contract can state", () => {
     expect(names(text, "usedFor")).toBe(true)
     expect(names(text, "props")).toBe(false)
     expect(names(text, "used")).toBe(false)
+  })
+})
+
+// The design-build skill tells an agent what each construct the design side is
+// compared on becomes in a design-tool component. A marker, a mechanism, a
+// prop type or an anatomy field it never names is one the agent builds by
+// guess, and the audit then reports drift the procedure caused. So every name
+// is read from the contract schema: the top-level fields (each one either
+// built or stated to stay off the design side), every prop type, both
+// deviation markers' values and the rename's keys, every mechanism, and every
+// anatomy node field.
+describe("the design-build skill covers what the design side is compared on", () => {
+  const schema = JSON.parse(
+    readFileSync(join(ROOT, "schema/contract.schema.json"), "utf8"),
+  )
+  const skill = SKILLS.find(entry => entry.name === "design-delta-build-design")
+  /** Whether some piece of the skill's code carries `name` as a whole word. */
+  const names = name =>
+    codeOf(skill.text).some(code => code.split(/[^A-Za-z$_]+/).includes(name))
+  const unnamed = fields => fields.filter(field => !names(field))
+  const designDeviation = schema.$defs.designDeviation.oneOf
+  const rename = designDeviation.find(shape => shape.type === "object")
+
+  it("reads a schema that has the fields to check", () => {
+    expect(designDeviation.map(shape => shape.const)).toEqual(
+      expect.arrayContaining(["none", "unverified"]),
+    )
+    expect(rename.properties.mechanism.enum).toContain("toggle")
+    expect(Object.keys(schema.$defs.anatomyNode.properties)).toContain(
+      "designLayer",
+    )
+  })
+
+  it("names every top-level contract field", () => {
+    expect(unnamed(Object.keys(schema.properties))).toEqual([])
+  })
+
+  it("names every prop type, and both sides' deviation markers", () => {
+    expect(unnamed(schema.$defs.prop.properties.type.enum)).toEqual([])
+    expect(
+      unnamed(designDeviation.map(shape => shape.const).filter(Boolean)),
+    ).toEqual([])
+    expect(unnamed(Object.keys(rename.properties))).toEqual([])
+    expect(unnamed(rename.properties.mechanism.enum)).toEqual([])
+    expect(unnamed(schema.$defs.codeDeviation.enum)).toEqual([])
+  })
+
+  it("names every anatomy node field, and the rendered-shape block", () => {
+    expect(unnamed(Object.keys(schema.$defs.anatomyNode.properties))).toEqual(
+      [],
+    )
+    expect(unnamed(["$variants"])).toEqual([])
+  })
+})
+
+// PR #52's evaluator round: each defect it found in the design-build skill's
+// procedure, held to the section that has to state the fix. Read against the
+// engine: `coverage/design-missing` is `side: "spec"`, the binding check needs
+// the token census and `usedVars`, `variantCombinations` is bindings-owned,
+// a `presentIf` node is never reported missing, and a design-only component
+// already built is reported as `coverage/design-only`.
+describe("the design-build skill's audit loop cannot pass on nothing compared", () => {
+  const skill = SKILLS.find(entry => entry.name === "design-delta-build-design")
+  /** The text from heading `from` up to the next heading of the same depth. */
+  const section = from => {
+    const start = skill.text.indexOf(from)
+    expect(start).toBeGreaterThan(-1)
+    const depth = from.match(/^#+/)[0]
+    const rest = skill.text.slice(start + from.length)
+    const end = rest.search(new RegExp(`\\n${depth} `))
+    return end === -1 ? rest : rest.slice(0, end)
+  }
+  const step3 = section("### 3.")
+  const step4 = section("### 4.")
+  const step7 = section("### 7.")
+  const updating = section("## Updating")
+  const rowFor = marker =>
+    step4.split("\n").find(line => line.startsWith(`| ${marker}`))
+
+  it("treats an unresolved address, a skipped token census and a missing bindings field as not verified", () => {
+    const notVerified = step7.slice(
+      step7.indexOf("nothing compared, not verified"),
+    )
+    for (const name of [
+      "coverage/design-missing",
+      "skipped.design",
+      "skipped.designAnatomy",
+      "skipped.tokens",
+      "usedVars",
+      "variantCombinations",
+    ])
+      expect(notVerified).toContain(`\`${name}`)
+  })
+
+  it("refreshes both passes after every fix, never one alone", () => {
+    expect(step7).not.toMatch(/components for a property or variant/)
+    expect(step7).toMatch(/components pass and then the bindings pass/)
+    expect(step7).toMatch(/Never run\s+one pass alone/)
+  })
+
+  it("requires every implied combination, whatever the sibling leaves out", () => {
+    const row = rowFor("`invalidVariantCombinations`")
+    expect(row).not.toMatch(/unless the sibling/)
+    expect(row).toMatch(/contract question/)
+  })
+
+  it("looks for a component built before its contract before creating one", () => {
+    expect(step3).toContain("`coverage/design-only`")
+    expect(step3).toMatch(/\[Updating\]/)
+  })
+
+  it("names the anatomy gaps the audit cannot see", () => {
+    const notCompared = step7.slice(step7.indexOf("is not compared on"))
+    expect(notCompared).toContain("`presentIf`")
+    expect(notCompared).toMatch(/fold to the same name/)
+  })
+
+  it("applies step 4's variable rules to a binding fixed in the loop or on an update", () => {
+    expect(step7).toMatch(/step 4's rules/)
+    expect(step7).toContain("`impact`")
+    expect(updating).toMatch(/step 4's variable rules/)
+  })
+
+  it("builds a code-only-absent prop by its type, not as a variant", () => {
+    const row = rowFor('`code: "none"`')
+    expect(row).not.toMatch(/like any enum/)
+    expect(row).toMatch(/its `type`/)
   })
 })
 
