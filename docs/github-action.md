@@ -12,12 +12,14 @@ no registry auth before this action's steps run `npx`.
 
 ## Inputs
 
-| Input         | Default              | Meaning                                                                                                                                        |
-| ------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `config-path` | _(unset)_            | Passed as `--config`. Unset uses the CLI's own default, `design-delta.json`.                                                                   |
-| `fail-on`     | `error`              | Passed as `verify --fail-on` (`error` \| `warn` \| `review` \| `none`).                                                                        |
-| `sarif`       | `false`              | When `"true"`, runs `report --format sarif` and uploads it via `upload-sarif` before `verify` runs, so annotations land even on a failing run. |
-| `sarif-path`  | `drift-report.sarif` | Output path for the SARIF log, when `sarif` is `"true"`.                                                                                       |
+| Input          | Default              | Meaning                                                                                                                                                                              |
+| -------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `config-path`  | _(unset)_            | Passed as `--config`. Unset uses the CLI's own default, `design-delta.json`.                                                                                                         |
+| `fail-on`      | `error`              | Passed as `verify --fail-on` (`error` \| `warn` \| `review` \| `none`).                                                                                                              |
+| `sarif`        | `false`              | When `"true"`, runs `report --format sarif` and uploads it via `upload-sarif` before `verify` runs, so annotations land even on a failing run.                                       |
+| `sarif-path`   | `drift-report.sarif` | Output path for the SARIF log, when `sarif` is `"true"`.                                                                                                                             |
+| `check-skills` | `false`              | When `"true"`, runs `dock --check` before `verify`, so a version bump that left a generated skill stub missing or out of date fails the run. See [`docs/cli.md` § `dock`](./cli.md). |
+| `dock-dir`     | _(unset)_            | Passed as `dock --check`'s `--dir` when `check-skills` is `"true"`: set it to the `--dir` the project ran `dock` with. Unset uses the CLI's own default, `.claude`.                  |
 
 ## Example
 

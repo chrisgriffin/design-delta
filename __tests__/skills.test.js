@@ -18,6 +18,8 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import yaml from "js-yaml"
+
 import { GLOBAL_FLAGS_HELP, SUBCOMMANDS, run } from "../src/cli/main.mjs"
 import { SEVERITIES } from "../src/core/findings.mjs"
 import { buildFullRuleRegistry } from "../src/cli/rule-registry.mjs"
@@ -218,6 +220,17 @@ describe("the packaged skills", () => {
       expect(fields).not.toBeNull()
       expect(fields.name).toBe(skill.name)
       expect(fields.description.trim().length).toBeGreaterThan(0)
+    })
+
+    // A skill's frontmatter is YAML, and an unquoted value holding `: ` or
+    // ` #` is not the string it reads as: Claude Code fails to load the
+    // skill or drops its description. `dock` copies every description into
+    // a consumer's stub verbatim, so a bad one breaks every project (#55).
+    it("parses as YAML, its description the same string the line holds", () => {
+      const block = skill.text.match(/^---\n([\s\S]*?)\n---\n/)[1]
+      const parsed = yaml.load(block)
+      expect(parsed.name).toBe(skill.name)
+      expect(parsed.description).toBe(frontmatter(skill.text).description)
     })
 
     it("names only subcommands, flags, rules and config keys the engine has", () => {

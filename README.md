@@ -123,6 +123,15 @@ engine's own instruction set, versioned with it. Skills inside
 triggers only, so engine behavior is never restated where it can go stale.
 The skill's own last section documents the stub and the migration path.
 
+A version bump is the whole skill update. Every stub points into the
+installed package, so upgrading updates every procedure; the
+`design-delta` stub's description covers any design-delta request, and the
+packaged skill it links routes to the procedure skill for the task, so a
+skill added in a release is reached before the project re-runs `dock`.
+`design-delta dock --check`, or the GitHub Action's `check-skills` input,
+fails when a stub is missing or out of date
+([`docs/cli.md` § `dock`](./docs/cli.md)).
+
 Two more skills go the other way, from a request to code.
 [`skills/design-delta-author/SKILL.md`](./skills/design-delta-author/SKILL.md)
 writes a component's contract from a description, a design-snapshot
