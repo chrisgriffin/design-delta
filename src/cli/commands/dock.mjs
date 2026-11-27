@@ -81,6 +81,7 @@ export const LINKED_SKILLS = [
   "design-delta-refresh",
   "design-delta-resolve",
   "design-delta-docs",
+  "design-delta-token",
   "design-delta-adopt",
 ]
 

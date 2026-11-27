@@ -92,6 +92,9 @@ describe("runDock", () => {
       existsSync(join(root, ".claude/skills/design-delta-docs/SKILL.md")),
     ).toBe(true)
     expect(
+      existsSync(join(root, ".claude/skills/design-delta-token/SKILL.md")),
+    ).toBe(true)
+    expect(
       existsSync(join(root, ".claude/skills/design-delta-adopt/SKILL.md")),
     ).toBe(true)
   })
@@ -147,6 +150,7 @@ describe("runDock --json", () => {
       { path: ".claude/skills/design-delta-refresh/SKILL.md", action: "wrote" },
       { path: ".claude/skills/design-delta-resolve/SKILL.md", action: "wrote" },
       { path: ".claude/skills/design-delta-docs/SKILL.md", action: "wrote" },
+      { path: ".claude/skills/design-delta-token/SKILL.md", action: "wrote" },
       { path: ".claude/skills/design-delta-adopt/SKILL.md", action: "wrote" },
     ])
 
@@ -183,6 +187,10 @@ describe("runDock --json", () => {
         action: "up-to-date",
       },
       {
+        path: ".claude/skills/design-delta-token/SKILL.md",
+        action: "up-to-date",
+      },
+      {
         path: ".claude/skills/design-delta-adopt/SKILL.md",
         action: "up-to-date",
       },
@@ -202,6 +210,7 @@ describe("runDock --json", () => {
       "agent-config/skills/design-delta-refresh/SKILL.md",
       "agent-config/skills/design-delta-resolve/SKILL.md",
       "agent-config/skills/design-delta-docs/SKILL.md",
+      "agent-config/skills/design-delta-token/SKILL.md",
       "agent-config/skills/design-delta-adopt/SKILL.md",
     ])
   })
@@ -351,13 +360,14 @@ describe("renderSkillStubTemplate", () => {
 // ---------------------------------------------------------------------------
 
 describe("the packaged procedure skills dock links", () => {
-  it("are the build, authoring, refresh, resolve, docs and adopt skills", () => {
+  it("are the build, authoring, refresh, resolve, docs, token and adopt skills", () => {
     expect(LINKED_SKILLS).toEqual([
       "design-delta-build",
       "design-delta-author",
       "design-delta-refresh",
       "design-delta-resolve",
       "design-delta-docs",
+      "design-delta-token",
       "design-delta-adopt",
     ])
   })
