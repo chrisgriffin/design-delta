@@ -94,6 +94,9 @@ describe("runDock", () => {
     expect(
       existsSync(join(root, ".claude/skills/design-delta-token/SKILL.md")),
     ).toBe(true)
+    expect(
+      existsSync(join(root, ".claude/skills/design-delta-adopt/SKILL.md")),
+    ).toBe(true)
   })
 
   it("honors --dir", () => {
@@ -148,6 +151,7 @@ describe("runDock --json", () => {
       { path: ".claude/skills/design-delta-resolve/SKILL.md", action: "wrote" },
       { path: ".claude/skills/design-delta-docs/SKILL.md", action: "wrote" },
       { path: ".claude/skills/design-delta-token/SKILL.md", action: "wrote" },
+      { path: ".claude/skills/design-delta-adopt/SKILL.md", action: "wrote" },
     ])
 
     const secondRun = runJson(["--json"])
@@ -186,6 +190,10 @@ describe("runDock --json", () => {
         path: ".claude/skills/design-delta-token/SKILL.md",
         action: "up-to-date",
       },
+      {
+        path: ".claude/skills/design-delta-adopt/SKILL.md",
+        action: "up-to-date",
+      },
     ])
   })
 
@@ -203,6 +211,7 @@ describe("runDock --json", () => {
       "agent-config/skills/design-delta-resolve/SKILL.md",
       "agent-config/skills/design-delta-docs/SKILL.md",
       "agent-config/skills/design-delta-token/SKILL.md",
+      "agent-config/skills/design-delta-adopt/SKILL.md",
     ])
   })
 
@@ -351,7 +360,7 @@ describe("renderSkillStubTemplate", () => {
 // ---------------------------------------------------------------------------
 
 describe("the packaged procedure skills dock links", () => {
-  it("are the build, authoring, refresh, resolve, docs and token skills", () => {
+  it("are the build, authoring, refresh, resolve, docs, token and adopt skills", () => {
     expect(LINKED_SKILLS).toEqual([
       "design-delta-build",
       "design-delta-author",
@@ -359,6 +368,7 @@ describe("the packaged procedure skills dock links", () => {
       "design-delta-resolve",
       "design-delta-docs",
       "design-delta-token",
+      "design-delta-adopt",
     ])
   })
 })

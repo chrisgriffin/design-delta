@@ -137,7 +137,12 @@ contract changes.
 [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md) adds,
 renames, deprecates or removes a token in the project's tokens file, listing
 first every contract, stylesheet and token that references it and handing
-their edits to the authoring and build skills. `init` and `dock` each write a stub for each under
+their edits to the authoring and build skills.
+[`skills/design-delta-adopt/SKILL.md`](../design-delta-adopt/SKILL.md) takes
+a project that has never used the engine to a confirmed config, its most-used
+components contracted through the authoring skill, a `snapshot` baseline and
+a CI gate at the strictest level it already passes, and hands what is left to
+the resolve skill. `init` and `dock` each write a stub for each under
 `.claude/skills/`, in a directory of the skill's own name, the same way.
 
 Migrating an existing hand-written skill: delete every statement about

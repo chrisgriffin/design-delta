@@ -82,6 +82,7 @@ export const LINKED_SKILLS = [
   "design-delta-resolve",
   "design-delta-docs",
   "design-delta-token",
+  "design-delta-adopt",
 ]
 
 /** Where a packaged skill lives, in this package and under `--dir` alike. */
