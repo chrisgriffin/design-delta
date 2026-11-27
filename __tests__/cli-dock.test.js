@@ -20,6 +20,7 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import {
   GENERATED_MARKER,
@@ -481,5 +482,102 @@ describe("the linked stub's generated-by guard", () => {
     expect(runDock([], { globalOpts: {}, io, root })).toBe(0)
     expect(out()).toContain(`SKIP   ${STUB_PATH}`)
     expect(out()).toContain("left untouched")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #55 the router stub reads the packaged router's description, and
+// `dock --check` reports, without writing, what a version bump left stale.
+// ---------------------------------------------------------------------------
+
+describe("#55 the router stub's description", () => {
+  it("is the packaged router skill's own, not a second copy", () => {
+    const packaged = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../skills/design-delta/SKILL.md",
+      ),
+      "utf8",
+    ).match(/^description: (.+)$/m)[1]
+    expect(renderSkillStubTemplate()).toContain(`\ndescription: ${packaged}\n`)
+  })
+})
+
+describe("#55 runDock --check", () => {
+  const ROUTER = ".claude/skills/design-delta/SKILL.md"
+  const HOOK = ".claude/hooks/design-delta-verify.mjs"
+  const actionsOf = out =>
+    Object.fromEntries(JSON.parse(out).files.map(f => [f.path, f.action]))
+
+  it("on an empty project writes nothing and exits 1, every stub missing", () => {
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(1)
+    const payload = JSON.parse(out)
+    expect(payload).toMatchObject({ command: "dock", check: true, ok: false })
+    const actions = actionsOf(out)
+    expect(actions[ROUTER]).toBe("missing")
+    for (const name of LINKED_SKILLS) {
+      expect(actions[`.claude/skills/${name}/SKILL.md`]).toBe("missing")
+    }
+    expect(actions[HOOK]).toBe("absent")
+    expect(existsSync(join(root, ".claude"))).toBe(false)
+  })
+
+  it("exits 0 right after dock, every file up to date", () => {
+    runJson([])
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(0)
+    expect(JSON.parse(out).ok).toBe(true)
+    expect(new Set(Object.values(actionsOf(out)))).toEqual(
+      new Set(["up-to-date"]),
+    )
+  })
+
+  it("exits 0 after init's stubs alone: a hook and verify skill never written are not drift", () => {
+    runJson([])
+    rmSync(join(root, HOOK))
+    rmSync(join(root, ".claude/skills/design-delta-verify"), {
+      recursive: true,
+    })
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(0)
+    expect(actionsOf(out)[HOOK]).toBe("absent")
+  })
+
+  it("exits 1 on a generated stub with an old description, and leaves it as it was", () => {
+    runJson([])
+    const abs = join(root, ROUTER)
+    const old = readFileSync(abs, "utf8").replace(
+      /^description: .+$/m,
+      "description: an older release's description",
+    )
+    writeFileSync(abs, old)
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(1)
+    expect(actionsOf(out)[ROUTER]).toBe("stale")
+    expect(readFileSync(abs, "utf8")).toBe(old)
+  })
+
+  it("exits 1 on a stale hook dock once wrote", () => {
+    runJson([])
+    writeFileSync(join(root, HOOK), "an older release's hook\n")
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(1)
+    expect(actionsOf(out)[HOOK]).toBe("stale")
+  })
+
+  it("a consumer-owned file is skipped, not drift", () => {
+    runJson([])
+    writeFileSync(join(root, ROUTER), "Our own house rules.\n")
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(0)
+    expect(actionsOf(out)[ROUTER]).toBe("skipped")
+  })
+
+  it("the human output names the stale file and says to re-run dock", () => {
+    const { code, out } = runJson(["--check"])
+    expect(code).toBe(1)
+    expect(out).toContain(`MISS   ${ROUTER}`)
+    expect(out).toContain("npx design-delta dock")
   })
 })

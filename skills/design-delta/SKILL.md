@@ -1,6 +1,6 @@
 ---
 name: design-delta
-description: Run and interpret a design-delta audit — the deterministic, read-only conformance check between a project's code and its per-component *.contract.json contracts, and (when a design provider is configured) between those contracts and the design tool. Use when asked for a design-delta or design-system audit, when a component or token looks out of sync with its contract, or when a design-delta finding needs validating.
+description: Anything design-delta in a project — run or interpret an audit of its code and its design tool against the per-component *.contract.json contracts, write or change a contract, build a component to its contract, write a component's documentation page, add, rename, deprecate or remove a design token, refresh the design snapshot, or work a list of findings down. Use for any design-delta, design-system, contract or design-token request, or when a component or token looks out of sync with its contract: this skill routes to the packaged procedure for the task.
 ---
 
 # design-delta — the engine's own instruction set
@@ -16,6 +16,25 @@ repo root — especially its `_`-prefixed keys (`_knownFindings`, `_doc`, …),
 which are documentary comments the schema deliberately permits at every
 level. That is where a consumer records its severity decisions, known-open
 findings, and local caveats. This file never describes any one project.
+
+## Route the task first
+
+This skill is where every design-delta request lands. If the task is not
+running or interpreting an audit, read the procedure skill for it, beside
+this file in the installed package, and follow that instead:
+
+| The task                                          | Read and follow                                                            |
+| ------------------------------------------------- | -------------------------------------------------------------------------- |
+| Write, draft, finish or change a contract         | [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)   |
+| Build a component, or update one to its contract  | [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md)     |
+| Refresh or re-gather the design snapshot          | [`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md) |
+| Work a long list of findings down                 | [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md) |
+| Write or refresh a component's documentation page | [`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md)       |
+| Add, rename, deprecate or remove a token          | [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md)     |
+
+A project's `.claude/skills/` may not have a stub for every row: a skill
+added in a release is reached through this table until the project re-runs
+`design-delta dock`.
 
 ## The model
 
@@ -118,6 +137,9 @@ file** (`node_modules/design-delta/skills/design-delta/SKILL.md`)
 first, then the project's `design-delta.json` `_`-prefixed keys for local
 decisions. The stub carries no engine prose, so it never goes stale; this
 file versions with the engine, so it can't disagree with the installed CLI.
+A version bump is the whole update: every stub's procedure comes from the
+installed package, and `design-delta dock --check` exits 1 when a stub is
+missing or its copied description is out of date.
 
 **Writing a contract** and **building from one** are sibling skills.
 [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)

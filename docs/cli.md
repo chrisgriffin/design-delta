@@ -663,8 +663,19 @@ Interactive — no `--json`. **Exit codes:** `0` on success, `1` on an error
 ## `dock` — scaffold a Claude Code hook + skills (Phase 6)
 
 ```
-design-delta dock [--dir <path>] [--json]
+design-delta dock [--dir <path>] [--check] [--json]
 ```
+
+**A version bump is the whole skill update.** Every stub is a pointer into
+the installed package, so upgrading `design-delta` updates every procedure
+with no re-run. Only two things are copied into the project: each stub's
+frontmatter description, which this package changes only on purpose (a test
+pins each one), and the set of stubs. A skill added in a release is reached
+through the `skills/design-delta/SKILL.md` stub every project has: its
+description covers any design-delta request and the packaged router it links
+sends the session to the procedure skill for the task. Re-running `dock` adds
+that skill's own stub. `dock --check` (below) catches a project that needs
+one.
 
 Writes nine generic templates under `--dir` (default `.claude`, resolved
 against the current working directory): a `hooks/design-delta-verify.mjs`
@@ -716,6 +727,18 @@ delete the marker line; to replace your own file with the generated stub,
 move yours aside and re-run.
 
 **Exit codes:** `0` unless a flag error or an unwritable `--dir` occurs (`1`).
+
+**`--check`** writes nothing. It compares each template with what is on disk
+and exits `1` when a linked stub is `missing`, or any generated file is
+`stale` (its content differs from what this version would write, such as an
+old description). It exits `0` otherwise: a consumer-owned file is
+`skipped`, and a hook or verify skill that was never written (`init` writes
+neither) is `absent`, neither of them drift. Run it in CI, or set the GitHub
+Action's `check-skills` input ([`docs/github-action.md`](./github-action.md)),
+so the pull request that bumps `design-delta` fails until someone runs
+`dock` and commits the result. Its `--json` payload adds `check: true` and
+`ok` to the one below, and each file's `action` is one of `"up-to-date"`,
+`"stale"`, `"missing"`, `"skipped"` or `"absent"`.
 
 **`--json` payload:**
 
