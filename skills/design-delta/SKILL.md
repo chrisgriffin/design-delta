@@ -23,15 +23,16 @@ This skill is where every design-delta request lands. If the task is not
 running or interpreting an audit, read the procedure skill for it, beside
 this file in the installed package, and follow that instead:
 
-| The task                                          | Read and follow                                                            |
-| ------------------------------------------------- | -------------------------------------------------------------------------- |
-| Write, draft, finish or change a contract         | [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)   |
-| Build a component, or update one to its contract  | [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md)     |
-| Refresh or re-gather the design snapshot          | [`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md) |
-| Work a long list of findings down                 | [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md) |
-| Write or refresh a component's documentation page | [`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md)       |
-| Add, rename, deprecate or remove a token          | [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md)     |
-| Adopt design-delta in an existing codebase        | [`skills/design-delta-adopt/SKILL.md`](../design-delta-adopt/SKILL.md)     |
+| The task                                               | Read and follow                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Write, draft, finish or change a contract              | [`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md)             |
+| Build a component, or update one to its contract       | [`skills/design-delta-build/SKILL.md`](../design-delta-build/SKILL.md)               |
+| Refresh or re-gather the design snapshot               | [`skills/design-delta-refresh/SKILL.md`](../design-delta-refresh/SKILL.md)           |
+| Work a long list of findings down                      | [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)           |
+| Write or refresh a component's documentation page      | [`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md)                 |
+| Add, rename, deprecate or remove a token               | [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md)               |
+| Adopt design-delta in an existing codebase             | [`skills/design-delta-adopt/SKILL.md`](../design-delta-adopt/SKILL.md)               |
+| Build a component in the design tool from its contract | [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md) |
 
 A project's `.claude/skills/` may not have a stub for every row: a skill
 added in a release is reached through this table until the project re-runs
