@@ -31,6 +31,7 @@ this file in the installed package, and follow that instead:
 | Work a long list of findings down                 | [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md) |
 | Write or refresh a component's documentation page | [`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md)       |
 | Add, rename, deprecate or remove a token          | [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md)     |
+| Adopt design-delta in an existing codebase        | [`skills/design-delta-adopt/SKILL.md`](../design-delta-adopt/SKILL.md)     |
 
 A project's `.claude/skills/` may not have a stub for every row: a skill
 added in a release is reached through this table until the project re-runs
