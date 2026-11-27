@@ -32,6 +32,20 @@ inputs:
     description: Output path for the SARIF log, when `sarif` is `"true"`.
     required: false
     default: "drift-report.sarif"
+  check-skills:
+    description: >-
+      When `"true"`, also runs `design-delta dock --check` before `verify`,
+      failing the run when a Claude Code skill stub `dock`/`init` generated
+      is missing or out of date with the installed design-delta.
+    required: false
+    default: "false"
+  dock-dir:
+    description: >-
+      The directory `check-skills` checks, passed as `dock --check`'s
+      `--dir`: set it to the `--dir` the project ran `dock` with. Leave unset
+      to use the CLI's own default (`.claude`).
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -58,6 +72,18 @@ runs:
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: ${{ inputs.sarif-path }}
+
+    - name: design-delta dock --check
+      if: inputs.check-skills == 'true'
+      shell: bash
+      env:
+        DOCK_DIR: ${{ inputs.dock-dir }}
+      run: |
+        args=(dock --check)
+        if [ -n "$DOCK_DIR" ]; then
+          args+=(--dir "$DOCK_DIR")
+        fi
+        npx --yes design-delta "${args[@]}"
 
     - name: design-delta verify
       shell: bash

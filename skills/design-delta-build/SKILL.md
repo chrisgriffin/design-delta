@@ -195,13 +195,15 @@ Four things make an empty list mean something:
 - **Every severity counts.** `warn` and `review` findings do not fail the
   project's gate by default, and they are still findings. The target is none
   of any severity.
-- **Shorthands are not compared.** A token written inside a shorthand
-  declaration (`background: var(…)`, `border: 1px solid var(…)`) does not say
-  which property it satisfies, so the audit stays silent about that binding
-  rather than guess, even when the token is the wrong one. Write the longhand
-  the contract's property names (`background-color` for `background`) where
-  the project's stylesheets allow it; where they do not, check each such
-  binding against the contract by eye and say so in the report.
+- **Multi-part shorthands are not compared.** A token written inside a
+  shorthand with more than one part (`border: 1px solid var(…)`), or inside a
+  `border` shorthand at all, does not say which property it satisfies, so the
+  audit stays silent about that binding rather than guess, even when the token
+  is the wrong one. A `background` whose whole value is one `var(…)` is
+  compared like `background-color`. Write the longhand the contract's
+  property names (`border-color` for `border.color`) where the project's
+  stylesheets allow it; where they do not, check each such binding against
+  the contract by eye and say so in the report.
 
 **Some of those findings are not the code's to clear.** Every finding carries
 a `side`. A `side: "design"` finding is about the design tool's component,
@@ -297,13 +299,16 @@ project's gate then reports.
   [contract-authoring-guide.md](../../docs/contract-authoring-guide.md).
 - **The design tool.** Nothing here creates or edits a design-tool component,
   and a design-side finding (`side: "design"`) for the component is reported,
-  not fixed.
+  not fixed. Building the component in the design tool from the same
+  contract is
+  [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md).
 - **Behavior a contract cannot state.** Interaction logic, data fetching,
   focus management and animation are not in a contract, so the audit cannot
   prove them. Build what the request asks, cover it with the project's own
   tests, and say in the report that the audit does not vouch for it.
 - **New tokens.** A value with no token is a contract question or a token
-  task, never a literal in the stylesheet.
+  task, never a literal in the stylesheet. The token task is
+  [`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md).
 - **Visual correctness.** A clean audit says the code binds what the contract
   declares. It does not say the result looks right. The complement is a
   visual before/after check: render the component in each of its variants

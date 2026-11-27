@@ -123,6 +123,15 @@ engine's own instruction set, versioned with it. Skills inside
 triggers only, so engine behavior is never restated where it can go stale.
 The skill's own last section documents the stub and the migration path.
 
+A version bump is the whole skill update. Every stub points into the
+installed package, so upgrading updates every procedure; the
+`design-delta` stub's description covers any design-delta request, and the
+packaged skill it links routes to the procedure skill for the task, so a
+skill added in a release is reached before the project re-runs `dock`.
+`design-delta dock --check`, or the GitHub Action's `check-skills` input,
+fails when a stub is missing or out of date
+([`docs/cli.md` § `dock`](./docs/cli.md)).
+
 Two more skills go the other way, from a request to code.
 [`skills/design-delta-author/SKILL.md`](./skills/design-delta-author/SKILL.md)
 writes a component's contract from a description, a design-snapshot
@@ -152,8 +161,28 @@ documentation format the project already uses: props with types, defaults
 and enum values, slots, states, anatomy and token bindings, with a marked
 question wherever the contract is silent, and only its own generated
 sections rewritten when it is run again; both commands lay its stub too.
+[`skills/design-delta-token/SKILL.md`](./skills/design-delta-token/SKILL.md)
+adds, renames, deprecates or removes a token in the project's tokens file:
+it lists every contract, stylesheet, token and config entry that references
+the token before changing it, asks for the name, tier and value the request
+leaves open, edits only the tokens file, and hands each contract and code
+edit to the authoring and build skills; both commands lay its stub as well.
+[`skills/design-delta-adopt/SKILL.md`](./skills/design-delta-adopt/SKILL.md)
+takes a codebase that has never used design-delta to a working setup: a
+config its owner confirmed, contracts for its most-used components written
+through the authoring skill, a `snapshot` baseline, and `verify` in CI
+through the package's Action at the strictest `--fail-on` level the project
+already passes, so the first pull request is not failed by older drift; the
+rest goes to the resolve skill, and both commands lay its stub too.
+[`skills/design-delta-build-design/SKILL.md`](./skills/design-delta-build-design/SKILL.md)
+is the build skill's design-side twin: with a session connected to the
+design tool, it creates or updates the component there from its contract,
+properties, variants, layers and variable bindings, using the session's own
+design-tool tools, then refreshes the snapshot and audits until the
+component has no design-side findings; the engine itself still never
+touches the design tool, and both commands lay this stub as well.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. A seventh,
+the report to it. A tenth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 

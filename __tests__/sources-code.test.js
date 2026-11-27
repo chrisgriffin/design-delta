@@ -249,6 +249,90 @@ describe("sources/code — censusTokens flattens composite $values to cssValue (
   })
 })
 
+describe("sources/code — censusTokens never censuses a value nobody wrote", () => {
+  // The legacy string form of a dimension/duration (`"4px"`). DTCG 2025.10
+  // writes it `{value, unit}`, and the CSS transform reads those two fields off
+  // whatever it is handed — a string has neither.
+  const doc = {
+    space: {
+      $type: "dimension",
+      sm: { $value: "4px" },
+      md: { $value: { value: 8, unit: "px" } },
+      moded: {
+        $value: { value: 8, unit: "px" },
+        $extensions: { mode: { dense: "2px" } },
+      },
+      alias: { $value: "{space.sm}" },
+      aliasModed: {
+        $value: "{space.md}",
+        $extensions: { mode: { dense: "2px" } },
+      },
+    },
+    motion: { $type: "duration", fast: { $value: "150ms" } },
+    edge: {
+      $type: "border",
+      thin: { $value: { color: "#000000", width: "1px", style: "solid" } },
+    },
+  }
+  const fs = {
+    existsSync: () => true,
+    readFileSync: () => JSON.stringify(doc),
+    statSync: () => ({ isDirectory: () => false, isFile: () => true }),
+  }
+
+  it("#53 a string dimension is reported once, by id, and carries no undefined", async () => {
+    const result = await censusTokens({}, { fs })
+    expect(result.ok).toBe(true)
+    expect(JSON.stringify(result)).not.toContain("undefined")
+
+    const byId = Object.fromEntries(result.tokens.map(t => [t.id, t]))
+    for (const id of ["space.sm", "space.alias", "motion.fast", "edge.thin"])
+      expect(byId[id].cssValue).toBeUndefined()
+    // The object form is untouched, and a mode that cannot be read loses only
+    // that mode's CSS value.
+    expect(byId["space.md"].cssValue).toBe("8px")
+    expect(byId["space.moded"].cssValue).toBe("8px")
+    expect(byId["space.moded"].modeCssValues).toBeUndefined()
+    expect(byId["space.aliasModed"].cssValue).toBe("8px")
+
+    const unreadable = result.diagnostics.filter(
+      d => d.code === "token-value-unreadable",
+    )
+    expect(unreadable.map(d => d.tokenId)).toEqual([
+      "edge.thin",
+      "motion.fast",
+      "space.alias",
+      "space.aliasModed",
+      "space.moded",
+      "space.sm",
+    ])
+    const sm = unreadable.find(d => d.tokenId === "space.sm")
+    expect(sm.message).toContain('"4px"')
+    expect(sm.message).toContain('{"value": 4, "unit": "px"}')
+    expect(sm.file).toBe("tokens.json")
+    expect(sm.message).toMatch(/it has no CSS value and is not compared$/)
+    // A mode-only failure says only that mode is lost; the default is still
+    // compared.
+    const moded = unreadable.find(d => d.tokenId === "space.moded").message
+    expect(moded).toContain('"2px" (mode "dense")')
+    expect(moded).toMatch(
+      /; that mode has no CSS value; the default value is still compared$/,
+    )
+    expect(moded).not.toContain("it has no CSS value")
+    // The alias note belongs to the value it describes: the default aliases
+    // space.md, the mode's literal aliases nothing.
+    const aliasModed = unreadable.find(
+      d => d.tokenId === "space.aliasModed",
+    ).message
+    expect(aliasModed).toContain('"2px" (mode "dense") could not')
+    expect(aliasModed).not.toContain("an alias of")
+    expect(unreadable.find(d => d.tokenId === "space.alias").message).toContain(
+      '"4px" (an alias of "space.sm")',
+    )
+    expect(result.tokens.some(t => "valueDiagnostic" in t)).toBe(false)
+  })
+})
+
 // ---------------------------------------------------------------------------
 // Unresolvable aliases degrade instead of exploding — the behavior this slice
 // exists for (issue #94).

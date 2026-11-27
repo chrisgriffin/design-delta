@@ -927,7 +927,7 @@ describe("PROPERTY_DEFS — shorthand forms real stylesheets use (#183)", () => 
   const BORDER_COLOR = PROPERTY_DEFS.find(d => d.key === "border.color")
   const BORDER_WIDTH = PROPERTY_DEFS.find(d => d.key === "border.width")
 
-  it("`background: var(--x)` is indeterminate, not missing", () => {
+  it("`background: var(--x)` satisfies the slot, not missing", () => {
     expect(
       compareProperty(
         BACKGROUND,

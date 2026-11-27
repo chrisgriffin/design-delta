@@ -443,16 +443,81 @@ export function findUnresolvableAliases(doc) {
 // forms into the caller's match set) if that turns out to matter on a real
 // project — exact-match-only is this rule's own documented design, so this
 // is a narrowing of the SAME gap, not a new one.
+//
+// Returns the CSS (a string, or an object for a multi-property composite),
+// `undefined` when the transform threw, or `UNREADABLE` when it produced a
+// value nobody wrote (issue #53, `leaksUndefined`).
 function resolveTokenCssValue(token, tokensSet) {
-  const options = {
-    tokensSet,
-    color: { legacyHex: true },
-    transformAlias: aliasTarget => resolveTokenCssValue(aliasTarget, tokensSet),
-  }
+  let css
   try {
-    return transformCSSValue(token, options)
+    css = transformToCss(token, tokensSet)
   } catch {
     return undefined // malformed/unconvertible value — never a matchable string
+  }
+  return leaksUndefined(css, token.$value) ? UNREADABLE : css
+}
+
+// The raw transform, recursing through alias targets. The leak check runs once,
+// on the outermost token, so an alias of an unreadable value and a composite
+// with an unreadable aliased member are caught too.
+function transformToCss(token, tokensSet) {
+  return transformCSSValue(token, {
+    tokensSet,
+    color: { legacyHex: true },
+    transformAlias: aliasTarget => transformToCss(aliasTarget, tokensSet),
+  })
+}
+
+const UNREADABLE = Symbol("unreadable")
+
+// Terrazzo's dimension and duration transforms build
+// `${$value.value}${$value.unit}`, and every composite member that is one (a
+// border's width, a shadow's offsets, a transition's timing, a typography
+// size) goes through them. A value in the legacy string form (`"4px"`) has
+// neither field, so it comes back as "undefinedundefined" instead of throwing
+// (issue #53). An `undefined` in the CSS that the authored value never held is
+// that failure, whatever the type.
+function leaksUndefined(css, authored) {
+  const leaks = value =>
+    typeof value === "string"
+      ? value.includes("undefined")
+      : isPlainObject(value) && Object.values(value).some(leaks)
+  return leaks(css) && !JSON.stringify(authored ?? null).includes("undefined")
+}
+
+// What a DTCG 2025.10 value of each type looks like, for a type whose legacy
+// string form the CSS transform cannot read (issue #53).
+const OBJECT_FORM = {
+  dimension: '{"value": 4, "unit": "px"}',
+  duration: '{"value": 150, "unit": "ms"}',
+}
+
+// One diagnostic per token naming every value of it that could not be read as
+// CSS (issue #53): `labels` is "." for the default value and each mode's name.
+// ponytail: the legacy string is reported, not converted. Parse it into
+// `{value, unit}` before the transform if a real project needs those tokens
+// compared rather than reported.
+function unreadableValueDiagnostic(token, labels) {
+  const sourceOf = label => (label === "." ? token : token.mode[label])
+  // Each value carries its own alias note: a mode's literal is never labelled
+  // with the default value's alias target.
+  const values = labels.map(label => {
+    const { $value, aliasOf } = sourceOf(label)
+    return `${JSON.stringify($value)}${label === "." ? "" : ` (mode "${label}")`}${aliasOf ? ` (an alias of "${aliasOf}")` : ""}`
+  })
+  const legacy =
+    OBJECT_FORM[token.$type] &&
+    labels.some(label => typeof sourceOf(label).$value === "string")
+  // When the default value was read, only the listed modes lose their CSS
+  // value; the token keeps its `cssValue` and is still compared.
+  const modesOnly = !labels.includes(".")
+  const lost = modesOnly
+    ? `${labels.length === 1 ? "that mode has" : "those modes have"} no CSS value; the default value is still compared`
+    : "it has no CSS value and is not compared"
+  return {
+    code: "token-value-unreadable",
+    tokenId: token.id,
+    message: `token "${token.id}"'s value ${formatList(values)} could not be read as CSS${legacy ? ` — DTCG writes a ${token.$type} as an object like ${OBJECT_FORM[token.$type]}, not a string` : ""}; ${lost}`,
   }
 }
 
@@ -599,6 +664,9 @@ function normalizeToken(token, tokensSet, opacity) {
 
   const cssValue = resolveTokenCssValue(cssSource, tokensSet)
   if (typeof cssValue === "string") entry.cssValue = cssValue
+  // A value the transform could only turn into garbage is reported, never
+  // silent (#53).
+  const unreadable = cssValue === UNREADABLE ? ["."] : []
 
   // Each `$extensions.mode` override as the CSS string it renders as (issue
   // #642), beside `cssValue` and never replacing it: `cssValue` stays the
@@ -622,8 +690,11 @@ function normalizeToken(token, tokensSet, opacity) {
       tokensSet,
     )
     if (typeof css === "string") modeCssValues[name] = css
+    else if (css === UNREADABLE) unreadable.push(name)
   }
   if (Object.keys(modeCssValues).length) entry.modeCssValues = modeCssValues
+  if (unreadable.length)
+    entry.valueDiagnostic = unreadableValueDiagnostic(token, unreadable)
   return entry
 }
 
@@ -1218,16 +1289,16 @@ export async function censusTokens(
   const tokens = Object.values(parsed.tokens)
     .map(token => normalizeToken(token, parsed.tokens, opacity))
     .sort((a, b) => compareEntities(a.id, b.id))
-  // An extension the census could not read is reported, never silent — the
-  // token is still censused, at its own alpha, and the diagnostic says so.
-  const opacityDiagnostics = []
+  // An extension or a value the census could not read is reported, never
+  // silent — the token is still censused (at its own alpha; with no CSS value),
+  // and the diagnostic says so.
+  const tokenDiagnostics = []
   for (const entry of tokens) {
-    if (!entry.opacityDiagnostic) continue
-    opacityDiagnostics.push({
-      ...entry.opacityDiagnostic,
-      file: loaded.fileOf(entry.id),
-    })
-    delete entry.opacityDiagnostic
+    for (const key of ["opacityDiagnostic", "valueDiagnostic"]) {
+      if (!entry[key]) continue
+      tokenDiagnostics.push({ ...entry[key], file: loaded.fileOf(entry.id) })
+      delete entry[key]
+    }
   }
 
   onProgress?.done?.(
@@ -1261,7 +1332,7 @@ export async function censusTokens(
     diagnostics: [
       ...loaded.diagnostics,
       ...aliasDiagnostics,
-      ...opacityDiagnostics,
+      ...tokenDiagnostics,
     ],
     excluded,
     dollarFields,

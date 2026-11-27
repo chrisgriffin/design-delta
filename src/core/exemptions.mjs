@@ -127,6 +127,25 @@ function entityCandidates(finding) {
   return [entity, ...tokens, ...expectedVar]
 }
 
+// The rule ids whose exemptions cover a finding: its own `ruleId` first, then
+// every further rule id it declares via `data.exemptionRules` — the same
+// module-agnostic convention as `entityCandidates`' alternate identities, so
+// `core/` still names no domain. A module that routes ONE claim to one of two
+// rules depending on what the run can see declares the other rule here, and
+// an exemption a consumer wrote under that rule keeps holding when the
+// finding moves (issue #43): `modules/tokens.mjs`'s `tokens/token-unemitted`
+// and `tokens/token-unreferenced` each name the other — the two rules that
+// report the same unused token, depending on whether the style roots are
+// there to tell the halves apart.
+// Without it, the build state alone invalidates the exemption — the finding
+// reappears AND a false `coverage/stale-exemption` fires.
+function exemptionRuleIds(finding) {
+  const extra = Array.isArray(finding?.data?.exemptionRules)
+    ? finding.data.exemptionRules.filter(id => typeof id === "string")
+    : []
+  return [finding?.ruleId, ...extra.filter(id => id !== finding?.ruleId)]
+}
+
 /**
  * Apply `exemptions` to a finding list.
  *
@@ -165,19 +184,31 @@ export function applyExemptions(findings, exemptions, options = {}) {
   const decided = []
 
   for (const finding of list) {
-    const entries = (byRule[finding.ruleId] || [])
-      .map(normalizeEntry)
-      .filter(Boolean)
+    // Each entry keeps the rule it was written under, so a literal that
+    // silences a finding of a declared `data.exemptionRules` rule is marked
+    // matched under ITS OWN rule — the key the stale check below reads.
+    const entries = exemptionRuleIds(finding).flatMap(ruleId =>
+      (byRule[ruleId] || [])
+        .map(normalizeEntry)
+        .filter(Boolean)
+        .map(entry => ({ ...entry, ruleId })),
+    )
 
     const candidates = entityCandidates(finding)
     let exemptedBy = null
+    // The first match decides, own rule first. Each rule still marks its own
+    // first matching literal, as a single rule always has: a declared rule's
+    // claim (this entity is reported) holds whichever half reported it, so
+    // its entry is not stale merely because the own rule's entry won.
+    const ruleMatched = new Set()
     for (const entry of entries) {
+      if (ruleMatched.has(entry.ruleId)) continue
       if (!candidates.some(candidate => matchesEntity(entry.entity, candidate)))
         continue
-      exemptedBy = entry
+      ruleMatched.add(entry.ruleId)
       if (!isGlob(entry.entity))
-        matchedLiterals.add(`${finding.ruleId}\u0000${entry.entity}`)
-      break
+        matchedLiterals.add(`${entry.ruleId}\u0000${entry.entity}`)
+      if (!exemptedBy) exemptedBy = entry
     }
     if (!exemptedBy) kept.push(finding)
     else

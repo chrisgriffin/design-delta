@@ -4,6 +4,37 @@ design-delta was cut from its earlier, privately developed source at 0.26.0.
 Entries start with the first release from this repo; `release-pr.yml` writes
 each one from the Conventional Commits since the previous tag.
 
+## [0.29.0](https://github.com/chrisgriffin/design-delta/compare/v0.28.0...v0.29.0) (2026-11-27)
+
+### Features
+
+* **dock:** make a design-delta version bump the whole skill update ([e81030c](https://github.com/chrisgriffin/design-delta/commit/e81030ca97ec6fb075d1f7482e1977c1c886f182))
+* **skills:** add design-delta-adopt, a skill that adopts design-delta in an existing codebase ([9c7c3e2](https://github.com/chrisgriffin/design-delta/commit/9c7c3e248e011f8ea495cbb8b483b3039ecdd1de))
+* **skills:** add design-delta-build-design, a component in the design tool from its contract ([8fc39ed](https://github.com/chrisgriffin/design-delta/commit/8fc39edd6f11d175b337142689a900d00986d79f))
+* **skills:** add design-delta-token, a skill that adds, renames, deprecates and removes a token ([d6d41f2](https://github.com/chrisgriffin/design-delta/commit/d6d41f28e44a0d35993f62c78c2c197d534ef255))
+
+### Bug Fixes
+
+* **dock:** parse the router's frontmatter, check the docked dir, ignore line endings ([5f4b606](https://github.com/chrisgriffin/design-delta/commit/5f4b606f0b4ed8715715331034791595d80da382))
+* **dock:** pin design-delta-adopt and route to it from the router ([36c269f](https://github.com/chrisgriffin/design-delta/commit/36c269ffd5eccb1acf68b6005f0db693ce0405d1))
+* **dock:** pin design-delta-build-design and route to it from the router ([2909670](https://github.com/chrisgriffin/design-delta/commit/2909670da324c5e7d59e73121cbacd15db45a0e4)), closes [#59](https://github.com/chrisgriffin/design-delta/issues/59)
+* **exemptions:** cover the other direction, token-unemitted to token-unreferenced ([7391d3b](https://github.com/chrisgriffin/design-delta/commit/7391d3bcbd4c51072b314aeb08c5e7345d460d24))
+* **exemptions:** let a token-unreferenced exemption cover token-unemitted ([f2291e9](https://github.com/chrisgriffin/design-delta/commit/f2291e92b4397cf3ca478b29d3f6f13b7c1a828d))
+* **skills:** close the design-build skill's false-clean and loop gaps ([ec1334d](https://github.com/chrisgriffin/design-delta/commit/ec1334dc291455ea1d8e53b856df6fb7e69d98d2))
+* **skills:** correct the adopt skill's naming, usage, gate and config steps ([8caa081](https://github.com/chrisgriffin/design-delta/commit/8caa081eaf27749507aa7f91a3e9ef3d0ec5b5aa))
+* **skills:** design-delta-token covers declarations, group clashes, mode sets and aliasing tokens ([065d108](https://github.com/chrisgriffin/design-delta/commit/065d108b51ecea2a57da810856444e9c9343f388))
+* **styles:** compare a single-var shorthand like its longhand ([0218931](https://github.com/chrisgriffin/design-delta/commit/0218931b1ae585329780788eaad01903625ae7a6))
+* **styles:** keep only the background declaration that wins the cascade ([267caab](https://github.com/chrisgriffin/design-delta/commit/267caabf51e8fd5f0f6142e5fff526eaa502fd33))
+* **tokens:** report a string dimension instead of censusing "undefinedundefined" ([b79167c](https://github.com/chrisgriffin/design-delta/commit/b79167c0789cc062e465ae936f23c3a34579ff1c))
+* **tokens:** say only a mode is lost when only a mode is unreadable ([da1955c](https://github.com/chrisgriffin/design-delta/commit/da1955ce20c5951378c8da6862d5ca21874b8f3f))
+
+### Documentation
+
+* **spec:** a packaged skill that adds, renames, deprecates and removes a token ([7f637fd](https://github.com/chrisgriffin/design-delta/commit/7f637fd77c33520de2d3c27c8350d57d5d424781))
+* **spec:** a packaged skill that adopts design-delta in an existing codebase ([3547c55](https://github.com/chrisgriffin/design-delta/commit/3547c557415352543121bcca62781d7670bfa2ba))
+* **spec:** a packaged skill that builds a component in the design tool from its contract ([0cf7cc5](https://github.com/chrisgriffin/design-delta/commit/0cf7cc51458f5ba09d5f794e9d963f180e61fae8))
+* **spec:** make a design-delta version bump the whole skill update ([1b593de](https://github.com/chrisgriffin/design-delta/commit/1b593deced233b7300991611fa09680a25eb8dbc))
+
 ## [0.28.0](https://github.com/chrisgriffin/design-delta/compare/v0.27.0...v0.28.0) (2026-11-23)
 
 ### Features

@@ -296,7 +296,10 @@ separately.
 
 - **Fixing a design-side finding.** A finding that the design tool's
   component disagrees with its contract is settled in the design tool or by a
-  contract decision. This procedure edits neither. Reading and working down
+  contract decision. This procedure edits neither. Bringing one component in
+  the design tool in line with its contract, or creating it there, is
+  [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md),
+  which runs this procedure to check its work. Reading and working down
   findings is the audit skill's subject.
 - **Connecting the session to a design tool.** If the tools are not there,
   step 4 stops and says so.

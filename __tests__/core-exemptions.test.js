@@ -505,3 +505,52 @@ describe("applyExemptions — exempted findings keep a visible decision (#565)",
     expect(applyExemptions([finding(rule, "x")], {}).decided).toEqual([])
   })
 })
+
+// A finding may declare further rule ids whose exemptions also cover it, via
+// `data.exemptionRules` (#43): one claim a module routes to either of two
+// rules must not lose its exemption when it moves between them.
+describe("applyExemptions — a finding may declare data.exemptionRules (#43)", () => {
+  const moved = {
+    ...finding("area/second-half", "thing.one"),
+    data: { exemptionRules: ["area/first-half"] },
+  }
+
+  it("#43 exempts a finding by an entry under a rule it declares", () => {
+    const result = applyExemptions([moved], {
+      "area/first-half": ["thing.one"],
+    })
+    expect(result.exempted).toBe(1)
+    expect(result.findings).toEqual([])
+    expect(result.decided[0].decision.exemption).toBe("thing.one")
+  })
+
+  it("#43 counts the entry matched under its own rule, so it is not stale", () => {
+    const result = applyExemptions(
+      [moved],
+      { "area/first-half": ["thing.one"] },
+      { wasEvaluated: () => true },
+    )
+    expect(ids(result.findings)).toEqual([])
+  })
+
+  it("#43 prefers the finding's own rule's entry when both match", () => {
+    const result = applyExemptions([moved], {
+      "area/first-half": ["thing.one"],
+      "area/second-half": [{ entity: "thing.one", reason: "own" }],
+    })
+    expect(result.decided[0].decision.reason).toBe("own")
+    // The declared rule's literal still matched the finding: not stale.
+    expect(result.findings).toEqual([])
+  })
+
+  it("#43 does not cover a finding that declares no such rule", () => {
+    const result = applyExemptions([finding("area/second-half", "thing.one")], {
+      "area/first-half": ["thing.one"],
+    })
+    expect(result.exempted).toBe(0)
+    expect(ids(result.findings)).toEqual([
+      "area/second-half",
+      "coverage/stale-exemption",
+    ])
+  })
+})
