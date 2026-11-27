@@ -22,6 +22,8 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
+import yaml from "js-yaml"
+
 import {
   GENERATED_MARKER,
   LINKED_SKILLS,
@@ -578,6 +580,69 @@ describe("#55 runDock --check", () => {
     const { code, out } = runJson(["--check"])
     expect(code).toBe(1)
     expect(out).toContain(`MISS   ${ROUTER}`)
-    expect(out).toContain("npx design-delta dock")
+    expect(out).toContain("run `npx design-delta dock` to")
+  })
+
+  it.each([
+    ["agent-config", "npx design-delta dock --dir agent-config"],
+    ["nested/agent-config", "npx design-delta dock --dir nested/agent-config"],
+    ["agent config", "npx design-delta dock --dir 'agent config'"],
+  ])(
+    "under --dir %s, the fix it prints names that dir, and running it clears the check",
+    (dir, command) => {
+      const { code, out } = runJson(["--check", "--dir", dir])
+      expect(code).toBe(1)
+      expect(out).toContain(`run \`${command}\` to`)
+      expect(runJson(["--dir", dir]).code).toBe(0)
+      expect(runJson(["--check", "--dir", dir]).code).toBe(0)
+    },
+  )
+
+  it("a generated file whose line endings a checkout turned to CRLF is up to date, not stale", () => {
+    runJson([])
+    const files = JSON.parse(runJson(["--check", "--json"]).out).files
+    for (const { path } of files) {
+      const abs = join(root, path)
+      writeFileSync(abs, readFileSync(abs, "utf8").replace(/\n/g, "\r\n"))
+    }
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(0)
+    expect(new Set(Object.values(actionsOf(out)))).toEqual(
+      new Set(["up-to-date"]),
+    )
+    // and dock leaves them be rather than rewriting them on every run
+    expect(new Set(Object.values(actionsOf(runJson(["--json"]).out)))).toEqual(
+      new Set(["up-to-date"]),
+    )
+  })
+
+  it("a CRLF stub with an old description is still stale", () => {
+    runJson([])
+    const abs = join(root, ROUTER)
+    writeFileSync(
+      abs,
+      readFileSync(abs, "utf8")
+        .replace(/^description: .+$/m, "description: an older one")
+        .replace(/\n/g, "\r\n"),
+    )
+    const { code, out } = runJson(["--check", "--json"])
+    expect(code).toBe(1)
+    expect(actionsOf(out)[ROUTER]).toBe("stale")
+  })
+})
+
+// A stub copies its packaged skill's description into YAML frontmatter, so
+// every stub dock writes has to parse, its description intact (#55).
+describe("#55 every generated stub's frontmatter is valid YAML", () => {
+  const STUBS = [
+    ["design-delta", renderSkillStubTemplate()],
+    ...LINKED_SKILLS.map(name => [name, renderPackagedSkillStubTemplate(name)]),
+  ]
+
+  it.each(STUBS)("%s", (name, text) => {
+    const block = text.match(/^---\n([\s\S]*?)\n---\n/)[1]
+    const parsed = yaml.load(block)
+    expect(parsed.name).toBe(name)
+    expect(parsed.description).toBe(block.match(/^description: (.+)$/m)[1])
   })
 })

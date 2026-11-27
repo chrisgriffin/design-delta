@@ -9,7 +9,7 @@
 
 - [x] T003 Widen the packaged router's description; the router stub reads it from the packaged file.
 - [x] T004 Implement `dock --check`: no writes, per-file state, exit 1 on `stale`/`missing`.
-- [x] T005 Add the Action's `check-skills` input and its step; add its row to `docs/github-action.md`.
+- [x] T005 Add the Action's `check-skills` input and its step, with `dock-dir` passed as its `--dir`; add their rows to `docs/github-action.md`.
 - [x] T006 Update `README.md` § Agent skills and `docs/cli.md` § `dock`.
 
 ## Phase 3: Green

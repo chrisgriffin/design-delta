@@ -294,7 +294,7 @@ function writeFile(fs, path, content) {
 
 /**
  * Write one generated template under `dir`, skipping the write when the
- * file already holds exactly this content — same overwrite-safe posture
+ * file already holds this content, line endings aside — same overwrite-safe posture
  * `runDock` itself uses. Exported so `init` (issue #336) writes the linked
  * skill stub through this instead of a second scaffold path.
  *
@@ -321,7 +321,9 @@ export function writeTemplateFile(fs, root, dir, relative, content, options) {
   const abs = join(dirAbs, relative)
   const existing = readIfExists(fs, abs)
   const path = join(dir, relative)
-  if (existing === content) return { path, action: "up-to-date" }
+  if (existing !== null && sameText(existing, content)) {
+    return { path, action: "up-to-date" }
+  }
   const marker = options?.requireMarker
   if (existing !== null && marker && !existing.includes(marker)) {
     return { path, action: "skipped" }
@@ -344,13 +346,26 @@ export function checkTemplateFile(fs, root, dir, relative, content, options) {
   const dirAbs = isAbsolute(dir) ? dir : join(root, dir)
   const existing = readIfExists(fs, join(dirAbs, relative))
   const path = join(dir, relative)
-  if (existing === content) return { path, action: "up-to-date" }
+  if (existing !== null && sameText(existing, content)) {
+    return { path, action: "up-to-date" }
+  }
   if (existing === null) {
     return { path, action: options?.optional ? "absent" : "missing" }
   }
   const marker = options?.requireMarker
   if (marker && !existing.includes(marker)) return { path, action: "skipped" }
   return { path, action: "stale" }
+}
+
+/**
+ * Whether two texts differ only in line endings. A checkout can rewrite a
+ * committed stub's endings (git's `core.autocrlf`, on by default on Windows,
+ * gives it CRLF), and re-running `dock` cannot undo that: git rewrites them
+ * again on the next checkout. So `--check` compares the text, not the bytes,
+ * or such a project reads `stale` on every run with no way to clear it.
+ */
+function sameText(a, b) {
+  return a.replace(/\r\n/g, "\n") === b.replace(/\r\n/g, "\n")
 }
 
 const DRIFT_ACTIONS = new Set(["stale", "missing"])
@@ -364,6 +379,17 @@ const ACTION_LABELS = {
   absent: "NONE ",
 }
 
+/**
+ * The `dock` command that rewrites what `--check` checked: under a
+ * non-default `--dir` it has to name that dir, or running it writes the
+ * default one and the check stays red.
+ */
+function dockCommand(dir) {
+  if (dir === DEFAULT_DIR) return "npx design-delta dock"
+  const arg = /^[\w./-]+$/.test(dir) ? dir : `'${dir.replace(/'/g, "'\\''")}'`
+  return `npx design-delta dock --dir ${arg}`
+}
+
 function renderCheckHuman(result) {
   const lines = [`design-delta dock --check: ${result.dir}`, ""]
   for (const file of result.files) {
@@ -373,7 +399,7 @@ function renderCheckHuman(result) {
   lines.push(
     result.ok
       ? "Every generated file is current with the installed design-delta."
-      : "STALE or MISS: run `npx design-delta dock` to bring the generated " +
+      : `STALE or MISS: run \`${dockCommand(result.dir)}\` to bring the generated ` +
           "files up to date with the installed design-delta, then commit them.",
   )
   return lines.join("\n") + "\n"

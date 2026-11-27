@@ -1,6 +1,6 @@
 ---
 name: design-delta
-description: Anything design-delta in a project — run or interpret an audit of its code and its design tool against the per-component *.contract.json contracts, write or change a contract, build a component to its contract, write a component's documentation page, add, rename, deprecate or remove a design token, refresh the design snapshot, or work a list of findings down. Use for any design-delta, design-system, contract or design-token request, or when a component or token looks out of sync with its contract: this skill routes to the packaged procedure for the task.
+description: Anything design-delta in a project — run or interpret an audit of its code and its design tool against the per-component *.contract.json contracts, write or change a contract, build a component to its contract, write a component's documentation page, add, rename, deprecate or remove a design token, refresh the design snapshot, or work a list of findings down. Use for any design-delta, design-system, contract or design-token request, or when a component or token looks out of sync with its contract — this skill routes to the packaged procedure for the task.
 ---
 
 # design-delta — the engine's own instruction set
@@ -135,9 +135,10 @@ keeps a thin, discovered stub at `.claude/skills/design-delta/SKILL.md`:
 trigger phrases in its frontmatter, and a body that says to read **this
 file** (`node_modules/design-delta/skills/design-delta/SKILL.md`)
 first, then the project's `design-delta.json` `_`-prefixed keys for local
-decisions. The stub carries no engine prose, so it never goes stale; this
-file versions with the engine, so it can't disagree with the installed CLI.
-A version bump is the whole update: every stub's procedure comes from the
+decisions. The stub carries no engine prose, so the only part of it that
+can go stale is the description it copies from this file; this file
+versions with the engine, so it can't disagree with the installed CLI. A
+version bump is the whole update: every stub's procedure comes from the
 installed package, and `design-delta dock --check` exits 1 when a stub is
 missing or its copied description is out of date.
 

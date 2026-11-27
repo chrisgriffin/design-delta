@@ -726,15 +726,19 @@ in the human output. To hand a generated stub back to your own maintenance,
 delete the marker line; to replace your own file with the generated stub,
 move yours aside and re-run.
 
-**Exit codes:** `0` unless a flag error or an unwritable `--dir` occurs (`1`).
+**Exit codes:** `0` unless a flag error or an unwritable `--dir` occurs
+(`1`). Under `--check`, also `1` when a generated file is `missing` or
+`stale` (below).
 
 **`--check`** writes nothing. It compares each template with what is on disk
 and exits `1` when a linked stub is `missing`, or any generated file is
 `stale` (its content differs from what this version would write, such as an
-old description). It exits `0` otherwise: a consumer-owned file is
-`skipped`, and a hook or verify skill that was never written (`init` writes
-neither) is `absent`, neither of them drift. Run it in CI, or set the GitHub
-Action's `check-skills` input ([`docs/github-action.md`](./github-action.md)),
+old description; line endings alone do not count, since a checkout may
+rewrite them). It exits `0` otherwise: a consumer-owned file is `skipped`,
+and a hook or verify skill that was never written (`init` writes neither) is
+`absent`, neither of them drift. Run it in CI, or set the GitHub
+Action's `check-skills` input, with `dock-dir` set to any `--dir` the
+project docked with ([`docs/github-action.md`](./github-action.md)),
 so the pull request that bumps `design-delta` fails until someone runs
 `dock` and commits the result. Its `--json` payload adds `check: true` and
 `ok` to the one below, and each file's `action` is one of `"up-to-date"`,
@@ -745,9 +749,12 @@ so the pull request that bumps `design-delta` fails until someone runs
 ```
 {
   command: "dock",
+  check?: true,              // --check only
+  ok?: boolean,              // --check only: false when any file is "missing" or "stale"
   dir: string,               // the --dir value (or default), as given
   files: [
     { path: string, action: "wrote" | "up-to-date" | "skipped" },
+    // under --check: "up-to-date" | "stale" | "missing" | "skipped" | "absent"
     ...
   ],
 }

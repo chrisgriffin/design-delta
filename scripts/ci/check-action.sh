@@ -30,6 +30,9 @@ cd "$REPO_ROOT"
 # derivation checks immediately below, not by hand.
 REPORT_CMD=(report --format sarif --config design-delta.json --out drift-report.sarif)
 VERIFY_CMD=(verify --config design-delta.json --fail-on error)
+# A non-default --dir, so the check-skills step's `dock-dir` pass-through is
+# what is exercised, not the default it falls back to.
+DOCK_CMD=(dock --check --dir agent-config)
 
 echo "==> Deriving action.yml's surface and checking this script covers it"
 
@@ -55,13 +58,13 @@ echo "OK    every referenced input is declared"
 ACTION_TOKENS="$(grep -oE '^[[:space:]]*args\+?=\(.*' action.yml |
   sed -E 's/.*\(//; s/\)$//' | tr ' ' '\n' |
   grep -E '^(--[a-z-]+|[a-z]+)$' | sort -u)"
-EXERCISED=" ${REPORT_CMD[*]} ${VERIFY_CMD[*]} "
+EXERCISED=" ${REPORT_CMD[*]} ${VERIFY_CMD[*]} ${DOCK_CMD[*]} "
 for token in $ACTION_TOKENS; do
   case "$EXERCISED" in
   *" $token "*) ;;
   *)
     echo "::error::action.yml runs \`$token\`, which check-action.sh does not exercise" >&2
-    echo "::error::update REPORT_CMD/VERIFY_CMD in this script to match action.yml" >&2
+    echo "::error::update REPORT_CMD/VERIFY_CMD/DOCK_CMD in this script to match action.yml" >&2
     exit 1
     ;;
   esac
@@ -112,6 +115,18 @@ if ! npx --yes design-delta "${VERIFY_CMD[@]}"; then
   exit 1
 fi
 echo "OK    verify passed"
+
+echo "==> design-delta ${DOCK_CMD[*]} (action.yml's check-skills step)"
+if npx --yes design-delta "${DOCK_CMD[@]}" >/dev/null; then
+  echo "::error::dock --check exited 0 before dock had written anything" >&2
+  exit 1
+fi
+npx --yes design-delta dock --dir agent-config >/dev/null
+if ! npx --yes design-delta "${DOCK_CMD[@]}"; then
+  echo "::error::dock --check exited non-zero right after dock wrote the same --dir" >&2
+  exit 1
+fi
+echo "OK    dock --check passed on the --dir dock wrote"
 
 echo
 echo "Action integrity checks passed — the commands action.yml runs work"

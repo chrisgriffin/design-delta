@@ -39,6 +39,13 @@ inputs:
       is missing or out of date with the installed design-delta.
     required: false
     default: "false"
+  dock-dir:
+    description: >-
+      The directory `check-skills` checks, passed as `dock --check`'s
+      `--dir`: set it to the `--dir` the project ran `dock` with. Leave unset
+      to use the CLI's own default (`.claude`).
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -69,7 +76,14 @@ runs:
     - name: design-delta dock --check
       if: inputs.check-skills == 'true'
       shell: bash
-      run: npx --yes design-delta dock --check
+      env:
+        DOCK_DIR: ${{ inputs.dock-dir }}
+      run: |
+        args=(dock --check)
+        if [ -n "$DOCK_DIR" ]; then
+          args+=(--dir "$DOCK_DIR")
+        fi
+        npx --yes design-delta "${args[@]}"
 
     - name: design-delta verify
       shell: bash

@@ -6,7 +6,7 @@
 - `skills/design-delta/SKILL.md`: the description widens to every kind of design-delta work and says to use it for any design-delta request, which it routes to the right procedure skill.
 - `--check`: each template is compared with what is on disk without writing. States: `up-to-date`, `stale`, `missing`, `skipped` (consumer-owned) and `absent` (the hook or verify skill, which only `dock` writes and `init` never does, not written at all). `stale` or `missing` exits 1.
 - `__tests__/skill-descriptions.test.js` pins the router's and every `LINKED_SKILLS` description.
-- `action.yml`: a `check-skills` input; when `"true"`, a step runs `npx --yes design-delta dock --check` before `verify`.
+- `action.yml`: a `check-skills` input; when `"true"`, a step runs `npx --yes design-delta dock --check` before `verify`, passing a `dock-dir` input as `--dir` when it is set.
 
 ## Surfaces touched
 
