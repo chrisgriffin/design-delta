@@ -54,6 +54,12 @@ jobs:
           sarif: "true"
 ```
 
+A project adopting the gate for the first time usually has drift that
+predates it, and `fail-on: error` would fail its first pull request on that.
+The packaged
+[`skills/design-delta-adopt/SKILL.md`](../skills/design-delta-adopt/SKILL.md)
+picks the strictest level `verify` already passes at, and wires it in here.
+
 Pin an exact release tag, as above, from the
 [releases page](https://github.com/chrisgriffin/design-delta/releases). This
 repo's tags are bare `vX.Y.Z` (the release flow cuts nothing else), so there

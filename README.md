@@ -167,8 +167,15 @@ it lists every contract, stylesheet, token and config entry that references
 the token before changing it, asks for the name, tier and value the request
 leaves open, edits only the tokens file, and hands each contract and code
 edit to the authoring and build skills; both commands lay its stub as well.
+[`skills/design-delta-adopt/SKILL.md`](./skills/design-delta-adopt/SKILL.md)
+takes a codebase that has never used design-delta to a working setup: a
+config its owner confirmed, contracts for its most-used components written
+through the authoring skill, a `snapshot` baseline, and `verify` in CI
+through the package's Action at the strictest `--fail-on` level the project
+already passes, so the first pull request is not failed by older drift; the
+rest goes to the resolve skill, and both commands lay its stub too.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. An eighth,
+the report to it. A ninth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 
