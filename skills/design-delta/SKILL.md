@@ -138,6 +138,11 @@ contract changes.
 renames, deprecates or removes a token in the project's tokens file, listing
 first every contract, stylesheet and token that references it and handing
 their edits to the authoring and build skills.
+[`skills/design-delta-adopt/SKILL.md`](../design-delta-adopt/SKILL.md) takes
+a project that has never used the engine to a confirmed config, its most-used
+components contracted through the authoring skill, a `snapshot` baseline and
+a CI gate at the strictest level it already passes, and hands what is left to
+the resolve skill.
 [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md)
 builds a contract's component in the design tool with the session's own
 design-tool tools, then refreshes the snapshot and audits until the
