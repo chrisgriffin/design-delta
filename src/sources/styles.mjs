@@ -238,6 +238,24 @@ export function resolveHeaderSelectors(headerRaw, parentSelector) {
 // 4. The brace-depth walk.
 // ---------------------------------------------------------------------------
 
+// Which longhands a later shorthand declaration overrides, so the census
+// keeps only the declaration that wins the cascade. Only `background` is
+// listed: it is the one shorthand whose single `var()` the style check
+// compares as a binding (issue #38). A shorthand left out keeps today's
+// behaviour, where the longhand is reported whatever the order.
+const SHORTHAND_RESETS = {
+  background: [
+    "background-color",
+    "background-image",
+    "background-position",
+    "background-size",
+    "background-repeat",
+    "background-attachment",
+    "background-origin",
+    "background-clip",
+  ],
+}
+
 function flushDeclaration(frame, text) {
   const trimmed = text.trim()
   if (trimmed === "") return
@@ -251,6 +269,11 @@ function flushDeclaration(frame, text) {
     .trim()
   if (property === "" || value === "") return
   frame.declarations.set(property, classifyDeclarationValue(value))
+  // A shorthand resets its longhands: an earlier `background-color` in the
+  // same rule no longer applies once `background` follows it (issue #38).
+  for (const longhand of SHORTHAND_RESETS[property] || []) {
+    frame.declarations.delete(longhand)
+  }
 }
 
 /**
@@ -349,6 +372,18 @@ export function censusStylesheetText(rawText) {
             if (frame.conditional && entry.unconditional.has(property)) continue
             entry.declarations.set(property, decl)
             if (!frame.conditional) entry.unconditional.add(property)
+            // A shorthand in a later rule overrides a longhand an earlier
+            // rule set, under the same "only among equals" test: a
+            // conditional shorthand never displaces an unconditional
+            // longhand. A longhand this same rule set after the shorthand
+            // is still in `frame.declarations` and is set by this loop.
+            for (const longhand of SHORTHAND_RESETS[property] || []) {
+              if (frame.declarations.has(longhand)) continue
+              if (frame.conditional && entry.unconditional.has(longhand))
+                continue
+              entry.declarations.delete(longhand)
+              entry.unconditional.delete(longhand)
+            }
           }
         }
       }

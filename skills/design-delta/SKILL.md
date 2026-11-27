@@ -134,6 +134,10 @@ it.
 component's documentation page from its contract, in the project's own
 documentation format, and rewrites only its generated sections when the
 contract changes.
+[`skills/design-delta-token/SKILL.md`](../design-delta-token/SKILL.md) adds,
+renames, deprecates or removes a token in the project's tokens file, listing
+first every contract, stylesheet and token that references it and handing
+their edits to the authoring and build skills.
 [`skills/design-delta-build-design/SKILL.md`](../design-delta-build-design/SKILL.md)
 builds a contract's component in the design tool with the session's own
 design-tool tools, then refreshes the snapshot and audits until the

@@ -718,10 +718,11 @@ export const PROPERTY_DEFS = [
     cssNames: { _value: "background-color" },
     // …but `background: var(--x)` is an ordinary way to set exactly that, and
     // the shorthand list is a SEPARATE question from which property a token
-    // binds: it only decides whether an absent longhand means "missing" or
-    // "indeterminate". Without it, `background:` read as a missing binding
-    // while the structurally identical `border:` case did not — an asymmetry,
-    // not a scope decision (issue #183).
+    // binds: it decides what an absent longhand falls back to. Without it,
+    // `background:` read as a missing binding while the structurally
+    // identical `border:` case did not — an asymmetry, not a scope decision
+    // (issue #183). No other def lists `background`, so a whole-value `var()`
+    // there is compared like the longhand (issue #38).
     shorthands: ["background"],
   },
   {
@@ -774,6 +775,14 @@ export const PROPERTY_DEFS = [
     cssNames: { _value: "line-height" },
   },
 ]
+
+// Shorthands more than one def lists (`border` carries `border.width` and
+// `border.color`): a single `var()` under one cannot say which it binds.
+const SHARED_SHORTHANDS = new Set(
+  PROPERTY_DEFS.flatMap(def => def.shorthands || []).filter(
+    (short, i, all) => all.indexOf(short) !== i,
+  ),
+)
 
 function readPropPath(base, path) {
   let value = base
@@ -856,18 +865,24 @@ export function resolveCssFinest(
       if (found !== undefined) break
     }
     // Nothing under this slot's own CSS names, but a SHORTHAND that can carry
-    // it is declared (`border` for `border.color`). The shorthand's value does
+    // it is declared (`border` for `border.color`). A multi-part value does
     // not say which sub-property each part satisfies, so the slot is
     // indeterminate — reported as `compound` so `compareProperty` stays silent
     // rather than claiming the binding is missing. This is 14% of a real
     // design system's var-using declarations; getting it wrong would be the
     // check's single largest source of false findings.
+    //
+    // A whole-value `var()` is one part, and under a shorthand only one def
+    // lists (`background: var(--x)`) it can only be that def's slot, so it is
+    // compared like the longhand (issue #38). Under a shorthand several defs
+    // share (`border: var(--x)`: width or color?) it stays `compound`.
     if (found === undefined) {
       for (const short of shorthands) {
         if (declarations.has(short)) {
           const decl = declarations.get(short)
           found =
-            decl.kind === "literal"
+            decl.kind === "literal" ||
+            (decl.kind === "var" && !SHARED_SHORTHANDS.has(short))
               ? decl
               : {
                   kind: "compound",

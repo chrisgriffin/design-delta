@@ -152,6 +152,12 @@ documentation format the project already uses: props with types, defaults
 and enum values, slots, states, anatomy and token bindings, with a marked
 question wherever the contract is silent, and only its own generated
 sections rewritten when it is run again; both commands lay its stub too.
+[`skills/design-delta-token/SKILL.md`](./skills/design-delta-token/SKILL.md)
+adds, renames, deprecates or removes a token in the project's tokens file:
+it lists every contract, stylesheet, token and config entry that references
+the token before changing it, asks for the name, tier and value the request
+leaves open, edits only the tokens file, and hands each contract and code
+edit to the authoring and build skills; both commands lay its stub as well.
 [`skills/design-delta-build-design/SKILL.md`](./skills/design-delta-build-design/SKILL.md)
 is the build skill's design-side twin: with a session connected to the
 design tool, it creates or updates the component there from its contract,
@@ -160,7 +166,7 @@ design-tool tools, then refreshes the snapshot and audits until the
 component has no design-side findings; the engine itself still never
 touches the design tool, and both commands lay this stub as well.
 To see one component's findings, `design-delta audit --contract <id>` scopes
-the report to it. An eighth,
+the report to it. A ninth,
 [`skills/design-delta-doctor/SKILL.md`](./skills/design-delta-doctor/SKILL.md),
 is the maintainer's procedure for testing the engine against a real project.
 
