@@ -141,7 +141,7 @@ them, so an answered decision never comes back as a question.
 - [ ] `fix-code`/`change-contract`/`change-design` answers appear in the decisions file. An entry whose findings are gone is reported done and removed on the next run.
 - [ ] `decide --no-serve` writes one HTML file that makes no network request. `decide --apply` with its saved answers writes the same result a served save would. An answers file naming an unknown decision id writes nothing and exits 1.
 - [ ] `docs/cli.md` documents `decide`, `docs/config-reference.md` is regenerated with `paths.decisionsFile`, and the resolve skill reads the decisions file and ends by handing over `decide`.
-- [ ] **Runnable:** `npx jest __tests__/cli-decide.test.js` exits 0 (exits 1 on develop: no such test file, "No tests found").
+- [ ] **Runnable:** `npx jest __tests__/cli-decide.test.js` exits 0; this work adds that test file (exits 1 on develop: "No tests found").
 - [ ] `npm run verify` exits 0.
 
 ## Out of scope
