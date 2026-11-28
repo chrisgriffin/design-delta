@@ -8,7 +8,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { runAudit } from "../src/cli/commands/audit.mjs"
-import { runDecide } from "../src/cli/commands/decide.mjs"
+import { runDecide, saveAnswers } from "../src/cli/commands/decide.mjs"
+import { EMPTY_DECISIONS_FILE, buildDecisions } from "../src/core/decisions.mjs"
 import { createSyntheticProject } from "./helpers/synthetic-project.mjs"
 
 function streams() {
@@ -413,5 +414,77 @@ describe("handleDecideRequest", () => {
         ctx,
       ).status,
     ).toBe(415)
+  })
+})
+
+describe("design-delta decide: the paths that write nothing", () => {
+  let project
+  beforeEach(() => {
+    project = createSyntheticProject()
+  })
+  afterEach(() => project.cleanup?.())
+
+  it("stopped with SIGINT, returns 130 and leaves the project untouched", async () => {
+    const configBefore = readFileSync(project.configPath, "utf8")
+    const s = streams()
+    const cwd = process.cwd()
+    process.chdir(project.root)
+    try {
+      const running = runDecide(["--port", "0"], {
+        io: s.io,
+        globalOpts: { config: project.configPath },
+      })
+      for (let i = 0; i < 200 && !/http:\/\/127/.test(s.out()); i++)
+        await new Promise(r => setTimeout(r, 25))
+      expect(s.out()).toMatch(/http:\/\/127\.0\.0\.1:\d+\//)
+      process.emit("SIGINT")
+      expect(await running).toBe(130)
+    } finally {
+      process.chdir(cwd)
+    }
+    expect(s.err()).toContain("no answers written")
+    expect(readFileSync(project.configPath, "utf8")).toBe(configBefore)
+    expect(existsSync(decisionsPath(project))).toBe(false)
+  })
+
+  it("refuses a save whose config would fail the schema, and leaves the project untouched", () => {
+    const configPath = join(project.root, "invalid.json")
+    const configText = JSON.stringify({ notAKey: true })
+    writeFileSync(configPath, configText)
+    const decisionsFile = join(project.root, "owner-decisions.json")
+    const { decisions } = buildDecisions({
+      findings: [
+        {
+          ruleId: "tokens/token-unreferenced",
+          severity: "review",
+          surface: "tokens",
+          side: "code",
+          entity: "brand.red",
+          message: "unused",
+        },
+      ],
+    })
+    const result = saveAnswers(
+      {
+        config: { notAKey: true },
+        configPath,
+        configText,
+        configLabel: "invalid.json",
+        decisionsFile: EMPTY_DECISIONS_FILE,
+        decisionsPath: decisionsFile,
+        decisionsText: null,
+        decisionsLabel: "owner-decisions.json",
+        decisions,
+        done: [],
+      },
+      {
+        version: 1,
+        answers: [{ id: decisions[0].id, answer: "accept", reason: "kept" }],
+      },
+    )
+    expect(result.errors[0]).toMatch(/would leave the config invalid/)
+    expect(result.errors.join("\n")).toMatch(/notAKey/)
+    expect(readFileSync(configPath, "utf8")).toBe(configText)
+    expect(existsSync(decisionsFile)).toBe(false)
   })
 })
