@@ -59,17 +59,18 @@ issues. Full contract authoring reference:
 Full reference with every flag and exit code: [cli.md](../../docs/cli.md).
 The short map:
 
-| Command                                               | What it does                                                                                                          |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `contracts`                                           | schema- + semantically-validate every contract                                                                        |
-| `audit`                                               | read-only census + diff across the configured surfaces; `--contract <id>` scopes the report to one component          |
-| `verify`                                              | the composed CI gate — invalid contract or gating finding fails it                                                    |
-| `lint`                                                | static token-system rules (separate from `verify`, never run by it)                                                   |
-| `report`                                              | render findings to artifacts (`md,terminal,sarif,pr-comment`)                                                         |
-| `init` / `dock`                                       | scaffold config / a Claude Code hook + skills into the consumer                                                       |
-| `gather` / `ingest`                                   | design-side census: `gather` prints a plan, `ingest` normalizes results                                               |
-| `scaffold` / `snapshot` / `movers` / `impact` / `map` | draft contracts; write the `isNew` baseline; diff since it; blast radius; ownership overview — **all code-side only** |
-| `mcp`                                                 | read-only MCP server over stdio: contracts + tokens for a coding agent, every answer version-stamped                  |
+| Command                                               | What it does                                                                                                                                                                             |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contracts`                                           | schema- + semantically-validate every contract                                                                                                                                           |
+| `audit`                                               | read-only census + diff across the configured surfaces; `--contract <id>` scopes the report to one component                                                                             |
+| `verify`                                              | the composed CI gate — invalid contract or gating finding fails it                                                                                                                       |
+| `lint`                                                | static token-system rules (separate from `verify`, never run by it)                                                                                                                      |
+| `report`                                              | render findings to artifacts (`md,terminal,sarif,pr-comment`)                                                                                                                            |
+| `decide`                                              | put the findings code cannot clear to their owner: a local page, one question per group, a recommended answer each; answers are written back as exemptions or into `paths.decisionsFile` |
+| `init` / `dock`                                       | scaffold config / a Claude Code hook + skills into the consumer                                                                                                                          |
+| `gather` / `ingest`                                   | design-side census: `gather` prints a plan, `ingest` normalizes results                                                                                                                  |
+| `scaffold` / `snapshot` / `movers` / `impact` / `map` | draft contracts; write the `isNew` baseline; diff since it; blast radius; ownership overview — **all code-side only**                                                                    |
+| `mcp`                                                 | read-only MCP server over stdio: contracts + tokens for a coding agent, every answer version-stamped                                                                                     |
 
 Every command reads `design-delta.json` at the project root by default
 (`--config <path>` overrides); `--json` on any command emits one
@@ -154,7 +155,7 @@ that contract to code and then uses the audit above as the proof.
 refreshes the design snapshot, and
 [`skills/design-delta-resolve/SKILL.md`](../design-delta-resolve/SKILL.md)
 works a project's whole list of findings down, sorting each by who can clear
-it.
+it, and ends by handing the owner `decide`'s page for the rest.
 [`skills/design-delta-docs/SKILL.md`](../design-delta-docs/SKILL.md) writes a
 component's documentation page from its contract, in the project's own
 documentation format, and rewrites only its generated sections when the

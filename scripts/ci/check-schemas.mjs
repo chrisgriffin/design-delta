@@ -28,6 +28,10 @@ import Ajv from "ajv/dist/2020.js"
 import addFormats from "ajv-formats"
 
 import { CONFIG_SCHEMA_FILE } from "../../src/core/config.mjs"
+import {
+  ANSWERS_SCHEMA_FILE,
+  DECISIONS_SCHEMA_FILE,
+} from "../../src/core/decisions.mjs"
 import { CONTRACT_SCHEMA_FILE } from "../../src/spec/contracts.mjs"
 import {
   DESIGN_COMPONENTS_SCHEMA_FILE,
@@ -73,6 +77,8 @@ const referenced = new Set(
   [
     CONFIG_SCHEMA_FILE,
     CONTRACT_SCHEMA_FILE,
+    DECISIONS_SCHEMA_FILE,
+    ANSWERS_SCHEMA_FILE,
     DESIGN_COMPONENTS_SCHEMA_FILE,
     DESIGN_TOKENS_SCHEMA_FILE,
   ].map(p => p.split("/").pop()),

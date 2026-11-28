@@ -51,8 +51,9 @@ them, so an answered decision never comes back as a question.
   which becomes its only home. The resolve skill points at it, through
   `decide --json`'s `pile` field, instead of restating it. A rule the
   table does not name is placed by a stated default that is never `code`.
-- FR3. Findings in the `code` pile are not decisions. The page and the JSON
-  report their count and say they are the resolve skill's to clear.
+- FR3. Findings in the `code` pile are not decisions. The page reports
+  their count and says they are the resolve skill's to clear; the JSON lists
+  them under `code`, which is what the resolve skill works.
 - FR4. The other findings are grouped into one decision per `ruleId` and
   pile. A decision lists every entity it covers. An answer applies to the
   entities the owner leaves selected, which is all of them by default, so a
@@ -60,8 +61,9 @@ them, so an answered decision never comes back as a question.
 - FR5. Each decision has a stable `id` derived only from its `ruleId`, pile
   and sorted entities, so the same audit yields the same ids.
 - FR6. The answer options are `fix-code`, `change-contract`, `change-design`,
-  `accept` (correct by design), `waive` and `track` (a known gap, with an
-  issue reference). Each decision offers only the options that can clear
+  `accept` (correct by design), `waive`, `track` (a known gap, with an
+  issue reference) and, for a stale exemption, `remove-exemption`, which
+  deletes it from the config. Each decision offers only the options that can clear
   its rule.
 - FR7. Every decision carries one **recommended** option and a one-sentence
   reason. These come from a fixed table keyed by `ruleId`, in `core/`, so
@@ -133,7 +135,7 @@ them, so an answered decision never comes back as a question.
 
 ## Success criteria
 
-- [ ] `design-delta decide --json` on a fixture project prints one decision per rule and pile, each with an id, a pile, options and a recommended option with a reason; code-pile findings appear only as a count; two runs print the same bytes.
+- [ ] `design-delta decide --json` on a fixture project prints one decision per rule and pile, each with an id, a pile, options and a recommended option with a reason; code-pile findings are never decisions, listed under `code` with their count; two runs print the same bytes.
 - [ ] A test fails when a registered rule has no recommendation entry, or when an entry recommends an option its rule does not offer.
 - [ ] The resolve skill's pile table lives only in `core/`, and the skill points at `decide --json`'s `pile` instead of restating it.
 - [ ] A served `decide` binds to `127.0.0.1` only, rejects a post without the run's token, and on a valid save writes the answers and exits 0.

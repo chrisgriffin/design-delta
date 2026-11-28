@@ -33,9 +33,10 @@ rest by owner.
 npx design-delta contracts --json
 npx design-delta audit --json
 npx design-delta lint --json
+npx design-delta decide --json
 ```
 
-Keep all three documents, outside the project's tracked files. They are
+Keep all four documents, outside the project's tracked files. They are
 "before", and step 7 compares against them.
 
 Before reading a single finding:
@@ -54,6 +55,12 @@ Before reading a single finding:
   Note how many, and keep the list. They are decisions somebody made; they
   are not on your list, and at the end the only ones allowed to be gone are
   those step 7 accounts for.
+- **The owner's answers.** `decide --json` marks each decision the owner
+  already answered with a change (`answered`: `fix-code`, `change-contract`
+  or `change-design`, with their note). Those answers live in the project's
+  decisions file (`paths.decisionsFile`). They are the owner's decisions,
+  made: step 5 works them. Entries listed under `done` were carried out
+  already.
 - The project's own instructions, and its `design-delta.json`, `_`-prefixed
   keys included: a project records known findings and local decisions there,
   and a finding it already explains goes to the report as explained, not
@@ -80,30 +87,24 @@ change that was half made.
 
 `side` says where the engine attributes the drift. It does **not** say who
 can clear it: a token no component uses is `side: "code"`, and no code change
-is the right fix for it. Sort by rule first:
+is the right fix for it. The engine sorts for you, and the table it sorts by
+lives in one place, `src/core/piles.mjs` in the installed package. Never
+restate it.
 
-| Pile                  | What goes in it                                                                                                                                                                                                                                                                                                                                           | Owner                                                   |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **Code**              | `side: "code"` findings at `error` or `warn` on the `components`, `styles` and `anatomy` surfaces, for a component whose contract is valid; `tokens/var-unresolved`; `coverage/contract-only` when the contract is right and the component was never built                                                                                                | you, through the build skill (step 5)                   |
-| **Contract**          | every `side: "spec"` finding of a rule no other row names; `coverage/uncontracted-component` (the component needs a contract, which is a decision); `coverage/unfinished-contract`; `components/intent-unverified` and `components/intent-stale`; `coverage/contract-only` when the path is what is wrong; any component whose contract failed validation | whoever owns the contract                               |
-| **Design side**       | every `side: "design"` finding; `coverage/design-only`; `coverage/design-missing`; `styles/design-binding-missing`; the `tokens` rules whose name starts with `design-`                                                                                                                                                                                   | whoever owns the design file, after the check in step 4 |
-| **Tokens and config** | `tokens/token-unreferenced`, `tokens/token-unemitted`, `tokens/token-untracked`, `tokens/emitted-value-mismatch`; `coverage/stale-exemption`; every `lint` finding                                                                                                                                                                                        | whoever owns the token system, or the project's config  |
-| **Review**            | every remaining `review` finding: the engine could not reach a verdict (`anatomy/coverage-partial`, `anatomy/coverage-declined`, `styles/element-unmapped`, `styles/variant-unmapped`, `components/prop-type-unresolved`, `anatomy/attribute-unresolved`), or the answer is a person's (`components/unused-component`)                                    | a person, with what you found when you read it yourself |
+- **Code**: `decide --json`'s `code` list. Yours, through the build skill
+  (step 5).
+- **Everything else**: `decide --json`'s `decisions`, one per rule and pile,
+  each with its `pile` (`contract`, `design`, `tokens-config` or `review`),
+  the entities it covers, the answers that can clear it, and a recommended
+  answer. Each pile belongs to an owner: the contract's, the design file's,
+  the token system's or config's, or a person's.
 
-For a rule the table does not name, read its description in
-[rules.md](../../docs/rules.md) and place it by what would have to change to
-clear it. If that is not code in a component, it is not the code pile.
-
-A finding goes in exactly one pile. A row that names the finding's rule wins
-over a row that only catches its `side`: `coverage/design-missing`,
-`coverage/stale-exemption` and the `lint` findings are `side: "spec"` too, and
-each goes to the row that names it, not to the contract pile.
-`coverage/contract-only` is named in two rows, and its condition decides:
-whether the contract's path is right and the component was never built, or
-the path is what is wrong. When that cannot be told from the project, or a
-rule the table does not name could go either way, it is the pile that is
-**not** code: a wrong guess there costs a question, and a wrong guess the
-other way costs a change nobody asked for.
+A rule the table does not name is never placed in the code pile: a wrong
+guess there costs a question, and a wrong guess the other way costs a change
+nobody asked for. `coverage/contract-only` is in the contract pile because
+the engine cannot tell a wrong path from a component never built. When you
+read the project and the contract's path is right and the component was
+simply never built, work it as code (step 5).
 
 Two piles deserve a second look before they leave your hands:
 
@@ -135,6 +136,10 @@ the report, with the date. Refreshing it is the sibling skill
 do that first when the session has the design tool's tools, and re-sort.
 
 ### 5. Work the code pile, one component at a time
+
+The code pile is `decide --json`'s `code` list, plus every decision the owner
+answered `fix-code`, plus the components of every `change-contract` answer
+once step 5a has changed their contract.
 
 Order the components:
 
@@ -186,11 +191,22 @@ where it is, and treat that file's component as the one being worked.
 Keep each component's change separate (its own commit, where the project's
 workflow has commits), so one that has to be undone takes nothing with it.
 
+### 5a. Make the contract changes the owner asked for
+
+For each decision answered `change-contract`, change the contract as the
+owner's note says, through
+[`skills/design-delta-author/SKILL.md`](../design-delta-author/SKILL.md),
+and only for the entities the answer covers. Where the note leaves the
+change open, ask the owner rather than choosing. Then work that component in
+step 5. A `change-design` answer is the design file's owner's to make: list
+it in the report for them, and never edit the design file to clear it.
+
 ### 6. What never clears a finding
 
 Whatever the pile, and however small the remainder:
 
-- never edit a contract so it agrees with the code;
+- never edit a contract so it agrees with the code, except the change a
+  `change-contract` answer in the decisions file records (step 5a);
 - never add, widen or reword an `exemptions` entry;
 - never change a rule's severity or turn it off under `rules`, and never add
   an ignore option to one;
@@ -201,8 +217,9 @@ Whatever the pile, and however small the remainder:
   number.
 
 Each of these is sometimes the right outcome. None of them is yours to
-choose: each is the owner's decision, and the report is how they get to make
-it.
+choose: each is the owner's decision, and `decide` (step 8) is how they get
+to make it. Never answer a decision on the owner's behalf, on the page or
+with `decide --apply`.
 
 ### 7. Take the list again, and account for every change
 
@@ -229,9 +246,10 @@ Compare with step 1's, by `ruleId` and `entity`:
   exemption, for the config's owner to remove. Removing it is theirs, never
   yours. Any other change to `decided` is a regression;
 - `skipped` lists nothing it did not list before;
-- the project's `design-delta.json` and every contract file show no change.
-  Check with the project's version control, and put the result in the
-  report: it is the proof that nothing was cleared the wrong way.
+- the project's `design-delta.json` and every contract file show no change,
+  except the contracts a `change-contract` answer named (step 5a). Check
+  with the project's version control, and put the result in the report: it
+  is the proof that nothing was cleared the wrong way.
 
 ### 8. Report
 
@@ -259,6 +277,14 @@ Compare with step 1's, by `ruleId` and `entity`:
   owner keeps the gate red until they decide, and that is the report's first
   line, not a reason to reach for step 6's list.
 
+**Hand the rest to the owner.** End by running `npx design-delta decide`
+and giving the owner the address it prints: one question per group, each
+with the recommended answer and its reason, and their answers are written
+back for the next pass. Where no browser can reach the session, run
+`npx design-delta decide --no-serve` and give them the page's path; they
+apply what it saves with `decide --apply`. Say how many decisions are on the
+page, and that nothing was answered for them.
+
 A project where the code pile was empty ends here with nothing cleared and
 every group in front of its owner. That is a complete result. Say plainly
 that no finding was code's to clear, so nobody reads the unchanged count as
@@ -285,7 +311,9 @@ work not done.
 ## Hard limits
 
 - Never clear a finding by editing a contract, an exemption, a rule's
-  severity or any other config.
+  severity or any other config. The one exception is a `change-contract`
+  answer the owner recorded in the decisions file.
+- Never answer a decision for the owner.
 - Never report a count without the count before it.
 - Never report a finding as cleared that you did not fix in code.
 - Never start a second component with the first one's audit unread.
