@@ -50,7 +50,14 @@ them, so an answered decision never comes back as a question.
   step 3 states today. That table moves into one pure module in `core/`,
   which becomes its only home. The resolve skill points at it, through
   `decide --json`'s `pile` field, instead of restating it. A rule the
-  table does not name is placed by a stated default that is never `code`.
+  table does not name is placed by a stated default by its side: a
+  `side: "code"` finding at `error` or `warn` on the `components`, `styles`
+  or `anatomy` surface is `code`, as that table's Code row says, and
+  anything the side does not settle is `review`. A code-side finding on a
+  component whose contract failed validation is `contract`, as that table's
+  Contract row says. (Corrected in review: this line first said the default
+  is "never `code`", which contradicts the table it moves, whose Code row
+  is itself a default by side and severity.)
 - FR3. Findings in the `code` pile are not decisions. The page reports
   their count and says they are the resolve skill's to clear; the JSON lists
   them under `code`, which is what the resolve skill works.

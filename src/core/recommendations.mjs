@@ -94,8 +94,11 @@ const RULE_OVERRIDES = {
     reason:
       "The contract names a design component the design file does not have; usually the component was renamed and the contract should follow.",
   },
+  // `remove-exemption` only: an exemption written under this rule could never
+  // take effect, because `applyExemptions` reports stale exemptions after its
+  // exemption pass, so nothing would ever match it.
   "coverage/stale-exemption": {
-    options: ["remove-exemption", "track"],
+    options: ["remove-exemption"],
     recommended: "remove-exemption",
     reason:
       "The exemption no longer matches anything the rule reports, so it hides nothing and can go.",

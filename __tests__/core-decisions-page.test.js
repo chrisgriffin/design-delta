@@ -61,6 +61,46 @@ describe("renderDecisionsPage", () => {
     expect(html).toMatch(/value="later"/)
   })
 
+  it("opens an already-answered decision on Decide later, listing every answer on file", () => {
+    const html = renderDecisionsPage({
+      ...buildDecisions({
+        findings: [
+          { ...findings[0], message: "unused" },
+          { ...findings[0], entity: "brand.blue", message: "unused" },
+        ],
+        previous: {
+          version: 1,
+          entries: [
+            {
+              id: "a",
+              ruleId: "tokens/token-unreferenced",
+              pile: "tokens-config",
+              entities: ["brand.red"],
+              answer: "fix-code",
+              note: "use it in the badge",
+            },
+            {
+              id: "b",
+              ruleId: "tokens/token-unreferenced",
+              pile: "tokens-config",
+              entities: ["brand.blue"],
+              answer: "change-contract",
+            },
+          ],
+        },
+      }),
+      mode: "static",
+    })
+    expect(html).toMatch(/value="later" checked>/)
+    expect(html).not.toMatch(/value="accept" checked>/)
+    expect(html).toContain(
+      '<strong>Fix the code</strong> for <code>brand.red</code>, "use it in the badge"',
+    )
+    expect(html).toContain(
+      "<strong>Change the contract</strong> for <code>brand.blue</code>",
+    )
+  })
+
   it("labels every text control", () => {
     const html = render()
     const ids = [

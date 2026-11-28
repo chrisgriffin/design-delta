@@ -4,7 +4,7 @@ Spec: [spec.md](./spec.md). Plan: [plan.md](./plan.md).
 
 ## Phase 1: foundational (pure `core/`)
 
-- [x] [T001] `src/core/piles.mjs`: `PILE_RULES` and `pileOf(finding)` from the resolve skill's step 3 table, with a cautious default that is never `code`; `__tests__/core-piles.test.js` covers every named rule, the precedence of a named rule over its `side`, and the default
+- [x] [T001] `src/core/piles.mjs`: `PILE_RULES` and `pileOf(finding)` from the resolve skill's step 3 table, with a default by side that is `code` only for a code-side `error`/`warn` on `components`, `styles` or `anatomy`, and `contract` for a component whose contract is invalid; `__tests__/core-piles.test.js` covers every named rule, the precedence of a named rule over its `side`, and the default
 - [x] [T002] `src/core/recommendations.mjs`: per-pile defaults plus per-rule overrides, `recommendationFor(ruleId, pile)`; `__tests__/core-recommendations.test.js` fails for a registered rule with no entry or a recommendation outside its options
 - [x] [T003] `src/core/decisions.mjs`: `buildDecisions` (grouping, stable ids, code count, answered/done from the decisions file) and `applyAnswers` (validation first, exemption entries appended preserving order and `_` keys, action entries keyed by id); `__tests__/core-decisions.test.js`
 - [x] [T004] `src/core/decisions-page.mjs`: `renderDecisionsPage` for `serve` and `static` modes, with embedded data escaped, no external request, recommended option preselected, and reason/issue requirements enforced in the inline script; `__tests__/core-decisions-page.test.js` (deterministic output, no `http(s)://` resource, `</script>` escaping, labels on every control)

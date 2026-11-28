@@ -100,6 +100,69 @@ describe("buildDecisions", () => {
     ])
     expect(done.map(e => e.id)).toEqual(["y"])
   })
+
+  it("lists every answered entry of a rule, not only the first", () => {
+    const entry = (id, entities, answer, note) => ({
+      id,
+      ruleId: "tokens/token-unreferenced",
+      pile: "tokens-config",
+      entities,
+      answer,
+      ...(note ? { note } : {}),
+    })
+    const { decisions } = buildDecisions({
+      findings: FINDINGS,
+      previous: {
+        version: 1,
+        entries: [
+          entry("a", ["brand.red"], "fix-code", "use it"),
+          entry("b", ["brand.blue"], "change-contract"),
+        ],
+      },
+    })
+    expect(byRule(decisions, "tokens/token-unreferenced").answered).toEqual([
+      { answer: "fix-code", note: "use it", entities: ["brand.red"] },
+      { answer: "change-contract", note: undefined, entities: ["brand.blue"] },
+    ])
+  })
+
+  it("never reports an entry done when its rule did not run", () => {
+    const gone = {
+      id: "y",
+      ruleId: "coverage/design-missing",
+      pile: "design",
+      entities: ["Chip"],
+      answer: "change-design",
+    }
+    const previous = { version: 1, entries: [gone] }
+    expect(
+      buildDecisions({
+        findings: FINDINGS,
+        previous,
+        wasEvaluated: () => false,
+      }).done,
+    ).toEqual([])
+    const asked = []
+    const { done } = buildDecisions({
+      findings: FINDINGS,
+      previous,
+      wasEvaluated: e => (asked.push(e), true),
+    })
+    expect(done).toEqual([gone])
+    expect(asked).toEqual([gone])
+  })
+
+  it("routes an invalid contract's code-side findings to the contract pile", () => {
+    const { decisions, codeCount } = buildDecisions({
+      findings: FINDINGS,
+      invalidContracts: { ids: ["badge"], files: [] },
+    })
+    expect(codeCount).toBe(0)
+    expect(byRule(decisions, "components/prop-missing")).toMatchObject({
+      pile: "contract",
+      entities: ["badge"],
+    })
+  })
 })
 
 describe("applyAnswers", () => {
@@ -223,6 +286,38 @@ describe("applyAnswers", () => {
       },
     ])
     expect(validateDecisionsFile(second.decisionsFile)).toEqual([])
+  })
+
+  it("narrows an earlier change answer to the entities a new one leaves, never dropping them", () => {
+    const s = setup()
+    const tokens = id(s.decisions, "tokens/token-unreferenced")
+    const earlier = {
+      id: tokens,
+      ruleId: "tokens/token-unreferenced",
+      pile: "tokens-config",
+      entities: ["brand.blue", "brand.red"],
+      answer: "change-contract",
+      note: "both belong in the contract",
+    }
+    const { decisionsFile } = applyAnswers({
+      ...s,
+      decisionsFile: { version: 1, entries: [earlier] },
+      answers: {
+        version: 1,
+        answers: [{ id: tokens, answer: "fix-code", entities: ["brand.red"] }],
+      },
+    })
+    expect(decisionsFile.entries).toEqual([
+      { ...earlier, entities: ["brand.blue"] },
+      {
+        id: tokens,
+        ruleId: "tokens/token-unreferenced",
+        pile: "tokens-config",
+        entities: ["brand.red"],
+        answer: "fix-code",
+      },
+    ])
+    expect(validateDecisionsFile(decisionsFile)).toEqual([])
   })
 
   it("drops done entries", () => {

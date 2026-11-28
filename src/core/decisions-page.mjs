@@ -11,8 +11,10 @@
  *   - `static` mode (`decide --no-serve`) saves them as an answers file for
  *     `design-delta decide --apply <file>`.
  *
- * Every decision opens on its recommended answer. "Decide later" leaves it
- * out of the save. `accept` and `waive` need a reason and `track` an issue
+ * Every decision opens on its recommended answer, except one already answered
+ * with a change, which opens on "Decide later": a save made for another
+ * decision must never rewrite an answer on file (its note, the entities it
+ * covers). "Decide later" leaves a decision out of the save. `accept` and `waive` need a reason and `track` an issue
  * reference before the page will save, the same checks `applyAnswers`
  * makes, so a refusal is seen on the page rather than after it.
  *
@@ -56,8 +58,8 @@ const embedJson = value =>
 function renderDecision(decision, index) {
   const name = `d${index}`
   const multi = decision.entities.length > 1
-  const answered = decision.answered?.[0]
-  const initial = answered?.answer || decision.recommended
+  const answered = decision.answered || []
+  const initial = answered.length > 0 ? "later" : decision.recommended
 
   const entities = multi
     ? `<fieldset class="entities"><legend>Applies to (${decision.entities.length})</legend>${decision.entities
@@ -87,9 +89,17 @@ function renderDecision(decision, index) {
     })
     .join("")
 
-  const answeredNote = answered
-    ? `<p class="answered">Already answered: <strong>${escapeHtml(ANSWER_LABELS[answered.answer] || answered.answer)}</strong>${answered.note ? `, "${escapeHtml(answered.note)}"` : ""}. Waiting for that change; pick again to change the answer.</p>`
-    : ""
+  const answeredNote =
+    answered.length > 0
+      ? `<div class="answered"><p>Already answered, waiting for that change:</p><ul>${answered
+          .map(
+            entry =>
+              `<li><strong>${escapeHtml(ANSWER_LABELS[entry.answer] || entry.answer)}</strong> for ${entry.entities.map(e => `<code>${escapeHtml(e)}</code>`).join(", ")}${entry.note ? `, "${escapeHtml(entry.note)}"` : ""}</li>`,
+          )
+          .join(
+            "",
+          )}</ul><p>It stays on Decide later, so saving leaves those answers as they are. Pick an answer to replace them for the entities you select.</p></div>`
+      : ""
 
   return `<section class="decision" data-id="${escapeHtml(decision.id)}" data-name="${name}" aria-labelledby="${name}-title">
 <h2 id="${name}-title"><code>${escapeHtml(decision.ruleId)}</code></h2>
@@ -210,7 +220,7 @@ export function renderDecisionsPage({
       : ""
   const doneNote =
     done.length > 0
-      ? `<p class="answered">${done.length} earlier answer${done.length === 1 ? " has" : "s have"} been carried out; ${done.length === 1 ? "it is" : "they are"} removed from the decisions file on the next save.</p>`
+      ? `<p class="answered">${done.length} earlier answer${done.length === 1 ? " has" : "s have"} been carried out and ${done.length === 1 ? "was" : "were"} removed from the decisions file.</p>`
       : ""
   const hasDesign = decisions.some(d => d.pile === "design")
   const snapshotNote =
@@ -237,7 +247,7 @@ export function renderDecisionsPage({
 <h1>Decisions</h1>
 <p class="lede">${summary}${generatedAt ? ` From the audit run ${escapeHtml(generatedAt)}.` : ""}</p>
 ${code}${doneNote}${snapshotNote}
-<p class="hint">Each decision starts on its recommended answer. ${how}</p>
+<p class="hint">Each decision starts on its recommended answer, or on Decide later when it is already answered. ${how}</p>
 ${decisions.map(renderDecision).join("\n")}
 </main>
 <div class="bar"><button type="button" id="save"${count === 0 ? " disabled" : ""}>Save answers</button><p id="status" role="status" aria-live="polite"></p></div>

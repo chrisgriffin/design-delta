@@ -178,6 +178,68 @@ describe("design-delta decide", () => {
     ).toHaveLength(1)
   })
 
+  it("removes done entries on a run that saves nothing, and never on --json", async () => {
+    const { decisions } = await decisionsOf(project)
+    const target = decisions.find(d => d.ruleId === "tokens/token-unreferenced")
+    const gone = {
+      id: "000000000000",
+      ruleId: target.ruleId,
+      pile: target.pile,
+      entities: ["long.gone"],
+      answer: "fix-code",
+    }
+    writeFileSync(
+      decisionsPath(project),
+      JSON.stringify({ version: 1, entries: [gone] }),
+    )
+    expect((await decisionsOf(project)).done).toEqual([gone])
+    expect(
+      JSON.parse(readFileSync(decisionsPath(project), "utf8")).entries,
+    ).toHaveLength(1)
+
+    const { code, stderr } = await decide(project, [
+      "--no-serve",
+      "--no-timestamp",
+    ])
+    expect(code).toBe(0)
+    expect(stderr).toContain("done, removed")
+    expect(
+      JSON.parse(readFileSync(decisionsPath(project), "utf8")).entries,
+    ).toEqual([])
+  })
+
+  it("keeps an entry whose rule did not run: turned off, or a design rule with no snapshot", async () => {
+    const off = createSyntheticProject({
+      rules: { "tokens/token-unreferenced": "off" },
+    })
+    try {
+      const entries = [
+        {
+          id: "000000000000",
+          ruleId: "tokens/token-unreferenced",
+          pile: "tokens-config",
+          entities: ["long.gone"],
+          answer: "fix-code",
+        },
+        {
+          id: "111111111111",
+          ruleId: "coverage/design-missing",
+          pile: "design",
+          entities: ["long.gone"],
+          answer: "change-design",
+        },
+      ]
+      writeFileSync(decisionsPath(off), JSON.stringify({ version: 1, entries }))
+      expect((await decisionsOf(off)).done).toEqual([])
+      expect((await decide(off, ["--no-serve", "--no-timestamp"])).code).toBe(0)
+      expect(
+        JSON.parse(readFileSync(decisionsPath(off), "utf8")).entries,
+      ).toEqual(entries)
+    } finally {
+      off.cleanup?.()
+    }
+  })
+
   it("--apply refuses an answers file naming an unknown decision, and writes nothing", async () => {
     const before = readFileSync(project.configPath, "utf8")
     const { code, stderr } = await decide(project, [
@@ -261,6 +323,58 @@ describe("design-delta decide", () => {
     expect(
       readConfig(project).exemptions["tokens/token-unreferenced"][0],
     ).toMatchObject({ decision: "waived", reason: "not this release" })
+  })
+
+  it("refuses a served save when the config changed on disk while the page was open", async () => {
+    const { decisions } = await decisionsOf(project)
+    const target = decisions.find(d => d.ruleId === "tokens/token-unreferenced")
+    const s = streams()
+    const cwd = process.cwd()
+    process.chdir(project.root)
+    let running
+    try {
+      running = runDecide(["--port", "0"], {
+        io: s.io,
+        globalOpts: { config: project.configPath },
+      })
+      let url
+      for (let i = 0; i < 200 && !url; i++) {
+        url = s.out().match(/http:\/\/127\.0\.0\.1:\d+\//)?.[0]
+        if (!url) await new Promise(r => setTimeout(r, 25))
+      }
+      const token = (await (await fetch(url)).text()).match(
+        /"token":"([0-9a-f]+)"/,
+      )[1]
+
+      const save = () =>
+        fetch(`${url}answers`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-design-delta-token": token,
+          },
+          body: JSON.stringify({
+            version: 1,
+            answers: [{ id: target.id, answer: "waive", reason: "later" }],
+          }),
+        })
+      const original = readFileSync(project.configPath, "utf8")
+      const edited = { ...readConfig(project), _note: "edited while open" }
+      writeFileSync(project.configPath, JSON.stringify(edited, null, 2))
+      const refused = await save()
+      expect(refused.status).toBe(400)
+      expect((await refused.json()).errors.join(" ")).toContain(
+        "changed on disk",
+      )
+      expect(readConfig(project)).toEqual(edited)
+
+      // Put back as it was read, the same save goes through.
+      writeFileSync(project.configPath, original)
+      expect((await save()).status).toBe(200)
+      expect(await running).toBe(0)
+    } finally {
+      process.chdir(cwd)
+    }
   })
 
   it("rejects --port that is not a port", async () => {

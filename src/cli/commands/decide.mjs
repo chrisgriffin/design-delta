@@ -18,6 +18,17 @@
  * and `paths.decisionsFile`. It never edits a contract, a token, a component
  * or a design file, and never touches a rule's severity.
  *
+ * DONE ENTRIES are pruned from the decisions file on every run that is not
+ * `--json`, served or not and whether or not a decision is left: an entry is
+ * done only when its rule actually ran (`audit --json`'s and `lint --json`'s
+ * `evaluatedRules`, plus a read design snapshot for a design-pile rule), so a
+ * skipped surface never reads as a change carried out.
+ *
+ * A SAVE re-reads the config and the decisions file and refuses when either
+ * changed on disk since the run started: the answers were made against what
+ * it read, and writing over an edit made while the page was open would lose
+ * it silently.
+ *
  * THE SERVER binds 127.0.0.1 only, answers one page and one post, and
  * accepts the post only with the token embedded in the page it served and a
  * Host header naming the loopback address, so another site open in the
@@ -43,6 +54,7 @@ import {
   validateDecisionsFile,
 } from "../../core/decisions.mjs"
 import { renderDecisionsPage } from "../../core/decisions-page.mjs"
+import { loadContracts } from "../../spec/contracts.mjs"
 import { parseFlags } from "../flags.mjs"
 import { sink } from "../gather-health-score.mjs"
 import { runAudit } from "./audit.mjs"
@@ -78,18 +90,87 @@ function gatheredDates(audit) {
     .filter((date, i, all) => all.indexOf(date) === i)
 }
 
+/** A file's text as it is on disk now, or `null` when there is none. */
+function readText(path) {
+  try {
+    return existsSync(path) ? readFileSync(path, "utf8") : null
+  } catch {
+    return undefined
+  }
+}
+
 function readDecisionsFile(path) {
-  if (!existsSync(path)) return { file: EMPTY_DECISIONS_FILE }
+  if (!existsSync(path)) return { file: EMPTY_DECISIONS_FILE, text: null }
+  let text
   let doc
   try {
-    doc = JSON.parse(readFileSync(path, "utf8"))
+    text = readFileSync(path, "utf8")
+    doc = JSON.parse(text)
   } catch (err) {
     return { error: `could not read ${path}: ${err.message}` }
   }
   const errors = validateDecisionsFile(doc)
   if (errors.length > 0)
     return { error: `invalid ${path}:\n  - ${errors.join("\n  - ")}` }
-  return { file: doc }
+  return { file: doc, text }
+}
+
+/**
+ * The components whose contract failed validation, by contract id and file,
+ * for `core/piles.mjs`: their code-side findings are the contract owner's.
+ * A file that failed to load is read back for its `id`; one that is not
+ * even JSON is named by its file alone.
+ */
+function invalidContractsOf(config, root) {
+  const loaded = loadContracts(config, { root })
+  const failedFiles = new Set(
+    loaded.diagnostics
+      .map(diagnostic => diagnostic.file)
+      .filter(file => typeof file === "string"),
+  )
+  const ids = new Set()
+  for (const diagnostic of loaded.diagnostics)
+    if (typeof diagnostic.contractId === "string")
+      ids.add(diagnostic.contractId)
+  for (const entry of loaded.contracts)
+    if (failedFiles.has(entry.file)) ids.add(entry.id)
+  for (const file of failedFiles) {
+    try {
+      const id = JSON.parse(readFileSync(join(root, file), "utf8"))?.id
+      if (typeof id === "string") ids.add(id)
+    } catch {
+      // not JSON: matched by its file alone
+    }
+  }
+  return { ids: [...ids].sort(), files: [...failedFiles].sort() }
+}
+
+/**
+ * Whether the run evaluated the rule a decisions-file entry is about. A rule
+ * neither `audit` nor `lint` evaluated reported nothing because it never ran.
+ * A design-pile rule of the audit's also needs the design snapshot it reads:
+ * the audit counts the components surface as run even when
+ * `design-components.json` is missing or invalid, and the design-side rules
+ * then report nothing.
+ */
+function evaluatedCheck(audit, lint) {
+  const rules = new Set([
+    ...(audit.evaluatedRules || []),
+    ...(lint.evaluatedRules || []),
+  ])
+  const provenance = audit.provenance || {}
+  const read = snapshot =>
+    !provenance.unavailable &&
+    !provenance.notConsulted &&
+    provenance[snapshot] !== null &&
+    provenance[snapshot] !== undefined
+  return entry => {
+    if (!rules.has(entry.ruleId)) return false
+    if (entry.pile !== "design" || entry.ruleId.startsWith("lint/")) return true
+    return read(
+      entry.ruleId.startsWith("tokens/") ? "designTokens" : "designComponents",
+    )
+  }
 }
 
 function writeJson(path, value) {
@@ -104,6 +185,19 @@ function writeJson(path, value) {
  * @returns {{written: object[], done: object[]} | {errors: string[]}}
  */
 function save(state, answers) {
+  const changed = [
+    [state.configPath, state.configText, state.configLabel],
+    [state.decisionsPath, state.decisionsText, state.decisionsLabel],
+  ]
+    .filter(([path, text]) => readText(path) !== text)
+    .map(([, , label]) => label)
+  if (changed.length > 0)
+    return {
+      errors: [
+        `${changed.join(" and ")} changed on disk since decide started, so nothing was written: run decide again to answer against what is there now`,
+      ],
+    }
+
   let result
   try {
     result = applyAnswers({
@@ -137,6 +231,37 @@ function save(state, answers) {
     return { errors: [`could not write: ${err.message}`] }
   }
   return { written: result.written, done: state.done }
+}
+
+/**
+ * Remove the done entries from the decisions file, on disk and in `state`,
+ * and say which. Run once, before any mode that is not `--json`, so a run
+ * with no decisions left still clears what was carried out.
+ */
+function pruneDone(io, state) {
+  if (state.done.length === 0) return null
+  const doneIds = new Set(state.done.map(entry => JSON.stringify(entry)))
+  const next = {
+    version: 1,
+    entries: state.decisionsFile.entries.filter(
+      entry => !doneIds.has(JSON.stringify(entry)),
+    ),
+  }
+  if (readText(state.decisionsPath) !== state.decisionsText)
+    return `${state.decisionsLabel} changed on disk since decide started; run decide again`
+  try {
+    writeJson(state.decisionsPath, next)
+  } catch (err) {
+    return `could not write ${state.decisionsLabel}: ${err.message}`
+  }
+  for (const entry of state.done)
+    io.stderr.write(
+      `design-delta decide: done, removed from ${state.decisionsLabel}: ${entry.answer} ${entry.ruleId} (${entry.entities.join(", ")})\n`,
+    )
+  state.decisionsFile = next
+  state.decisionsText = readText(state.decisionsPath)
+  state.done = []
+  return null
 }
 
 function reportSaved(io, saved, state) {
@@ -242,7 +367,7 @@ function serve({ io, page, port, state }) {
       server.close()
       server.closeAllConnections?.()
       if (code === 130)
-        io.stderr.write("design-delta decide: stopped, nothing written\n")
+        io.stderr.write("design-delta decide: stopped, no answers written\n")
       resolve(code)
     }
     process.once("SIGINT", onSigint)
@@ -291,16 +416,21 @@ export async function runDecide(cmdArgv, ctx) {
   const read = readDecisionsFile(decisionsPath)
   if (read.error) return fail(read.error)
 
+  const configPath = resolve(configLabel)
   const { decisions, code, codeCount, done } = buildDecisions({
     findings: [...(audit.findings || []), ...(lint.findings || [])],
     previous: read.file,
+    invalidContracts: invalidContractsOf(config, root),
+    wasEvaluated: evaluatedCheck(audit, lint),
   })
   const snapshots = gatheredDates(audit)
   const state = {
     config,
-    configPath: resolve(configLabel),
+    configPath,
     configLabel,
+    configText: readText(configPath),
     decisionsFile: read.file,
+    decisionsText: read.text,
     decisionsPath,
     decisionsLabel,
     decisions,
@@ -313,6 +443,9 @@ export async function runDecide(cmdArgv, ctx) {
     )
     return 0
   }
+
+  const pruneError = pruneDone(io, state)
+  if (pruneError) return fail(pruneError)
 
   if (opts.apply !== undefined) {
     let answers

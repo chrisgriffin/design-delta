@@ -330,7 +330,7 @@ export async function runLint(cmdArgv, ctx) {
 
   if (opts.json) {
     io.stdout.write(
-      `${JSON.stringify({ findings: sorted, decided: sortFindings(decided), counts: { ...counts, exempted }, diagnostics }, null, 2)}\n`,
+      `${JSON.stringify({ findings: sorted, decided: sortFindings(decided), counts: { ...counts, exempted }, evaluatedRules: [...evaluatedLintRules].sort(), diagnostics }, null, 2)}\n`,
     )
     return 0
   }

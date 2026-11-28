@@ -1179,6 +1179,10 @@ export async function runAudit(cmdArgv, ctx) {
     // Every exempted finding, still visible, tagged with the decision that
     // covers it. Never gates and never counts toward severity totals.
     decided: shownDecided,
+    // The rules this run actually evaluated (the set the stale-exemption
+    // check reads), so a caller can tell "reported nothing" from "never ran"
+    // (issue #62: `decide` gates its `done` on it).
+    evaluatedRules: [...evaluatedRuleIds].sort(),
     // Deduplicated because the props and anatomy censuses parse the SAME
     // files independently, so a file that is missing, unloadable, or not a
     // component at all is discovered — correctly — by both, and was reported

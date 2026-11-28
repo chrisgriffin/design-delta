@@ -73,6 +73,48 @@ describe("pileOf", () => {
     )
   })
 
+  it("routes the lint rules that read a contract or the design file to that owner", () => {
+    for (const ruleId of [
+      "lint/contract-name-case",
+      "lint/contract-enum-invalid",
+    ])
+      expect(pileOf(finding(ruleId, { surface: "lint", side: "spec" }))).toBe(
+        "contract",
+      )
+    expect(
+      pileOf(
+        finding("lint/design-name-invalid", {
+          surface: "lint",
+          side: "design",
+        }),
+      ),
+    ).toBe("design")
+    expect(pileOf(finding("lint/token-rule", { surface: "lint" }))).toBe(
+      "tokens-config",
+    )
+  })
+
+  it("sends a code-side finding on a component whose contract is invalid to the contract pile", () => {
+    const invalidContracts = {
+      ids: ["badge"],
+      files: ["specs/Badge.spec.json"],
+    }
+    const code = over =>
+      finding("components/prop-missing", { severity: "error", ...over })
+    for (const entity of ["badge", "badge.root", "specs/Badge.spec.json"])
+      expect(pileOf(code({ entity }), { invalidContracts })).toBe("contract")
+    // Another component, or a rule that was never code's, is unchanged.
+    expect(pileOf(code({ entity: "badger" }), { invalidContracts })).toBe(
+      "code",
+    )
+    expect(pileOf(code({ entity: "field" }), { invalidContracts })).toBe("code")
+    expect(
+      pileOf(finding("components/prop-type-unresolved", { entity: "badge" }), {
+        invalidContracts,
+      }),
+    ).toBe("review")
+  })
+
   it("places every registered rule in exactly one pile", () => {
     for (const ruleId of buildFullRuleRegistry().ids())
       expect(PILES).toContain(pileOf(finding(ruleId)))

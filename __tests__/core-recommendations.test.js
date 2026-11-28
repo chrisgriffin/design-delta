@@ -41,6 +41,6 @@ describe("recommendationFor", () => {
     ).toBe("accept")
     expect(
       recommendationFor("coverage/stale-exemption", "tokens-config").options,
-    ).toEqual(["remove-exemption", "track"])
+    ).toEqual(["remove-exemption"])
   })
 })

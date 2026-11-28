@@ -99,9 +99,12 @@ restate it.
   answer. Each pile belongs to an owner: the contract's, the design file's,
   the token system's or config's, or a person's.
 
-A rule the table does not name is never placed in the code pile: a wrong
-guess there costs a question, and a wrong guess the other way costs a change
-nobody asked for. `coverage/contract-only` is in the contract pile because
+A rule the table does not name falls through to its side: a `side: "code"`
+finding at `error` or `warn` on the `components`, `styles` or `anatomy`
+surface is code, and anything the sides do not settle goes to review, where
+a wrong guess costs a question rather than a change nobody asked for. A
+component whose contract failed validation (step 1) has its code-side
+findings in the contract pile, not the code list. `coverage/contract-only` is in the contract pile because
 the engine cannot tell a wrong path from a component never built. When you
 read the project and the contract's path is right and the component was
 simply never built, work it as code (step 5).

@@ -106,16 +106,31 @@ function decisionId(ruleId, pile, keys) {
  * @param {object[]} input.findings audit and lint findings together; already
  *   exempted ones (`decided`) are never passed here
  * @param {{entries: object[]}} [input.previous] the decisions file, if any
+ * @param {{ids?: string[], files?: string[]}} [input.invalidContracts] the
+ *   components whose contract failed validation; their code-side findings go
+ *   to the contract pile (`core/piles.mjs`)
+ * @param {(entry: {ruleId: string, pile: string}) => boolean} [input.wasEvaluated]
+ *   whether this run actually evaluated the rule a decisions-file entry is
+ *   about. REQUIRED for an honest `done`: a rule that did not run (scoped out,
+ *   turned `"off"`, its design snapshot missing or invalid) reports nothing,
+ *   and reading that silence as "the change was made" would delete the
+ *   answer. Absent, every rule is assumed evaluated, as `applyExemptions`
+ *   assumes, which is correct only for a caller that ran everything.
  * @returns {{decisions: object[], code: object[], codeCount: number, done: object[]}}
  *   `code` is the code pile's findings themselves, for the resolve skill
  */
-export function buildDecisions({ findings, previous = EMPTY_DECISIONS_FILE }) {
+export function buildDecisions({
+  findings,
+  previous = EMPTY_DECISIONS_FILE,
+  invalidContracts,
+  wasEvaluated = () => true,
+}) {
   const groups = new Map()
   const code = []
   const seen = new Set()
 
   for (const finding of findings) {
-    const pile = pileOf(finding)
+    const pile = pileOf(finding, { invalidContracts })
     if (pile === "code") {
       code.push(finding)
       continue
@@ -181,13 +196,17 @@ export function buildDecisions({ findings, previous = EMPTY_DECISIONS_FILE }) {
       (a.ruleId < b.ruleId ? -1 : a.ruleId > b.ruleId ? 1 : 0),
   )
 
-  // An entry is done when no current finding of its rule names any of its
-  // entities: the resolve skill (or the owner) made the change it asked for.
+  // An entry is done when its rule ran and no current finding of it names any
+  // of its entities: the resolve skill (or the owner) made the change it asked
+  // for. A rule that did not run reports nothing either way, so its entries
+  // are never done on that silence.
   const live = new Set()
   for (const finding of findings)
     live.add(`${finding.ruleId}\n${keyOf(finding)}`)
   const done = entries.filter(
-    entry => !entry.entities.some(e => live.has(`${entry.ruleId}\n${e}`)),
+    entry =>
+      wasEvaluated(entry) &&
+      !entry.entities.some(e => live.has(`${entry.ruleId}\n${e}`)),
   )
 
   return { decisions, code, codeCount: code.length, done }
@@ -305,11 +324,20 @@ export function applyAnswers({
         to: "config",
       })
     } else if (ACTION_ANSWERS.includes(answer.answer)) {
-      nextFile.entries = nextFile.entries.filter(
-        entry =>
-          entry.ruleId !== decision.ruleId ||
-          !entry.entities.some(e => keys.includes(e)),
-      )
+      // The new answer replaces the old one for its own entities only: an
+      // earlier entry keeps every entity this answer does not name, and is
+      // dropped only once none is left.
+      nextFile.entries = nextFile.entries
+        .map(entry =>
+          entry.ruleId === decision.ruleId &&
+          entry.entities.some(e => keys.includes(e))
+            ? {
+                ...entry,
+                entities: entry.entities.filter(e => !keys.includes(e)),
+              }
+            : entry,
+        )
+        .filter(entry => entry.entities.length > 0)
       nextFile.entries.push({
         id: decision.id,
         ruleId: decision.ruleId,

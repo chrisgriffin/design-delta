@@ -27,7 +27,11 @@ engine cannot tell whether `coverage/contract-only`'s path or its build is
 wrong, it is `contract` (the resolve skill may still reclassify it to code
 after reading the project). An unnamed rule follows the default: `spec`
 goes to `contract`, `design` to `design`, a `review` severity to `review`,
-and anything else to `review`. An unnamed rule is never `code`.
+a `code`-side `error`/`warn` on `components`, `styles` or `anatomy` to
+`code` (the table's Code row), and anything else to `review`. A code-side
+finding on a component whose contract failed validation goes to `contract`;
+`decide` passes the invalid set in. The lint rules that read a contract or
+the design file are named: `contract` and `design`.
 
 Exports the table itself (`PILE_RULES`) so the skill, docs and tests read
 one copy.
@@ -41,8 +45,9 @@ already gathers them). The options are the subset of
 that can clear the rule. Defaults by pile fill in what a rule entry does not
 override, so the table stays short: for example `contract` → recommend
 `change-contract`; `design` → `change-design`; `tokens-config` → `accept`
-for `token-unreferenced`/`token-unemitted` (a scale kept complete), `track`
-for `coverage/stale-exemption`'s removal; `review` → `accept`. Every reason
+for `token-unreferenced`/`token-unemitted` (a scale kept complete),
+`remove-exemption` as `coverage/stale-exemption`'s only option (an
+exemption under that rule could never take effect); `review` → `accept`. Every reason
 is one plain sentence.
 
 Test (`__tests__/core-recommendations.test.js`): every registered rule
@@ -73,7 +78,9 @@ decisionsFile, written }`, pure. It validates every answer against its
 token })` returns one HTML string. It uses inline `<style>` with
 `prefers-color-scheme`, plus `<fieldset>`/`<legend>` radio groups per
 decision, entity checkboxes, and reason and issue fields. The recommended
-radio is `checked` and labeled "Recommended" with its reason. A small inline
+radio is `checked` and labeled "Recommended" with its reason; a decision
+already answered with a change opens on "Decide later" instead, listing
+every answer on file, so a save for another decision never rewrites it. A small inline
 script handles saving: in `serve` mode it `fetch("/answers", POST)`s with
 the token header; in `static` mode it builds the answers JSON and offers it
 as a download (`Blob` + `a[download]`), with a copy button as a fallback.
@@ -105,8 +112,12 @@ Flags: `--json`, `--no-serve`, `--port <n>`, `--out <path>`,
    returns 130 with nothing written. `ctx.serve` is injectable, so tests
    drive the handler without a socket. One test does bind a real socket to
    check the host.
-6. Prune: when any `done` entries exist and something is written, the
-   decisions file drops them, and the command lists them on stderr.
+6. Prune: on every run but `--json`, when any `done` entries exist, the
+   decisions file drops them, and the command lists them on stderr. An
+   entry is `done` only when its rule ran (`audit --json`'s and
+   `lint --json`'s `evaluatedRules`, plus a read design snapshot for a
+   design-pile rule). A save re-reads the config and the decisions file and
+   refuses when either changed on disk since the run started.
 
 Register in `SUBCOMMANDS` (summary "answer the findings code cannot clear:
 a local page, recommended answers, written back").
