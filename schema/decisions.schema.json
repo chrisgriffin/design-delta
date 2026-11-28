@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chrisgriffin.io/schemas/design-delta/decisions.schema.json",
+  "title": "design-delta decisions file",
+  "description": "The owner's answers that ask for a change rather than an exemption (`fix-code`, `change-contract`, `change-design`), written by `design-delta decide` at `paths.decisionsFile` for the resolve skill to act on. `accept`, `waive` and `track` answers are never here: they are `exemptions` entries in the config. An entry stays until every finding it names is gone, then the next `decide` run reports it done and removes it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "entries"],
+  "properties": {
+    "version": { "const": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ruleId", "pile", "entities", "answer"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The decision's id when it was answered."
+          },
+          "ruleId": { "type": "string" },
+          "pile": {
+            "enum": ["code", "contract", "design", "tokens-config", "review"]
+          },
+          "entities": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" },
+            "description": "The entities the answer covers, as the findings name them."
+          },
+          "answer": {
+            "enum": ["fix-code", "change-contract", "change-design"]
+          },
+          "note": {
+            "type": "string",
+            "description": "What the owner wants done, in their words."
+          }
+        }
+      }
+    }
+  }
+}

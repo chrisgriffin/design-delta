@@ -77,6 +77,10 @@
           "$ref": "#/$defs/stringValue",
           "description": "Where every command's `--report` markdown/JSON lands."
         },
+        "decisionsFile": {
+          "$ref": "#/$defs/stringValue",
+          "description": "Where `design-delta decide` records the owner's answers that ask for a change (`fix-code`, `change-contract`, `change-design`), for the resolve skill to act on. `accept`, `waive` and `track` answers go to `exemptions` instead. Shape: `schema/decisions.schema.json`."
+        },
         "styleRoots": {
           "type": "array",
           "items": {

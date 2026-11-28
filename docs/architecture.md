@@ -32,7 +32,11 @@ The work happens in five layers inside `src/`, and they only ever flow one way:
 
 - `src/core/` — the pure centre. The finding shape, the rule registry and
   severity resolution, config loading and validation, the health score, state,
-  progress reporting and terminal rendering. Pure is about the import graph — it
+  progress reporting and terminal rendering, and the decisions `decide` puts
+  to an owner: which pile each finding is in (`piles.mjs`), the recommended
+  answer per rule (`recommendations.mjs`), the grouping and the write-back of
+  answers (`decisions.mjs`), and the page they are answered on
+  (`decisions-page.mjs`). Pure is about the import graph — it
   imports nothing from the other layers — not the filesystem: it reads the
   project's config and `state.json`, and the engine's own schemas and
   `package.json`.

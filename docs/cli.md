@@ -288,6 +288,8 @@ an unreadable `--config` target, or an unknown rule id in `rules`/`exemptions`.
   findings: Finding[],        // see docs/report-structure.md
   decided: DecidedFinding[],  // always present; every exempted finding, see
                               // docs/report-structure.md § `decided`
+  evaluatedRules: string[],   // the rules this run evaluated: a rule absent
+                              // here reported nothing because it never ran
   diagnostics: Diagnostic[],  // deduplicated across surfaces
   skipped?: {                 // present only if something did not run
     components?: string,      // reason (e.g. no `typescript` install)
@@ -332,6 +334,7 @@ id a consumer sees in a report (e.g. `core/valid-color`), not the engine's own
   findings: Finding[],
   decided: DecidedFinding[],  // every exempted finding with its decision
   counts: { error: number, warn: number, review: number, exempted: number },
+  evaluatedRules: string[],   // the lint rules this run evaluated
   diagnostics: Diagnostic[],
 }
 ```
@@ -449,6 +452,106 @@ or a failure writing an artifact to disk.
 
 No `--json` flag — `report`'s whole purpose is human/artifact output; run
 `audit --json` directly for the machine-readable payload.
+
+## `decide` — answer the findings code cannot clear (Phase 6)
+
+```
+design-delta decide [--port <n>] [--no-serve] [--out <path>] [--apply <file>] [--json] [--no-timestamp]
+```
+
+Most findings are not code's to clear: which side of a disagreement is wrong
+is the owner's call. `decide` runs the same checks as `audit` and `lint`
+(reused, never re-composed), sorts every finding into one pile by who can
+clear it, and turns each group outside the code pile into one **decision**
+for the owner to answer.
+
+| Pile            | Who decides                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| `code`          | nobody: code can clear it, and the resolve skill does            |
+| `contract`      | the contract's owner                                             |
+| `design`        | the design file's owner                                          |
+| `tokens-config` | the token system's or the config's owner                         |
+| `review`        | a person: the engine reached no verdict, or the answer is theirs |
+
+Which rule goes in which pile is `src/core/piles.mjs`, the only place it is
+written down. A rule it does not name falls through to its side: a
+`side: "code"` finding at `error` or `warn` on the `components`, `styles` or
+`anatomy` surface is `code`, a `design` one `design`, a `spec` one
+`contract`, and anything else `review`. A code-side finding on a component
+whose contract failed validation is `contract`, never `code`: it compares
+against a contract that does not load.
+
+A decision groups one rule's findings in one pile, lists the entities they
+name, and offers the answers that can clear that rule. One is
+**recommended**, with a one-sentence reason, from a fixed per-rule table
+(`src/core/recommendations.mjs`), so the same audit always gets the same
+recommendations. Its `id` is a hash of the rule, pile and entities, so the
+same findings always give the same ids.
+
+| Answer             | Written to                                                                  |
+| ------------------ | --------------------------------------------------------------------------- |
+| `accept`           | `exemptions`, as `{entity, decision: "accepted", reason}`                   |
+| `waive`            | `exemptions`, as `{entity, decision: "waived", reason}`                     |
+| `track`            | `exemptions`, as `{entity, decision: "tracked", issue}`                     |
+| `remove-exemption` | `exemptions`: the stale entry a `coverage/stale-exemption` names is deleted |
+| `fix-code`         | `paths.decisionsFile`, for the resolve skill to work                        |
+| `change-contract`  | `paths.decisionsFile`, for the resolve skill to make                        |
+| `change-design`    | `paths.decisionsFile`, for whoever edits the design file                    |
+
+`accept` and `waive` need a reason and `track` an issue reference. An answer
+can cover some of a decision's entities and leave the rest for later. A
+change answer replaces an earlier one only for the entities it names; the
+earlier answer keeps the rest. `coverage/stale-exemption` offers only
+`remove-exemption`: an exemption under that rule could never take effect.
+
+**Modes:**
+
+- **Default:** serves the page on `127.0.0.1` (`--port`, default a free
+  port) and prints its address. Saving on the page writes the answers and
+  stops the command with exit `0`. Ctrl-C stops it with `130` and writes
+  no answers. A save is refused when the config or the decisions file
+  changed on disk since the command started, so an edit made while the page
+  was open is never written over. The server accepts a save only with the per-run token embedded
+  in the page it served and a `Host` naming the loopback address. A refused
+  save keeps it running so the answer can be corrected.
+- **`--no-serve`:** writes the page as one self-contained HTML file to
+  `paths.reportDir/decisions.html` (or `--out`) and exits. Saving on it
+  downloads an answers file (`schema/decide-answers.schema.json`).
+- **`--apply <file>`:** writes an answers file, exactly as a served save
+  would.
+- **`--json`:** prints `{decisions, code, codeCount, done, snapshots}`
+  and writes nothing. `code` is the code pile's findings, the resolve
+  skill's work; the page shows only their count. Same inputs, same bytes.
+
+**What it writes, and what it never does.** Only the config's `exemptions`
+block (every other key, its order and `_` comments kept) and
+`paths.decisionsFile` (`schema/decisions.schema.json`). Every answer is
+checked first, and the new config is validated against the config schema:
+one bad answer, or a config that would not validate, writes nothing. It
+never edits a contract, token, component or design file, and never changes
+a rule's severity. `audit`, `lint`, `report` and `verify` stay read-only.
+
+**Answered decisions.** An `accept`/`waive`/`track` answer moves its
+findings under `decided`, so the decision does not come back. A change
+answer stays in the decisions file and shows on the page as answered until
+its findings are gone; the next run whose audit or lint evaluated its rule
+reports it `done`, and every run but `--json` removes it, whether or not a
+decision is left. A rule that did not run (scoped out, turned `"off"`, or a
+design-side rule whose snapshot is missing or invalid) reported nothing, so
+its entries are never `done` on that silence. An answers file saved before the findings changed names ids the
+current audit no longer produces, and is refused naming them.
+
+The page fetches nothing (no external script, style, font or image), follows
+the viewer's light or dark preference, and opens each decision on its
+recommended answer, with "Decide later" to leave it out of the save. A
+decision already answered with a change opens on "Decide later" and lists
+every answer on file, so a save made for another decision leaves it as it
+is. A
+design-side decision shows when the design snapshot was gathered.
+
+**Exit codes:** `0` on a written save, an applied file, a written page, or
+`--json`. `1` on a flag error, an unreadable decisions or answers file, or
+a refused answer. `130` on Ctrl-C.
 
 ## `contracts` — validate every contract (Phase 1)
 
