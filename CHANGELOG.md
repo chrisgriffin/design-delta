@@ -4,6 +4,23 @@ design-delta was cut from its earlier, privately developed source at 0.26.0.
 Entries start with the first release from this repo; `release-pr.yml` writes
 each one from the Conventional Commits since the previous tag.
 
+## [0.30.0](https://github.com/chrisgriffin/design-delta/compare/v0.29.0...v0.30.0) (2026-11-27)
+
+### Features
+
+* **decide:** put every open decision in front of its owner ([9cfc443](https://github.com/chrisgriffin/design-delta/commit/9cfc4430636c42c8a9eceea5a99cfd8371a10f01)), closes [#62](https://github.com/chrisgriffin/design-delta/issues/62)
+
+### Bug Fixes
+
+* **decide:** keep earlier answers, gate done on rules that ran, route by owner ([cf4dad7](https://github.com/chrisgriffin/design-delta/commit/cf4dad701f21d83b8db26aa3fde3b83f916afa15))
+
+### Documentation
+
+* **spec:** design-delta decide puts every open decision in front of its owner ([4beebf0](https://github.com/chrisgriffin/design-delta/commit/4beebf0444c03e5f608b147ce8e15f7260792f23))
+* **spec:** run the decide Runnable line with NODE_OPTIONS set ([d1b08f3](https://github.com/chrisgriffin/design-delta/commit/d1b08f35426efc0ca6e57b8dd60c64d1f58f355e))
+* **spec:** say the work adds the runnable test file ([f5099a9](https://github.com/chrisgriffin/design-delta/commit/f5099a978ad61586739bb9afe61c518c98d8f706))
+* **spec:** test the two decide paths that write nothing ([dd05ea1](https://github.com/chrisgriffin/design-delta/commit/dd05ea1c0adea1664ac369cd5d8a3245785b23d8))
+
 ## [0.29.0](https://github.com/chrisgriffin/design-delta/compare/v0.28.0...v0.29.0) (2026-11-27)
 
 ### Features
