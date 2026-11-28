@@ -182,9 +182,13 @@ function writeJson(path, value) {
  * Apply answers and write the results. Nothing is written unless every
  * answer is valid AND the resulting config passes the config schema.
  *
+ * Exported for its tests: no real answer can produce an invalid config,
+ * since `applyAnswers` only appends valid exemption entries, so the schema
+ * guard below is a backstop a test drives with an invalid state directly.
+ *
  * @returns {{written: object[], done: object[]} | {errors: string[]}}
  */
-function save(state, answers) {
+export function saveAnswers(state, answers) {
   const changed = [
     [state.configPath, state.configText, state.configLabel],
     [state.decisionsPath, state.decisionsText, state.decisionsLabel],
@@ -350,7 +354,7 @@ function serve({ io, page, port, state }) {
             token,
             port: server.address().port,
             onAnswers: answers => {
-              const saved = save(state, answers)
+              const saved = saveAnswers(state, answers)
               if (!saved.errors) reportSaved(io, saved, state)
               return saved
             },
@@ -454,7 +458,7 @@ export async function runDecide(cmdArgv, ctx) {
     } catch (err) {
       return fail(`could not read ${opts.apply}: ${err.message}`)
     }
-    const saved = save(state, answers)
+    const saved = saveAnswers(state, answers)
     if (saved.errors) {
       for (const message of saved.errors) fail(message)
       return 1
