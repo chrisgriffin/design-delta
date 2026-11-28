@@ -75,9 +75,10 @@ describe("SUBCOMMANDS", () => {
     "dock",
     "snapshot",
     "mcp",
+    "decide",
   ]
 
-  it("covers exactly the sixteen subcommands, no more, no fewer", () => {
+  it("covers exactly the seventeen subcommands, no more, no fewer", () => {
     expect(Object.keys(SUBCOMMANDS).sort()).toEqual([...EXPECTED_NAMES].sort())
   })
 

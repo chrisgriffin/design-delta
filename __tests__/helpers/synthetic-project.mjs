@@ -58,6 +58,7 @@ export const SYNTHETIC_PATHS = {
   styleRoots: ["src/theme"],
   contractsDir: "specs",
   reportDir: "reports",
+  decisionsFile: "snap/owner-decisions.json",
 }
 
 /** @type {typeof import("../../src/core/config.mjs").DEFAULT_CONVENTIONS} */

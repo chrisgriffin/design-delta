@@ -61,6 +61,7 @@ Repo-relative path overrides. See DEFAULT_PATHS in src/core/config.mjs for each 
 | `componentsDir` | string | Root of the code-side component inventory. Icons live under this same root (design-delta's ADR-001 D9) — there is no separate `iconsDir`. |
 | `contractsDir` | string | Directory of `*.contract.json` component contracts (design-delta's ADR-001 D2). JSON is the only accepted serialization. |
 | `reportDir` | string | Where every command's `--report` markdown/JSON lands. |
+| `decisionsFile` | string | Where `design-delta decide` records the owner's answers that ask for a change (`fix-code`, `change-contract`, `change-design`), for the resolve skill to act on. `accept`, `waive` and `track` answers go to `exemptions` instead. Shape: `schema/decisions.schema.json`. |
 | `styleRoots` | array of string | Extra directories to scan for CSS custom-property DECLARATIONS, beyond `componentsDir`. Generated token stylesheets normally live outside the component tree (`tokens/css/`, `styles/`), and without them the census sees a var used but never declared and reports `tokens/var-unresolved` at error severity — 49 false errors measured on a real design system, enough to fail `verify` on a healthy project. They are also the build output `tokens/emitted-value-mismatch` reads: each custom property declared there is compared against its token's value. Empty by default: the engine assumes nothing about where a project emits its tokens. Default: `[]`. |
 
 ## `conventions`

@@ -76,6 +76,7 @@ design-delta movers       # entities changed since the last snapshot
 design-delta impact       # blast-radius query for a component or token
 design-delta map          # system-wide ownership overview
 design-delta query        # read-only inventory questions: raw-values lists literal CSS declarations
+design-delta decide       # answer the findings code cannot clear, on a local page
 design-delta dock         # scaffold a Claude Code hook + skills
 
 # Phase 7 — Agent access
@@ -155,6 +156,11 @@ is for a project with many findings: it sorts each by who can clear it, fixes
 the code-side ones a component at a time through the build skill, and reports
 what is left and who owns it, without ever editing a contract, an exemption
 or a rule severity to shrink the list; both commands lay its stub as well.
+What is left reaches its owner through `design-delta decide`: the skill ends
+by handing over a local page with one question per group of findings, each
+with a recommended answer and its reason. The owner's answers are written
+back as `exemptions` entries, or into `paths.decisionsFile` for the skill's
+next pass to act on.
 [`skills/design-delta-docs/SKILL.md`](./skills/design-delta-docs/SKILL.md)
 writes a component's documentation page from its contract, in the
 documentation format the project already uses: props with types, defaults

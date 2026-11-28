@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chrisgriffin.io/schemas/design-delta/decide-answers.schema.json",
+  "title": "design-delta decide answers",
+  "description": "What the decision page saves: one answer per decision the owner answered. A served page posts it to `design-delta decide`; a page written with `--no-serve` saves it as a file for `design-delta decide --apply <file>`. Each `id` must be a decision the current audit produces, and `entities` (default: all of the decision's) must be among that decision's.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "answers"],
+  "properties": {
+    "version": { "const": 1 },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "answer"],
+        "properties": {
+          "id": { "type": "string" },
+          "answer": {
+            "enum": [
+              "fix-code",
+              "change-contract",
+              "change-design",
+              "accept",
+              "waive",
+              "track",
+              "remove-exemption"
+            ]
+          },
+          "entities": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "reason": { "type": "string" },
+          "issue": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

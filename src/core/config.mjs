@@ -253,7 +253,7 @@ export function resolveRunConfig(configPath) {
   }
 }
 
-/** @type {{snapshotDir: string, stateFile: string, tokensFile: string, componentsDir: string, contractsDir: string, reportDir: string}} */
+/** @type {{snapshotDir: string, stateFile: string, tokensFile: string, componentsDir: string, contractsDir: string, reportDir: string, decisionsFile: string}} */
 export const DEFAULT_PATHS = {
   snapshotDir: ".agents/design-delta/snapshots",
   stateFile: ".agents/design-delta/state.json",
@@ -268,6 +268,9 @@ export const DEFAULT_PATHS = {
   styleRoots: [],
   contractsDir: "contracts",
   reportDir: ".agents/design-delta/reports",
+  // The owner's answers that ask for a change, written by `decide` for the
+  // resolve skill to act on (issue #62).
+  decisionsFile: ".agents/design-delta/decisions.json",
 }
 
 /** Which UI framework the audited code is written in (issue #117). One

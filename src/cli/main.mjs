@@ -46,6 +46,7 @@ import {
 } from "../core/progress.mjs"
 import { runAudit } from "./commands/audit.mjs"
 import { runContracts } from "./commands/contracts.mjs"
+import { runDecide } from "./commands/decide.mjs"
 import { runDock } from "./commands/dock.mjs"
 import { runImpact } from "./commands/impact.mjs"
 import { runMap } from "./commands/map.mjs"
@@ -159,6 +160,12 @@ export const SUBCOMMANDS = {
     summary: "write state.json with per-entity code/spec hashes",
     phase: 6,
     run: runSnapshot,
+  },
+  decide: {
+    summary:
+      "answer the findings code cannot clear: a local page, recommended answers, written back",
+    phase: 6,
+    run: runDecide,
   },
   dock: {
     summary:
